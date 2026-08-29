@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>داشبورد — اتیکا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<style>
+  .hero-card{
+    background:linear-gradient(135deg,var(--primary) 0%,#0d9488 100%);
+    color:#fff;border-radius:var(--r);padding:1.6rem;margin-bottom:1.25rem;
+    box-shadow:var(--shadow-md);
+  }
+  .hero-card h1{font-size:1.3rem;font-weight:900;margin-bottom:.35rem}
+  .hero-card p{font-size:.9rem;opacity:.92;margin-bottom:1.1rem;max-width:56ch;line-height:1.8}
+  .hero-card .btn{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.3);color:#fff;backdrop-filter:blur(8px)}
+  .hero-card .btn:hover{background:rgba(255,255,255,.26);border-color:rgba(255,255,255,.45);color:#fff}
+  .sec-h{font-size:1.02rem;font-weight:800;margin:1.5rem 0 .8rem;display:flex;align-items:center;gap:.5rem}
+  .recent{display:grid;grid-template-columns:1fr;gap:.7rem}
+  @media (min-width:820px){.recent{grid-template-columns:1fr 1fr}}
+  .rec{
+    display:block;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-sm);
+    padding:1rem 1.1rem;text-decoration:none;color:var(--text);transition:all .18s;
+  }
+  .rec:hover{border-color:var(--primary);box-shadow:var(--shadow-md);text-decoration:none;transform:translateY(-2px)}
+  .rec-title{font-size:.92rem;font-weight:700;line-height:1.65;margin-bottom:.35rem;
+             display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .rec-meta{font-size:.75rem;color:var(--text-muted);display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap">
+  <div class="hero-card">
+    <h1 id="greet">سلام</h1>
+    <p>یک تصمیم سخت پیش رو دارید؟ آن را بنویسید تا از منظر هفت مکتب فلسفه اخلاق بررسی شود — از کرامت کانتی تا پرده جهل رالز.</p>
+    <a href="/app" class="btn">🧭 شروع تحلیل تازه</a>
+  </div>
+
+  <div class="stat-grid" id="stats">
+    <div class="stat"><div class="skeleton" style="height:2.6rem"></div></div>
+    <div class="stat"><div class="skeleton" style="height:2.6rem"></div></div>
+    <div class="stat"><div class="skeleton" style="height:2.6rem"></div></div>
+    <div class="stat"><div class="skeleton" style="height:2.6rem"></div></div>
+  </div>
+
+  <h2 class="sec-h">📈 فعالیت ۳۰ روز اخیر</h2>
+  <div class="card"><div class="card-body">
+    <div class="bars" id="activityBars"></div>
+    <p class="hint" style="text-align:center;margin-top:.6rem" id="activityNote"></p>
+  </div></div>
+
+  <h2 class="sec-h">🕘 آخرین تحلیل‌ها</h2>
+  <div id="recentHost" class="recent"></div>
+</main>
+
+<script type="module">
+import { $, api, boot, state, esc, faNum, relTime, duration } from '/js/core.js';
+
+if (!await boot()) throw new Error('unauthenticated');
+
+$('#greet').textContent = `سلام ${state.user.name} 👋`;
+
+const [stats, recent] = await Promise.all([
+  api.get('/api/history/stats'),
+  api.get('/api/history?perPage=6')
+]);
+
+/* ---------- کارت‌های آمار ---------- */
+const avgSec = stats.avgMs ? (stats.avgMs / 1000).toFixed(1) : 0;
+$('#stats').innerHTML = `
+  <div class="stat">
+    <div class="stat-label">🗂️ کل تحلیل‌ها</div>
+    <div class="stat-value">${faNum(stats.total || 0)}</div>
+    <div class="stat-sub">${faNum(stats.done || 0)} مورد کامل</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">📅 امروز</div>
+    <div class="stat-value">${faNum(stats.today || 0)}</div>
+    <div class="stat-sub">از سهمیه ${faNum(stats.quota)} تایی</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">⭐ نشان‌شده</div>
+    <div class="stat-value">${faNum(stats.favorites || 0)}</div>
+    <div class="stat-sub">تحلیل‌های مهم شما</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">⏱️ میانگین زمان</div>
+    <div class="stat-value">${faNum(avgSec)}<span style="font-size:.9rem;font-weight:700"> ث</span></div>
+    <div class="stat-sub">برای هر تحلیل</div>
+  </div>`;
+
+/* ---------- نمودار فعالیت ---------- */
+const byDay = Object.fromEntries((stats.daily || []).map(d => [d.d, d.c]));
+const days = [];
+for (let i = 29; i >= 0; i--) {
+  const d = new Date();
+  d.setDate(d.getDate() - i);
+  const key = d.toISOString().slice(0, 10);
+  days.push({ key, count: byDay[key] || 0 });
+}
+const max = Math.max(1, ...days.map(d => d.count));
+$('#activityBars').innerHTML = days.map(d =>
+  `<div class="bar" data-v="${d.count}" style="height:${Math.max(4, (d.count / max) * 100)}%"
+        title="${d.key}: ${d.count} تحلیل"></div>`).join('');
+const total30 = days.reduce((a, b) => a + b.count, 0);
+$('#activityNote').textContent = total30
+  ? `${faNum(total30)} تحلیل در ۳۰ روز گذشته — پرکارترین روز: ${faNum(max)} تحلیل`
+  : 'در ۳۰ روز گذشته تحلیلی ثبت نشده است.';
+
+/* ---------- آخرین تحلیل‌ها ---------- */
+const host = $('#recentHost');
+if (!recent.items.length) {
+  host.style.gridTemplateColumns = '1fr';
+  host.innerHTML = `
+    <div class="card"><div class="empty">
+      <div class="empty-icon">📭</div>
+      <h3>هنوز تحلیلی ندارید</h3>
+      <p>اولین دوراهی‌تان را بنویسید تا اینجا ظاهر شود.</p>
+      <a class="btn btn-primary" href="/app">شروع کنید</a>
+    </div></div>`;
+} else {
+  host.innerHTML = recent.items.map(it => `
+    <a class="rec" href="/analysis?id=${it.id}">
+      <div class="rec-title">${esc(it.title)}</div>
+      <div class="rec-meta">
+        <span>${relTime(it.created_at)}</span>
+        <span>•</span>
+        <span>${duration(it.duration_ms)}</span>
+        ${it.is_favorite ? '<span>⭐</span>' : ''}
+        ${it.status === 'error' ? '<span class="badge badge-danger">ناموفق</span>' : ''}
+      </div>
+    </a>`).join('');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>تحلیل تازه — اتیکا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/result.css">
+<style>
+  .layout{display:grid;grid-template-columns:1fr;gap:1.25rem;align-items:start}
+  @media (min-width:1080px){
+    .layout{grid-template-columns:390px 1fr}
+    .form-col{position:sticky;top:calc(var(--nav-h) + 1.5rem);max-height:calc(100vh - var(--nav-h) - 3rem);overflow-y:auto}
+  }
+  .page-head{margin-bottom:1.25rem}
+  .page-head h1{font-size:1.35rem;font-weight:900;margin-bottom:.25rem}
+  .page-head p{font-size:.88rem;color:var(--text-muted)}
+  details.more{border-top:1px solid var(--border);padding-top:.9rem;margin-top:.3rem}
+  details.more summary{cursor:pointer;font-size:.87rem;font-weight:700;color:var(--primary);list-style:none;
+                       display:flex;align-items:center;gap:.4rem;margin-bottom:.9rem}
+  details.more summary::-webkit-details-marker{display:none}
+  details.more summary::before{content:"＋";font-weight:900}
+  details.more[open] summary::before{content:"－"}
+  .quota{font-size:.76rem;color:var(--text-muted);text-align:center;margin-top:.6rem}
+  .examples{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+  .examples button{font-size:.76rem;padding:.3rem .6rem;border-radius:999px;border:1px dashed var(--border-strong);
+                   background:transparent;color:var(--text-muted);cursor:pointer;font-family:inherit}
+  .examples button:hover{border-color:var(--primary);color:var(--primary);border-style:solid}
+</style>
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>یک دوراهی اخلاقی را بشکافید</h1>
+    <p>موقعیت را با جزئیات شرح دهید. هرچه دقیق‌تر بنویسید، تحلیل کمتر کلی‌گویانه خواهد بود.</p>
+  </div>
+
+  <div class="layout">
+    <!-- ستون فرم -->
+    <div class="form-col">
+      <div class="card">
+        <div class="card-body">
+          <form id="analyzeForm">
+            <div class="field">
+              <label for="dilemma">شرح دوراهی <span style="color:var(--danger)">*</span></label>
+              <textarea class="textarea" id="dilemma" rows="7" required minlength="20" maxlength="8000"
+                placeholder="مثلاً: مدیرم از من خواسته گزارشی را طوری بنویسم که ایراد یک محصول در آن دیده نشود. اگر قبول نکنم احتمالاً شغلم را از دست می‌دهم، و همسرم بیکار است…"></textarea>
+              <div class="row-between">
+                <span class="hint">حداقل ۲۰ نویسه</span>
+                <span class="char-count" id="charCount">۰ / ۸۰۰۰</span>
+              </div>
+              <div class="examples" id="examples"></div>
+            </div>
+
+            <details class="more">
+              <summary>اطلاعات تکمیلی (اختیاری ولی مؤثر)</summary>
+
+              <div class="field">
+                <label for="domain">حوزه</label>
+                <select class="select" id="domain">
+                  <option value="">— انتخاب کنید —</option>
+                  <option>محیط کار و حرفه</option>
+                  <option>خانواده و روابط شخصی</option>
+                  <option>سلامت و پزشکی</option>
+                  <option>کسب‌وکار و مالی</option>
+                  <option>فناوری و هوش مصنوعی</option>
+                  <option>تحصیل و پژوهش</option>
+                  <option>اجتماعی و سیاسی</option>
+                  <option>محیط زیست</option>
+                  <option>سایر</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="stakeholders">چه کسانی درگیرند؟</label>
+                <textarea class="textarea" id="stakeholders" rows="2" maxlength="1000"
+                  placeholder="خودم، همسرم، مدیر، مشتریانی که محصول را می‌خرند…"></textarea>
+              </div>
+
+              <div class="field">
+                <label for="options">گزینه‌هایی که به آن‌ها فکر کرده‌اید</label>
+                <textarea class="textarea" id="options" rows="2" maxlength="2000"
+                  placeholder="۱. قبول کنم ۲. رد کنم و استعفا بدهم ۳. به واحد بازرسی گزارش بدهم"></textarea>
+              </div>
+
+              <div class="grid-2">
+                <div class="field">
+                  <label for="urgency">فوریت</label>
+                  <select class="select" id="urgency">
+                    <option value="">— انتخاب کنید —</option>
+                    <option>همین امروز باید تصمیم بگیرم</option>
+                    <option>چند روز فرصت دارم</option>
+                    <option>چند هفته فرصت دارم</option>
+                    <option>فوریتی ندارد</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="model">مدل تحلیل</label>
+                  <select class="select" id="model"></select>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="values">ارزش‌ها و محدودیت‌های شخصی</label>
+                <textarea class="textarea" id="values" rows="2" maxlength="1000"
+                  placeholder="مثلاً: صداقت برایم از امنیت شغلی مهم‌تر است، ولی نمی‌توانم خانواده‌ام را بی‌درآمد بگذارم."></textarea>
+              </div>
+            </details>
+
+            <button class="btn btn-primary btn-block btn-lg" type="submit" id="submitBtn">
+              🧭 تحلیل اخلاقی را شروع کن
+            </button>
+            <div class="quota" id="quotaLine"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ستون نتیجه -->
+    <div id="resultCol">
+      <div class="card">
+        <div class="card-body">
+          <div class="empty">
+            <div class="empty-icon">🧭</div>
+            <h3>هنوز تحلیلی انجام نشده</h3>
+            <p>موقعیت خود را در فرم کنار بنویسید. اتیکا آن را از هفت منظر فلسفه اخلاق می‌سنجد، تعارض‌ها را نشان می‌دهد و یک مسیر موجه پیشنهاد می‌کند.</p>
+            <a class="btn btn-sm" href="/guide">مروری بر مکاتب اخلاقی</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { $, api, boot, toast, esc, faNum, state } from '/js/core.js';
+import { buildSkeleton, parseSections, applySections, progressOf } from '/js/result.js';
+
+if (!await boot()) throw new Error('unauthenticated');
+
+const EXAMPLES = [
+  'همکارم بدون اجازه کد من را به نام خودش ارائه داده و مدیر او را تشویق کرده. اگر بگویم، رابطه تیم خراب می‌شود.',
+  'پدرم بیماری پیشرفته دارد. پزشک به من گفته، ولی خانواده اصرار دارد به خودش نگوییم.',
+  'شرکتی به من پیشنهاد کار داده که حقوقش دو برابر است، ولی محصولش داده کاربران را بدون اطلاع کامل می‌فروشد.'
+];
+
+/* ---------- مقداردهی اولیه ---------- */
+const meta = await api.get('/api/analyze/meta');
+const modelSel = $('#model');
+modelSel.innerHTML = meta.models.map(m =>
+  `<option value="${esc(m.id)}" ${m.id === meta.defaultModel ? 'selected' : ''}>${esc(m.label)}</option>`
+).join('') || '<option value="">مدلی فعال نیست</option>';
+
+$('#examples').innerHTML = EXAMPLES.map((t, i) =>
+  `<button type="button" data-i="${i}">نمونه ${faNum(i + 1)}</button>`).join('');
+$('#examples').onclick = e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  $('#dilemma').value = EXAMPLES[+b.dataset.i];
+  $('#dilemma').dispatchEvent(new Event('input'));
+  $('#dilemma').focus();
+};
+
+const charCount = $('#charCount');
+$('#dilemma').addEventListener('input', e => {
+  const n = e.target.value.length;
+  charCount.textContent = `${faNum(n)} / ۸۰۰۰`;
+  charCount.classList.toggle('over', n > 8000);
+});
+
+async function refreshQuota() {
+  try {
+    const q = await api.get('/api/analyze/quota');
+    $('#quotaLine').textContent = `سهمیه امروز: ${faNum(q.remaining)} تحلیل از ${faNum(q.limit)} باقی مانده`;
+    $('#submitBtn').disabled = q.remaining <= 0;
+  } catch {}
+}
+refreshQuota();
+
+/* ---------- استریم تحلیل ---------- */
+let controller = null;
+
+$('#analyzeForm').onsubmit = async e => {
+  e.preventDefault();
+  if (controller) return;
+
+  const dilemma = $('#dilemma').value.trim();
+  if (dilemma.length < 20) return toast('شرح دوراهی باید حداقل ۲۰ نویسه باشد.', 'err');
+
+  const payload = {
+    dilemma,
+    domain: $('#domain').value,
+    stakeholders: $('#stakeholders').value.trim(),
+    options: $('#options').value.trim(),
+    urgency: $('#urgency').value,
+    values: $('#values').value.trim(),
+    model: modelSel.value
+  };
+
+  const btn = $('#submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> در حال تحلیل…';
+
+  const col = $('#resultCol');
+  col.innerHTML = `
+    <div class="streambar" id="streambar">
+      <div class="row-between">
+        <span class="streambar-label"><span class="spinner"></span> <span id="stStatus">در حال اتصال به مدل…</span></span>
+        <button class="btn btn-sm btn-ghost" id="cancelBtn">لغو</button>
+      </div>
+      <div class="progress"><div class="progress-fill" id="stFill"></div></div>
+      <div class="raw-peek" id="rawPeek"></div>
+    </div>
+    <div id="resultHost"></div>`;
+  buildSkeleton($('#resultHost'));
+
+  $('#cancelBtn').onclick = () => { controller?.abort(); };
+
+  controller = new AbortController();
+  let acc = '';
+  let analysisId = null;
+  const peek = $('#rawPeek');
+  const fill = $('#stFill');
+  const status = $('#stStatus');
+  let rafPending = false;
+
+  const rerender = () => {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      const sections = parseSections(acc);
+      applySections(sections, { streaming: true });
+      const p = progressOf(sections);
+      fill.style.width = p + '%';
+      status.textContent = p > 0 ? `در حال نوشتن تحلیل… ${faNum(p)}٪` : 'مدل در حال فکر کردن است…';
+      peek.textContent = acc.slice(-600);
+      peek.scrollTop = peek.scrollHeight;
+    });
+  };
+
+  try {
+    const res = await fetch('/api/analyze/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-csrf-token': state.csrf },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+      credentials: 'same-origin'
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `خطای ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+
+      let sep;
+      while ((sep = buf.indexOf('\n\n')) >= 0) {
+        const chunk = buf.slice(0, sep);
+        buf = buf.slice(sep + 2);
+        if (chunk.startsWith(':')) continue;              // heartbeat
+
+        let event = 'message', data = '';
+        for (const line of chunk.split('\n')) {
+          if (line.startsWith('event:')) event = line.slice(6).trim();
+          else if (line.startsWith('data:')) data += line.slice(5).trim();
+        }
+        if (!data) continue;
+        let payloadObj;
+        try { payloadObj = JSON.parse(data); } catch { continue; }
+
+        if (event === 'start') {
+          analysisId = payloadObj.analysisId;
+          status.textContent = 'مدل شروع کرد…';
+        } else if (event === 'delta') {
+          acc += payloadObj.t;
+          rerender();
+        } else if (event === 'done') {
+          finish(payloadObj);
+        } else if (event === 'error') {
+          throw new Error(payloadObj.message);
+        }
+      }
+    }
+    if (!analysisId) throw new Error('پاسخی از سرور دریافت نشد.');
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      $('#streambar')?.remove();
+      toast('تحلیل لغو شد.', '');
+    } else {
+      const bar = $('#streambar');
+      if (bar) bar.outerHTML = `<div class="alert alert-danger">${esc(err.message)}</div>`;
+      toast(err.message, 'err');
+    }
+  } finally {
+    controller = null;
+    btn.disabled = false;
+    btn.innerHTML = '🧭 تحلیل اخلاقی را شروع کن';
+    refreshQuota();
+  }
+
+  function finish(info) {
+    const sections = info.sections && Object.keys(info.sections).length ? info.sections : parseSections(acc);
+    applySections(sections, { streaming: false });
+    const secs = info.durationMs ? (info.durationMs / 1000).toFixed(1) : null;
+    $('#streambar').outerHTML = `
+      <div class="card no-print" style="margin-bottom:1.1rem">
+        <div class="card-body" style="padding:.9rem 1.2rem">
+          <div class="row-between">
+            <span style="font-size:.87rem;font-weight:700;color:var(--success)">✓ تحلیل کامل شد${secs ? ` — ${faNum(secs)} ثانیه` : ''}</span>
+            <div class="row" style="gap:.4rem">
+              <a class="btn btn-sm" href="/analysis?id=${info.analysisId}">صفحه اختصاصی</a>
+              <a class="btn btn-sm" href="/api/history/${info.analysisId}/export">دانلود</a>
+              <button class="btn btn-sm" onclick="print()">چاپ</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    const host = $('#resultHost');
+    if (host && !host.querySelector('.disclaimer')) {
+      host.insertAdjacentHTML('beforeend',
+        '<div class="disclaimer">این تحلیل توسط یک مدل زبانی تولید شده و می‌تواند خطا داشته باشد. تصمیم نهایی و مسئولیت آن با شماست. اتیکا جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</div>');
+    }
+    toast('تحلیل ذخیره شد.', 'ok');
+  }
+};
+
+addEventListener('beforeunload', e => {
+  if (controller) { e.preventDefault(); e.returnValue = ''; }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ورود به اتیکا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<style>
+  body{display:grid;place-items:center;min-height:100vh;padding:1.5rem 1rem;
+       background:radial-gradient(1200px 600px at 70% -10%, var(--primary-soft), transparent 60%), var(--bg-body)}
+  .auth{width:min(430px,100%)}
+  .auth-brand{display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.6rem}
+  .auth-brand .brand-mark{width:38px;height:38px;font-size:1.1rem;border-radius:11px}
+  .auth-brand span:last-child{font-size:1.35rem;font-weight:900}
+  .auth-tag{text-align:center;color:var(--text-muted);font-size:.88rem;margin-bottom:1.5rem}
+  .tabs{display:flex;background:var(--bg-subtle);border-radius:11px;padding:.25rem;margin-bottom:1.4rem;border:1px solid var(--border)}
+  .tabs button{flex:1;padding:.6rem;border:none;background:none;font-family:inherit;font-size:.9rem;
+               font-weight:700;color:var(--text-muted);border-radius:8px;cursor:pointer;transition:all .18s}
+  .tabs button.active{background:var(--bg-surface);color:var(--text);box-shadow:var(--shadow-sm)}
+  .auth-foot{text-align:center;margin-top:1.2rem;font-size:.83rem;color:var(--text-muted)}
+  .theme-corner{position:fixed;top:1rem;inset-inline-end:1rem}
+</style>
+</head>
+<body>
+
+<button class="btn btn-icon btn-ghost theme-corner" id="themeBtn" aria-label="تغییر تم">◐</button>
+
+<div class="auth">
+  <div class="auth-brand">
+    <span class="brand-mark">ا</span><span>اتیکا</span>
+  </div>
+  <p class="auth-tag">دوراهی‌ات را از هفت منظر فلسفه اخلاق ببین</p>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="tabs" role="tablist">
+        <button id="tabLogin" class="active" role="tab">ورود</button>
+        <button id="tabRegister" role="tab">ثبت‌نام</button>
+      </div>
+
+      <div id="alertBox"></div>
+
+      <!-- فرم ورود -->
+      <form id="loginForm">
+        <div class="field">
+          <label for="li-email">ایمیل</label>
+          <input class="input mono" id="li-email" type="email" autocomplete="email" required placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label for="li-pass">رمز عبور</label>
+          <input class="input" id="li-pass" type="password" autocomplete="current-password" required placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary btn-block btn-lg" type="submit" id="loginBtn">ورود</button>
+      </form>
+
+      <!-- فرم ثبت‌نام -->
+      <form id="registerForm" class="hidden">
+        <div class="field">
+          <label for="rg-name">نام</label>
+          <input class="input" id="rg-name" type="text" autocomplete="name" required minlength="2" placeholder="نام و نام خانوادگی">
+        </div>
+        <div class="field">
+          <label for="rg-email">ایمیل</label>
+          <input class="input mono" id="rg-email" type="email" autocomplete="email" required placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label for="rg-pass">رمز عبور</label>
+          <input class="input" id="rg-pass" type="password" autocomplete="new-password" required minlength="8" placeholder="حداقل ۸ نویسه">
+          <span class="hint">حداقل ۸ نویسه. رمزی انتخاب کنید که جای دیگری استفاده نکرده‌اید.</span>
+        </div>
+        <button class="btn btn-primary btn-block btn-lg" type="submit" id="registerBtn">ساخت حساب</button>
+      </form>
+    </div>
+  </div>
+
+  <p class="auth-foot">
+    این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.<br>
+    <a href="/">درباره اتیکا</a>
+  </p>
+</div>
+
+<script type="module">
+import { $, api, toggleTheme, loadSession, toast } from '/js/core.js';
+
+$('#themeBtn').onclick = () => toggleTheme();
+
+const params = new URLSearchParams(location.search);
+const next = params.get('next') || '/app';
+
+// اگر از قبل وارد شده، مستقیم برو
+try {
+  const s = await loadSession();
+  if (s.user) location.replace(next);
+  if (s.settings && s.settings.allowRegistration === false) {
+    $('#tabRegister').classList.add('hidden');
+  }
+} catch {}
+
+if (params.get('mode') === 'register') showTab('register');
+
+function showTab(which) {
+  const isLogin = which === 'login';
+  $('#tabLogin').classList.toggle('active', isLogin);
+  $('#tabRegister').classList.toggle('active', !isLogin);
+  $('#loginForm').classList.toggle('hidden', !isLogin);
+  $('#registerForm').classList.toggle('hidden', isLogin);
+  $('#alertBox').innerHTML = '';
+}
+$('#tabLogin').onclick = () => showTab('login');
+$('#tabRegister').onclick = () => showTab('register');
+
+function showError(msg) {
+  $('#alertBox').innerHTML = `<div class="alert alert-danger">${msg}</div>`;
+}
+
+async function submit(btn, fn) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> لطفاً صبر کنید…';
+  $('#alertBox').innerHTML = '';
+  try {
+    await fn();
+  } catch (e) {
+    showError(e.message);
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+$('#loginForm').onsubmit = e => {
+  e.preventDefault();
+  submit($('#loginBtn'), async () => {
+    await api.post('/api/auth/login', {
+      email: $('#li-email').value.trim(),
+      password: $('#li-pass').value
+    });
+    location.replace(next);
+  });
+};
+
+$('#registerForm').onsubmit = e => {
+  e.preventDefault();
+  submit($('#registerBtn'), async () => {
+    await api.post('/api/auth/register', {
+      name: $('#rg-name').value.trim(),
+      email: $('#rg-email').value.trim(),
+      password: $('#rg-pass').value
+    });
+    location.replace(next);
+  });
+};
+</script>
+</body>
+</html>

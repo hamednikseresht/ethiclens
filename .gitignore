@@ -1,0 +1,13 @@
+node_modules/
+.env
+*.log
+
+# پایگاه داده و پشتیبان‌ها (در زمان اجرا ساخته می‌شود)
+data/
+
+# ابزار محلی
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,41 @@
+[Unit]
+Description=Ethica — Ethical Decision Assistant
+Documentation=https://github.com/YOUR_USER/ethica
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ethica
+Group=ethica
+WorkingDirectory=/opt/ethica
+EnvironmentFile=/opt/ethica/.env
+ExecStart=/usr/bin/node server/index.js
+
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ethica
+
+# --- سخت‌سازی ---
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+RestrictRealtime=true
+# تنها مسیری که سرویس اجازه نوشتن دارد (پایگاه داده SQLite)
+ReadWritePaths=/opt/ethica/data
+
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

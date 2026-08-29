@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>تحلیل — اتیکا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/result.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap-narrow" style="max-width:1180px">
+  <div id="headHost"></div>
+  <div id="resultHost"></div>
+</main>
+
+<script type="module">
+import { $, api, boot, esc, faNum, faDate, duration, toast, confirmDialog } from '/js/core.js';
+import { buildSkeleton, applySections, verdictChips } from '/js/result.js';
+
+if (!await boot()) throw new Error('unauthenticated');
+
+const id = new URLSearchParams(location.search).get('id');
+if (!id) location.replace('/history');
+
+let a;
+try {
+  a = await api.get(`/api/history/${id}`);
+} catch (e) {
+  $('#headHost').innerHTML = `<div class="alert alert-danger">${esc(e.message)}</div>
+    <a class="btn" href="/history">بازگشت به تاریخچه</a>`;
+  throw e;
+}
+
+const ctx = a.context || {};
+const ctxBits = [
+  ctx.domain && `حوزه: ${ctx.domain}`,
+  ctx.urgency && `فوریت: ${ctx.urgency}`
+].filter(Boolean);
+
+$('#headHost').innerHTML = `
+  <div class="result-head">
+    <div class="row-between" style="margin-bottom:.5rem">
+      <a href="/history" class="btn btn-sm btn-ghost no-print">→ بازگشت به تاریخچه</a>
+      <div class="row no-print" style="gap:.4rem">
+        <button class="btn btn-sm" id="favBtn">${a.is_favorite ? '⭐ نشان‌شده' : '☆ نشان کردن'}</button>
+        <a class="btn btn-sm" href="/api/history/${a.id}/export">دانلود</a>
+        <button class="btn btn-sm" onclick="print()">چاپ</button>
+        <button class="btn btn-sm" id="delBtn" style="color:var(--danger)">حذف</button>
+      </div>
+    </div>
+    <h1>${esc(a.title)}</h1>
+    <div class="meta-row">
+      <span class="badge">${faDate(a.created_at)}</span>
+      <span class="badge">${esc(a.model)}</span>
+      <span class="badge">${duration(a.duration_ms)}</span>
+      ${ctxBits.map(b => `<span class="badge">${esc(b)}</span>`).join('')}
+      ${a.status === 'done' ? verdictChips(a.sections || {}) : ''}
+    </div>
+    <div class="result-dilemma">${esc(a.dilemma)}</div>
+  </div>`;
+
+if (a.status === 'error') {
+  $('#resultHost').innerHTML = `
+    <div class="alert alert-danger">این تحلیل کامل نشد: ${esc(a.error || 'خطای نامشخص')}</div>
+    <a class="btn btn-primary" href="/app">تحلیل تازه</a>`;
+} else if (a.status === 'pending') {
+  $('#resultHost').innerHTML = `
+    <div class="alert alert-warn">این تحلیل ناتمام مانده است — احتمالاً صفحه پیش از پایان بسته شده.</div>
+    <a class="btn btn-primary" href="/app">دوباره تحلیل کنید</a>`;
+} else {
+  buildSkeleton($('#resultHost'));
+  applySections(a.sections || {}, { streaming: false });
+  $('#resultHost').insertAdjacentHTML('beforeend',
+    '<div class="disclaimer">این تحلیل توسط یک مدل زبانی تولید شده و می‌تواند خطا داشته باشد. تصمیم نهایی و مسئولیت آن با شماست. اتیکا جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</div>');
+}
+
+$('#favBtn')?.addEventListener('click', async e => {
+  try {
+    const r = await api.post(`/api/history/${a.id}/favorite`);
+    e.target.textContent = r.isFavorite ? '⭐ نشان‌شده' : '☆ نشان کردن';
+  } catch (err) { toast(err.message, 'err'); }
+});
+
+$('#delBtn')?.addEventListener('click', async () => {
+  if (!await confirmDialog('حذف تحلیل', 'این تحلیل برای همیشه حذف می‌شود. مطمئنید؟', 'حذف کن')) return;
+  try { await api.del(`/api/history/${a.id}`); location.replace('/history'); }
+  catch (err) { toast(err.message, 'err'); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "name": "ethica",
+  "version": "1.0.0",
+  "description": "دستیار تصمیم‌گیری اخلاقی — تحلیل دوراهی‌های اخلاقی از منظر هفت مکتب فلسفه اخلاق",
+  "type": "module",
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "seed": "node server/seed.js"
+  },
+  "keywords": [
+    "ethics",
+    "philosophy",
+    "decision-making",
+    "nvidia-nim",
+    "persian"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0"
+  },
+  "allowScripts": {
+    "better-sqlite3": true
+  }
+}

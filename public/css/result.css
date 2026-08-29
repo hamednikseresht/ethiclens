@@ -1,0 +1,122 @@
+/* ==========================================================================
+   نمایش نتیجه تحلیل اخلاقی
+   ========================================================================== */
+.result{display:flex;flex-direction:column;gap:1.1rem}
+.pair{display:grid;grid-template-columns:1fr;gap:1.1rem}
+@media (min-width:900px){.pair{grid-template-columns:1fr 1fr}}
+
+.res-block{
+  background:var(--bg-surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.3rem;box-shadow:var(--shadow-sm);
+}
+.res-block.featured{
+  border-color:var(--primary);
+  box-shadow:0 0 0 1px var(--primary), var(--shadow-md);
+  background:linear-gradient(180deg,var(--primary-soft) 0%,var(--bg-surface) 120px);
+}
+.res-h{display:flex;align-items:center;gap:.5rem;font-size:1rem;font-weight:800;margin-bottom:.3rem}
+.res-h span{font-size:1.1rem}
+.res-sub{font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6}
+.res-block .prose{margin-top:.7rem}
+
+/* ---------- دروازه‌های فلوچارت ---------- */
+.gates{
+  display:grid;grid-template-columns:1fr;gap:.7rem;align-items:stretch;
+}
+.gate-arrow{display:none}
+@media (min-width:1000px){
+  .gates{display:flex;align-items:stretch;gap:.35rem}
+  .gate{flex:1}
+  .gate-arrow{display:flex;align-items:center;color:var(--border-strong);font-size:1.1rem;flex-shrink:0}
+}
+
+.gate{
+  position:relative;background:var(--bg-subtle);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:.85rem .9rem;transition:all .25s;
+  border-top:3px solid var(--border-strong);
+}
+.gate-badge{
+  position:absolute;top:.6rem;inset-inline-end:.7rem;font-size:.65rem;font-weight:700;
+  color:var(--text-faint);background:var(--bg-surface);border:1px solid var(--border);
+  padding:.05rem .4rem;border-radius:999px;
+}
+.gate-title{font-size:.92rem;font-weight:800;margin-bottom:.05rem;padding-inline-end:3.5rem}
+.gate-sub{font-size:.72rem;color:var(--text-muted);margin-bottom:.5rem}
+.gate-verdict{font-size:.85rem;font-weight:800;color:var(--text-faint)}
+.gate-note{font-size:.8rem;line-height:1.7;margin-top:.35rem;color:var(--text-muted)}
+.gate-note p{margin-bottom:.3rem}
+
+.gate[data-state="yes"]{border-top-color:var(--success);background:var(--success-soft)}
+.gate[data-state="yes"] .gate-verdict{color:var(--success)}
+.gate[data-state="maybe"]{border-top-color:var(--warn);background:var(--warn-soft)}
+.gate[data-state="maybe"] .gate-verdict{color:var(--warn)}
+.gate[data-state="no"]{border-top-color:var(--danger);background:var(--danger-soft)}
+.gate[data-state="no"] .gate-verdict{color:var(--danger)}
+
+/* ---------- کارت مکاتب ---------- */
+.schools{display:grid;grid-template-columns:1fr;gap:.85rem}
+@media (min-width:760px){.schools{grid-template-columns:1fr 1fr}}
+@media (min-width:1200px){.schools{grid-template-columns:1fr 1fr 1fr}}
+
+.school{
+  background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:1rem 1.1rem;border-top:3px solid var(--sc,var(--primary));
+  transition:box-shadow .2s,transform .2s;display:flex;flex-direction:column;
+}
+.school.filled:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.school.pending{opacity:.55}
+.school header{display:flex;align-items:flex-start;gap:.6rem;margin-bottom:.6rem}
+.school-icon{font-size:1.25rem;line-height:1.4;flex-shrink:0}
+.school-name{font-size:.95rem;font-weight:800;line-height:1.4}
+.school-thinker{font-size:.75rem;color:var(--text-muted)}
+.school-verdict{
+  font-size:.74rem;font-weight:800;padding:.2rem .55rem;border-radius:999px;
+  background:var(--bg-subtle);color:var(--text-faint);white-space:nowrap;flex-shrink:0;
+  border:1px solid var(--border);
+}
+.school-verdict.v-yes{background:var(--success-soft);color:var(--success);border-color:transparent}
+.school-verdict.v-no{background:var(--danger-soft);color:var(--danger);border-color:transparent}
+.school-verdict.v-maybe{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.school-verdict.v-neutral{background:var(--primary-soft);color:var(--primary);border-color:transparent}
+.school-body{font-size:.87rem;line-height:1.85;color:var(--text)}
+
+/* ---------- نوار پیشرفت استریم ---------- */
+.streambar{
+  position:sticky;top:calc(var(--nav-h) + .5rem);z-index:50;
+  background:var(--bg-surface);border:1px solid var(--primary);border-radius:var(--r-sm);
+  padding:.75rem 1rem;box-shadow:var(--shadow-md);margin-bottom:1.1rem;
+}
+.streambar .row-between{gap:.6rem}
+.streambar-label{font-size:.87rem;font-weight:700;display:flex;align-items:center;gap:.5rem}
+.progress{height:5px;background:var(--bg-inset);border-radius:99px;overflow:hidden;margin-top:.6rem}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:99px;transition:width .35s ease;width:0}
+
+/* پیش‌نمایش خام هنگام استریم */
+.raw-peek{
+  margin-top:.6rem;max-height:110px;overflow:hidden;position:relative;
+  font-size:.78rem;line-height:1.7;color:var(--text-muted);
+  -webkit-mask-image:linear-gradient(180deg,#000 30%,transparent);
+  mask-image:linear-gradient(180deg,#000 30%,transparent);
+  white-space:pre-wrap;word-break:break-word;
+}
+
+/* ---------- سربرگ نتیجه ---------- */
+.result-head{
+  background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:1.3rem;margin-bottom:1.1rem;box-shadow:var(--shadow-sm);
+}
+.result-head h1{font-size:1.2rem;font-weight:900;line-height:1.5;margin-bottom:.5rem}
+.result-dilemma{
+  background:var(--bg-subtle);border-inline-start:3px solid var(--accent);
+  border-radius:0 var(--r-sm) var(--r-sm) 0;padding:.85rem 1rem;
+  font-size:.88rem;line-height:1.85;white-space:pre-wrap;margin-top:.8rem;
+  max-height:180px;overflow:auto;
+}
+.meta-row{display:flex;flex-wrap:wrap;gap:.4rem;font-size:.76rem;color:var(--text-muted);margin-top:.6rem}
+
+/* ---------- سلب مسئولیت ---------- */
+.disclaimer{
+  font-size:.78rem;color:var(--text-muted);line-height:1.75;
+  background:var(--bg-subtle);border:1px dashed var(--border-strong);
+  border-radius:var(--r-sm);padding:.8rem 1rem;margin-top:1.2rem;
+}

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>اتیکا — دستیار تصمیم‌گیری اخلاقی</title>
+<meta name="description" content="دوراهی‌های اخلاقی‌تان را از منظر هفت مکتب بزرگ فلسفه اخلاق بررسی کنید: فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، قراردادگرایی، اخلاق مراقبت، اگزیستانسیالیسم و تبارشناسی نیچه.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<style>
+  .hero{
+    padding:3.5rem 1rem 3rem;text-align:center;
+    background:radial-gradient(900px 460px at 50% -12%, var(--primary-soft), transparent 62%);
+  }
+  .hero .eyebrow{display:inline-flex;align-items:center;gap:.4rem;font-size:.78rem;font-weight:700;
+    background:var(--bg-surface);border:1px solid var(--border);border-radius:999px;padding:.3rem .8rem;
+    color:var(--text-muted);margin-bottom:1.1rem}
+  .hero h1{font-size:clamp(1.7rem,5vw,2.7rem);font-weight:900;line-height:1.4;margin-bottom:.9rem;letter-spacing:-.02em}
+  .hero h1 .hl{background:linear-gradient(120deg,var(--primary),var(--accent));
+               -webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{font-size:clamp(.95rem,2.2vw,1.08rem);color:var(--text-muted);max-width:60ch;margin:0 auto 1.8rem;line-height:1.9}
+  .hero-cta{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap}
+
+  .lens-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:.7rem;margin:3rem 0}
+  .lens{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-sm);
+        padding:1rem;border-top:3px solid var(--lc);text-align:center}
+  .lens .ic{font-size:1.5rem;display:block;margin-bottom:.35rem}
+  .lens .nm{font-size:.88rem;font-weight:800;margin-bottom:.15rem}
+  .lens .th{font-size:.73rem;color:var(--text-muted)}
+
+  .steps{display:grid;grid-template-columns:1fr;gap:1rem;margin:1rem 0 3rem}
+  @media (min-width:820px){.steps{grid-template-columns:repeat(3,1fr)}}
+  .step{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem}
+  .step .n{width:30px;height:30px;border-radius:9px;background:var(--primary-soft);color:var(--primary);
+           display:grid;place-items:center;font-weight:900;margin-bottom:.7rem}
+  .step h3{font-size:1rem;font-weight:800;margin-bottom:.4rem}
+  .step p{font-size:.87rem;color:var(--text-muted);line-height:1.85}
+
+  .sec-title{text-align:center;margin-bottom:.5rem;font-size:1.35rem;font-weight:900}
+  .sec-lead{text-align:center;color:var(--text-muted);font-size:.9rem;max-width:56ch;margin:0 auto 2rem;line-height:1.85}
+
+  .cta-band{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border-radius:var(--r);
+            padding:2.4rem 1.5rem;text-align:center;margin:3rem 0 2rem}
+  .cta-band h2{font-size:1.3rem;font-weight:900;margin-bottom:.5rem}
+  .cta-band p{opacity:.93;font-size:.92rem;margin-bottom:1.3rem;max-width:52ch;margin-inline:auto;line-height:1.85}
+  .cta-band .btn{background:#fff;border-color:#fff;color:var(--primary)}
+  .cta-band .btn:hover{background:#fff;color:var(--primary);filter:brightness(.96)}
+
+  footer.site{border-top:1px solid var(--border);padding:2rem 1rem;text-align:center;
+              font-size:.83rem;color:var(--text-muted);line-height:1.9}
+</style>
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<section class="hero">
+  <span class="eyebrow">🏛️ هفت مکتب فلسفه اخلاق، در یک تحلیل</span>
+  <h1>تصمیم سختت را <span class="hl">از هفت منظر</span> ببین</h1>
+  <p>
+    موقعیتی که در آن گیر کرده‌ای را بنویس. اتیکا آن را با معیارهای کانت، میل، ارسطو، رالز، گیلیگان،
+    کی‌یرکگور و نیچه می‌سنجد، جایی که این مکاتب به هم می‌رسند و جایی که در تضادند را نشان می‌دهد،
+    و یک مسیر موجه با گام‌های عملی پیشنهاد می‌کند.
+  </p>
+  <div class="hero-cta" id="heroCta"></div>
+</section>
+
+<main class="wrap">
+  <div class="lens-strip">
+    <div class="lens" style="--lc:#7c3aed"><span class="ic">🏛️</span><div class="nm">فضیلت‌گرایی</div><div class="th">ارسطو</div></div>
+    <div class="lens" style="--lc:#2563eb"><span class="ic">⚖️</span><div class="nm">وظیفه‌گرایی</div><div class="th">کانت</div></div>
+    <div class="lens" style="--lc:#0d9488"><span class="ic">📊</span><div class="nm">فایده‌گرایی</div><div class="th">میل و بنتام</div></div>
+    <div class="lens" style="--lc:#ea580c"><span class="ic">🤝</span><div class="nm">قراردادگرایی</div><div class="th">رالز</div></div>
+    <div class="lens" style="--lc:#db2777"><span class="ic">🫂</span><div class="nm">اخلاق مراقبت</div><div class="th">گیلیگان</div></div>
+    <div class="lens" style="--lc:#65a30d"><span class="ic">🕯️</span><div class="nm">اگزیستانسیالیسم</div><div class="th">کی‌یرکگور</div></div>
+    <div class="lens" style="--lc:#b45309"><span class="ic">⛰️</span><div class="nm">تبارشناسی</div><div class="th">نیچه</div></div>
+  </div>
+
+  <h2 class="sec-title">چطور کار می‌کند؟</h2>
+  <p class="sec-lead">اتیکا به‌جای دادن یک پاسخ قطعی، ساختار استدلال را در اختیارتان می‌گذارد.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="n">۱</div>
+      <h3>موقعیت را شرح دهید</h3>
+      <p>دوراهی‌تان را با جزئیات بنویسید: چه کسانی درگیرند، چه گزینه‌هایی دارید و چه چیزی برایتان مهم است.</p>
+    </div>
+    <div class="step">
+      <div class="n">۲</div>
+      <h3>فلوچارت پالایش اجرا می‌شود</h3>
+      <p>ابتدا دو دروازه وتوکننده — کرامت کانتی و عدالت رالزی. گزینه‌ای که از این‌ها رد نشود، اصلاح یا حذف می‌شود.</p>
+    </div>
+    <div class="step">
+      <div class="n">۳</div>
+      <h3>تعارض‌ها و مسیر پیشنهادی</h3>
+      <p>حکم هر مکتب، نقاط اختلافشان، پرسش‌هایی که باید از خودتان بپرسید و گام‌های عملی مشخص.</p>
+    </div>
+  </div>
+
+  <div class="cta-band">
+    <h2>آماده‌اید؟</h2>
+    <p>یک حساب بسازید، دوراهی‌تان را بنویسید و تحلیل کامل را در کمتر از یک دقیقه ببینید. تاریخچه تحلیل‌هایتان ذخیره می‌شود.</p>
+    <a class="btn btn-lg" href="/login?mode=register" id="ctaBtn">ساخت حساب رایگان</a>
+  </div>
+
+  <h2 class="sec-title">می‌خواهید اول با مکاتب آشنا شوید؟</h2>
+  <p class="sec-lead">دانشنامه کاربردی فلسفه اخلاق شامل هفت مکتب، ۱۵ دوراهی واقعی دنیای مدرن، ماتریس مقایسه و فلوچارت تصمیم است.</p>
+  <div style="text-align:center"><a class="btn" href="/guide">📚 مطالعه دانشنامه</a></div>
+</main>
+
+<footer class="site">
+  <p><strong>اتیکا</strong> — دستیار تصمیم‌گیری اخلاقی</p>
+  <p>تحلیل‌ها توسط مدل زبانی تولید می‌شوند و می‌توانند خطا داشته باشند.<br>
+     این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست و تصمیم نهایی با شماست.</p>
+</footer>
+
+<script type="module">
+import { $, boot, state } from '/js/core.js';
+
+await boot({ auth: false });
+
+$('#heroCta').innerHTML = state.user
+  ? `<a class="btn btn-primary btn-lg" href="/app">🧭 تحلیل تازه</a>
+     <a class="btn btn-lg" href="/dashboard">داشبورد من</a>`
+  : `<a class="btn btn-primary btn-lg" href="/login?mode=register">شروع رایگان</a>
+     <a class="btn btn-lg" href="/guide">📚 دانشنامه اخلاق</a>`;
+
+if (state.user) $('#ctaBtn').outerHTML = '<a class="btn btn-lg" href="/app">شروع تحلیل</a>';
+</script>
+</body>
+</html>
