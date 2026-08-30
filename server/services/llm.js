@@ -25,6 +25,99 @@ function requireKey(provider) {
   return key;
 }
 
+/* ==========================================================================
+   سازگاری پارامترها میان نسل‌های مختلف مدل‌ها
+   --------------------------------------------------------------------------
+   خانواده‌های تازه اوپن‌ای‌آی (GPT-5 و سری o) به‌جای max_tokens پارامتر
+   max_completion_tokens می‌خواهند و temperature/top_p سفارشی را رد می‌کنند.
+   دو لایه دفاع داریم:
+     ۱. حدسِ اولیه از روی نام مدل (تا درخواست اول هم درست باشد)
+     ۲. تطبیق خودکار پس از خطای ۴۰۰ (تا مدل‌های آینده هم کار کنند)
+   ========================================================================== */
+
+/** مدل‌هایی که max_completion_tokens می‌خواهند */
+const NEW_PARAM_STYLE = /(^|\/)(o[1-9](-|$|\d)|gpt-5|gpt-4\.5)/i;
+
+/** مدل‌هایی که فقط temperature پیش‌فرض را می‌پذیرند */
+const FIXED_SAMPLING = /(^|\/)(o[1-9](-|$|\d)|gpt-5)/i;
+
+function buildBody({ model, messages, overrides, stream, quirks = {} }) {
+  const maxTokens = overrides.max_tokens ?? num('max_tokens', 4096);
+  const body = { model, messages };
+  if (stream) body.stream = true;
+
+  const useCompletionTokens = quirks.completionTokens ?? NEW_PARAM_STYLE.test(model);
+  if (useCompletionTokens) body.max_completion_tokens = maxTokens;
+  else body.max_tokens = maxTokens;
+
+  const fixedSampling = quirks.fixedSampling ?? FIXED_SAMPLING.test(model);
+  if (!fixedSampling) {
+    body.temperature = overrides.temperature ?? num('temperature', 0.6);
+    body.top_p = overrides.top_p ?? num('top_p', 0.95);
+  }
+  return body;
+}
+
+/** از متن خطای سرویس می‌فهمد کدام پارامتر مشکل‌ساز بوده است */
+function quirksFromError(detail, current = {}) {
+  const text = String(detail || '').toLowerCase();
+  const next = { ...current };
+  let changed = false;
+
+  if (/max_tokens.*not supported|use ['"]?max_completion_tokens|unsupported parameter: ['"]?max_tokens/.test(text)
+      && !current.completionTokens) {
+    next.completionTokens = true;
+    changed = true;
+  }
+  if (/(temperature|top_p).*(not supported|unsupported|does not support)/.test(text)
+      && !current.fixedSampling) {
+    next.fixedSampling = true;
+    changed = true;
+  }
+  return changed ? next : null;
+}
+
+/**
+ * درخواست را می‌فرستد و اگر سرویس از پارامتری شکایت کرد،
+ * یک بار با پارامترهای اصلاح‌شده دوباره تلاش می‌کند.
+ */
+async function postChat({ provider, key, model, messages, overrides, stream, signal, timeoutMs }) {
+  let quirks = {};
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetch(endpoint(provider, '/chat/completions'), {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        ...(stream ? { 'Accept': 'text/event-stream' } : {})
+      },
+      body: JSON.stringify(buildBody({ model, messages, overrides, stream, quirks })),
+      signal: signal ?? (timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined)
+    });
+
+    if (res.ok && (!stream || res.body)) return res;
+
+    const detail = await res.text().catch(() => '');
+
+    // آیا می‌توان با تنظیم پارامترها دوباره تلاش کرد؟
+    if (res.status === 400 && attempt === 0) {
+      const adjusted = quirksFromError(detail, quirks);
+      if (adjusted) {
+        quirks = adjusted;
+        console.warn(`[llm] «${model}» پارامترهای متفاوتی می‌خواهد — تلاش دوباره`,
+                     JSON.stringify(quirks));
+        continue;
+      }
+    }
+
+    const err = new Error(upstreamMessage(res.status, detail, provider));
+    err.status = res.status;
+    err.detail = detail.slice(0, 800);
+    throw err;
+  }
+}
+
 /**
  * فراخوانی استریمی chat/completions.
  * onDelta(text) برای هر تکه متن صدا زده می‌شود.
@@ -32,35 +125,7 @@ function requireKey(provider) {
  */
 export async function streamChat({ provider, messages, model, signal, onDelta, overrides = {} }) {
   const key = requireKey(provider);
-  const url = endpoint(provider, '/chat/completions');
-
-  const body = {
-    model,
-    messages,
-    temperature: overrides.temperature ?? num('temperature', 0.6),
-    top_p: overrides.top_p ?? num('top_p', 0.95),
-    max_tokens: overrides.max_tokens ?? num('max_tokens', 4096),
-    stream: true
-  };
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${key}`,
-      'Content-Type': 'application/json',
-      'Accept': 'text/event-stream'
-    },
-    body: JSON.stringify(body),
-    signal
-  });
-
-  if (!res.ok || !res.body) {
-    const detail = await res.text().catch(() => '');
-    const err = new Error(upstreamMessage(res.status, detail, provider));
-    err.status = res.status;
-    err.detail = detail.slice(0, 800);
-    throw err;
-  }
+  const res = await postChat({ provider, key, model, messages, overrides, stream: true, signal });
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder('utf-8');
@@ -109,25 +174,16 @@ export async function listRemoteModels(provider) {
 export async function pingModel(provider, model, timeoutMs = 45000) {
   const key = requireKey(provider);
   const started = Date.now();
-  const res = await fetch(endpoint(provider, '/chat/completions'), {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: 'user', content: 'به فارسی فقط یک کلمه بنویس: سالم' }],
-      max_tokens: 24, temperature: 0, stream: false
-    }),
-    signal: AbortSignal.timeout(timeoutMs)
+
+  const res = await postChat({
+    provider, key, model,
+    messages: [{ role: 'user', content: 'به فارسی فقط یک کلمه بنویس: سالم' }],
+    // مدل‌های استدلالی بخشی از بودجه را صرف فکر می‌کنند، پس سقف را دست‌ودل‌بازتر می‌گیریم
+    overrides: { max_tokens: 256, temperature: 0 },
+    stream: false, timeoutMs
   });
 
   const latencyMs = Date.now() - started;
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    const err = new Error(upstreamMessage(res.status, detail, provider));
-    err.status = res.status;
-    err.detail = detail.slice(0, 400);
-    throw err;
-  }
   const j = await res.json();
   return { latencyMs, reply: (j.choices?.[0]?.message?.content || '').trim().slice(0, 120) };
 }
