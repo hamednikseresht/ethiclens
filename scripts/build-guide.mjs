@@ -138,6 +138,7 @@ const NAV = `<nav class="app-nav">
     <a href="/app">تحلیل تازه</a>
     <a href="/dashboard">داشبورد</a>
     <a href="/history">تاریخچه</a>
+    <a href="/about">درباره ما</a>
     <a class="cta" href="/app">🧭 دوراهی خودت را تحلیل کن</a>
   </div>
 </nav>
@@ -149,6 +150,7 @@ html = html.replace(
   /<footer>[\s\S]*?<\/footer>/,
   `<footer>
     <p>دانشنامه کاربردی فلسفه اخلاق — بخشی از سامانه اتیکا</p>
+    <p style="margin-top:.4rem"><a href="/about" style="color:var(--primary)">درباره سازندگان</a></p>
     <p style="margin-top:.5rem"><a href="/app" style="color:var(--primary);font-weight:700">بازگشت به ابزار تحلیل ←</a></p>
   </footer>`
 );

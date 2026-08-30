@@ -200,11 +200,31 @@ $('#dilemma').addEventListener('input', e => {
   charCount.classList.toggle('over', n > 8000);
 });
 
+const fmtTokens = n => n >= 1000 ? faNum((n / 1000).toFixed(n >= 10000 ? 0 : 1)) + 'K' : faNum(n);
+
 async function refreshQuota() {
   try {
     const q = await api.get('/api/analyze/quota');
-    $('#quotaLine').textContent = `سهمیه امروز: ${faNum(q.remaining)} تحلیل از ${faNum(q.limit)} باقی مانده`;
-    $('#submitBtn').disabled = q.remaining <= 0;
+    const bits = [];
+
+    bits.push(q.daily.limit > 0
+      ? `گروه ${esc(q.tier.label)} — ${faNum(q.daily.remaining)} تحلیل از ${faNum(q.daily.limit)} امروز باقی مانده`
+      : `گروه ${esc(q.tier.label)} — بدون سقف روزانه`);
+
+    if (q.tokens.limit > 0) {
+      bits.push(`توکن این ماه: ${fmtTokens(q.tokens.used)} از ${fmtTokens(q.tokens.limit)} (${faNum(q.tokens.percent)}٪)`);
+    }
+
+    const outOfDaily = q.daily.limit > 0 && q.daily.remaining <= 0;
+    const outOfTokens = q.tokens.limit > 0 && q.tokens.remaining <= 0;
+
+    $('#quotaLine').innerHTML = outOfDaily || outOfTokens
+      ? `<span style="color:var(--danger);font-weight:700">${outOfDaily
+          ? 'سهمیه امروزتان تمام شده — فردا دوباره سر بزنید.'
+          : 'سقف توکن ماهانه‌تان تمام شده — با مدیر سامانه تماس بگیرید.'}</span>`
+      : bits.join(' • ');
+
+    $('#submitBtn').disabled = outOfDaily || outOfTokens;
   } catch {}
 }
 refreshQuota();

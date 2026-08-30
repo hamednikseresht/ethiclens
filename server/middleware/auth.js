@@ -4,7 +4,9 @@ import { db } from '../db.js';
 export function loadUser(req, _res, next) {
   req.user = null;
   if (req.session?.userId) {
-    const u = db.prepare('SELECT id, email, name, role, status, daily_quota, created_at FROM users WHERE id = ?')
+    const u = db.prepare(`SELECT id, email, name, role, tier, status,
+                                 quota_override, token_override, created_at
+                          FROM users WHERE id = ?`)
                 .get(req.session.userId);
     if (u && u.status === 'active') req.user = u;
     else req.session.destroy(() => {});

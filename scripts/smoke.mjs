@@ -43,6 +43,7 @@ for (const [path, needle] of [
   ['/', 'اتیکا'],
   ['/login', 'ورود'],
   ['/guide', 'دانشنامه'],
+  ['/about', 'علی مهبودی'],
   ['/css/app.css', '--bg-body'],
   ['/js/core.js', 'export'],
   ['/js/result.js', 'buildSkeleton'],
@@ -88,7 +89,13 @@ check('منظر خیر مشترک هست', (meta.data.schools || []).some(s => s
 check('پنج دروازه تعریف شده', meta.data.gates?.length === 5);
 
 const quota = await req('/api/analyze/quota');
-check('GET /api/analyze/quota', quota.status === 200 && typeof quota.data.remaining === 'number');
+check('GET /api/analyze/quota', quota.status === 200 && !!quota.data.tier, JSON.stringify(quota.data).slice(0, 120));
+check('سهمیه روزانه گزارش می‌شود', typeof quota.data?.daily?.used === 'number');
+check('مصرف توکن گزارش می‌شود', typeof quota.data?.tokens?.used === 'number');
+
+const meNow = await req('/api/auth/me');
+check('گروه کاربر در نشست هست', !!meNow.data.user?.tier, 'tier=' + meNow.data.user?.tier);
+check('allowance در نشست هست', !!meNow.data.allowance?.tier);
 
 const short = await req('/api/analyze/stream', { method: 'POST', csrf, body: { dilemma: 'کوتاه' } });
 check('متن کوتاه رد می‌شود', short.status === 400, `status=${short.status}`);
@@ -241,6 +248,86 @@ console.log('\n── دفترچه بازنگری ──');
     method: 'POST', csrf, body: { decision: 'x' }
   });
   check('بازنگری روی تحلیل ناموجود → ۴۰۴', foreign.status === 404);
+}
+
+
+/* ---------------- گروه‌های کاربری و سقف‌ها ---------------- */
+console.log('\n── گروه‌های کاربری ──');
+{
+  const t = await req('/api/admin/tiers');
+  check('GET /api/admin/tiers', t.status === 200 && t.data.items?.length >= 2, `tiers=${t.data.items?.length}`);
+  check('گروه عادی و ویژه تعریف شده‌اند',
+    ['basic', 'premium'].every(k => t.data.items.some(x => x.key === k)));
+  check('شمار کاربران هر گروه می‌آید', t.data.items.every(x => typeof x.users === 'number'));
+
+  const basic = t.data.items.find(x => x.key === 'basic');
+  const originalQuota = basic.daily_quota;
+
+  const up = await req(`/api/admin/tiers/${basic.id}`, {
+    method: 'PUT', csrf, body: { daily_quota: 7, monthly_tokens: 123000 }
+  });
+  check('ویرایش سقف گروه', up.status === 200);
+
+  const after = await req('/api/admin/tiers');
+  const b2 = after.data.items.find(x => x.key === 'basic');
+  check('سقف تازه گروه ذخیره شد', b2.daily_quota === 7 && b2.monthly_tokens === 123000,
+    `${b2.daily_quota}/${b2.monthly_tokens}`);
+
+  await req(`/api/admin/tiers/${basic.id}`, {
+    method: 'PUT', csrf, body: { daily_quota: originalQuota, monthly_tokens: basic.monthly_tokens }
+  });
+}
+
+console.log('\n── مصرف و سقف کاربران ──');
+{
+  const u = await req('/api/admin/users');
+  check('گروه کاربران در فهرست هست', u.data.items.every(x => !!x.tier));
+  check('مصرف توکن گزارش می‌شود',
+    u.data.items.every(x => typeof x.totalTokens === 'number' && typeof x.monthTokens === 'number'));
+  check('سقف مؤثر محاسبه می‌شود', u.data.items.every(x => typeof x.effectiveQuota === 'number'));
+  check('فهرست گروه‌ها همراه پاسخ می‌آید', Array.isArray(u.data.tiers) && u.data.tiers.length >= 2);
+
+  // کاربر آزمایشی که در بخش احراز هویت ساخته شد
+  const target = u.data.items.find(x => x.email === email);
+  if (!target) { console.log('  (کاربر آزمایشی پیدا نشد — رد شد)'); }
+  else {
+    check('کاربر تازه در گروه عادی است', target.tier === 'basic', target.tier);
+    check('کاربر تازه استثنای فردی ندارد',
+      target.quota_override === null && target.token_override === null);
+
+    const setTier = await req(`/api/admin/users/${target.id}`, {
+      method: 'PUT', csrf, body: { tier: 'premium', quota_override: '', token_override: 55000 }
+    });
+    check('تغییر گروه و سقف کاربر', setTier.status === 200);
+
+    const after = await req('/api/admin/users');
+    const t2 = after.data.items.find(x => x.id === target.id);
+    check('گروه تازه ذخیره شد', t2.tier === 'premium', t2.tier);
+    check('استثنای خالی یعنی ارث از گروه', t2.quota_override === null);
+    check('استثنای توکن ذخیره شد', t2.token_override === 55000, String(t2.token_override));
+    check('سقف مؤثر از گروه ویژه می‌آید', t2.effectiveQuota > 5, String(t2.effectiveQuota));
+
+    const bad = await req(`/api/admin/users/${target.id}`, {
+      method: 'PUT', csrf, body: { tier: 'superuser' }
+    });
+    const t3 = (await req('/api/admin/users')).data.items.find(x => x.id === target.id);
+    check('گروه نامعتبر پذیرفته نمی‌شود', bad.status === 200 && t3.tier === 'premium', t3.tier);
+  }
+}
+
+console.log('\n── دسترسی مدل بر اساس گروه ──');
+{
+  const models = await req('/api/admin/models');
+  check('min_tier روی مدل‌ها هست', models.data.every(m => !!m.min_tier));
+
+  const m = models.data.find(x => x.enabled);
+  if (m) {
+    const up = await req(`/api/admin/models/${m.id}`, { method: 'PUT', csrf, body: { min_tier: 'premium' } });
+    check('محدودکردن مدل به گروه ویژه', up.status === 200);
+    const back = (await req('/api/admin/models')).data.find(x => x.id === m.id);
+    check('min_tier ذخیره شد', back.min_tier === 'premium', back.min_tier);
+    await req(`/api/admin/models/${m.id}`, { method: 'PUT', csrf, body: { min_tier: m.min_tier } });
+  }
 }
 
 

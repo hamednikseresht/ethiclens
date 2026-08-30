@@ -43,7 +43,18 @@ const PROVIDER_SEED = [
     envKey: 'OPENAI_API_KEY', envUrl: 'OPENAI_BASE_URL', sort: 20 }
 ];
 
+const TIER_SEED = [
+  { key: 'basic',   label: 'عادی', daily_quota: 5,   monthly_tokens: 200000,  sort: 10 },
+  { key: 'premium', label: 'ویژه', daily_quota: 40,  monthly_tokens: 2000000, sort: 20 }
+];
+
 export function seed() {
+  /* ---- گروه‌های کاربری ---- */
+  const insTier = db.prepare(
+    `INSERT INTO tiers (key, label, daily_quota, monthly_tokens, sort_order)
+     VALUES (?,?,?,?,?) ON CONFLICT(key) DO NOTHING`);
+  for (const t of TIER_SEED) insTier.run(t.key, t.label, t.daily_quota, t.monthly_tokens, t.sort);
+
   /* ---- ارائه‌دهندگان ---- */
   const insProvider = db.prepare(
     `INSERT INTO providers (key, label, base_url, api_key, enabled, sort_order)
@@ -125,6 +136,13 @@ export function seed() {
     }
   }
 
+  /* ---- مدیران همیشه در گروه ویژه‌اند ----
+     مدیرانی که پیش از افزودن مفهوم گروه ساخته شده‌اند در گروه پایه می‌افتند
+     و ناخواسته به سقف کمتری می‌خورند. این را جبران می‌کنیم. */
+  const promoted = db.prepare(
+    "UPDATE users SET tier = 'premium' WHERE role = 'admin' AND tier <> 'premium'").run().changes;
+  if (promoted) console.log(`[seed] ${promoted} مدیر به گروه ویژه منتقل شد.`);
+
   /* ---- مدیر اولیه ---- */
   const adminCount = db.prepare("SELECT COUNT(*) c FROM users WHERE role = 'admin'").get().c;
   if (adminCount === 0) {
@@ -133,11 +151,12 @@ export function seed() {
     const name  = process.env.ADMIN_NAME || 'مدیر سامانه';
     const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existing) {
-      db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(existing.id);
+      db.prepare("UPDATE users SET role = 'admin', tier = 'premium' WHERE id = ?").run(existing.id);
       console.log(`[seed] کاربر ${email} به مدیر ارتقا یافت.`);
     } else {
-      db.prepare('INSERT INTO users (email, name, password_hash, role, daily_quota) VALUES (?,?,?,?,?)')
-        .run(email, name, bcrypt.hashSync(pass, 10), 'admin', 500);
+      db.prepare(`INSERT INTO users (email, name, password_hash, role, tier, quota_override, token_override)
+                  VALUES (?,?,?,?,?,?,?)`)
+        .run(email, name, bcrypt.hashSync(pass, 10), 'admin', 'premium', 500, 0);
       console.log(`[seed] حساب مدیر ساخته شد: ${email}`);
       if (pass === 'ChangeMe123!') console.log('[seed] ⚠️  رمز پیش‌فرض فعال است — حتماً تغییرش دهید.');
     }

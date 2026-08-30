@@ -2,7 +2,8 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { db, audit } from '../db.js';
-import { getSetting, num } from '../services/settings.js';
+import { getSetting } from '../services/settings.js';
+import { allowanceSummary } from '../services/tiers.js';
 import { requireAuth, csrfToken } from '../middleware/auth.js';
 
 export const router = express.Router();
@@ -18,7 +19,10 @@ const loginLimiter = rateLimit({
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 function publicUser(u) {
-  return { id: u.id, email: u.email, name: u.name, role: u.role, createdAt: u.created_at };
+  return {
+    id: u.id, email: u.email, name: u.name, role: u.role,
+    tier: u.tier || 'basic', createdAt: u.created_at
+  };
 }
 
 router.post('/register', loginLimiter, (req, res) => {
@@ -37,8 +41,9 @@ router.post('/register', loginLimiter, (req, res) => {
     return res.status(409).json({ error: 'این ایمیل قبلاً ثبت شده است.' });
   }
 
-  const info = db.prepare('INSERT INTO users (email, name, password_hash, daily_quota) VALUES (?,?,?,?)')
-    .run(email, name, bcrypt.hashSync(password, 10), num('default_daily_quota', 30));
+  const defaultTier = getSetting('default_tier') || 'basic';
+  const info = db.prepare('INSERT INTO users (email, name, password_hash, tier) VALUES (?,?,?,?)')
+    .run(email, name, bcrypt.hashSync(password, 10), defaultTier);
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
   req.session.userId = user.id;
@@ -80,6 +85,7 @@ router.post('/logout', (req, res) => {
 router.get('/me', (req, res) => {
   res.json({
     user: req.user ? publicUser(req.user) : null,
+    allowance: req.user ? allowanceSummary(req.user) : null,
     csrf: csrfToken(req),
     settings: {
       siteTitle: getSetting('site_title'),

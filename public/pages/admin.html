@@ -87,6 +87,7 @@
       <button data-tab="ai">🤖 ارائه‌دهنده و مدل</button>
       <button data-tab="prompts">📝 دستور تحلیل</button>
       <button data-tab="users">👥 کاربران</button>
+      <button data-tab="tiers">🎟️ گروه‌ها</button>
       <button data-tab="analyses">🗂️ تحلیل‌ها</button>
       <button data-tab="site">⚙️ تنظیمات سایت</button>
       <button data-tab="audit">🔒 گزارش رخدادها</button>
@@ -97,6 +98,7 @@
       <section class="panel" id="p-ai"></section>
       <section class="panel" id="p-prompts"></section>
       <section class="panel" id="p-users"></section>
+      <section class="panel" id="p-tiers"></section>
       <section class="panel" id="p-analyses"></section>
       <section class="panel" id="p-site"></section>
       <section class="panel" id="p-audit"></section>
@@ -306,7 +308,7 @@ loaders.ai = async () => {
       <div id="probeOut"></div>
       <div class="table-wrap" style="border:none;border-radius:0">
         <table>
-          <thead><tr><th>عنوان</th><th>ارائه‌دهنده</th><th>شناسه</th><th>وضعیت</th><th></th></tr></thead>
+          <thead><tr><th>عنوان</th><th>ارائه‌دهنده</th><th>شناسه</th><th>وضعیت</th><th>دسترسی</th><th></th></tr></thead>
           <tbody id="modelRows">
             ${models.map(m => `
               <tr data-id="${m.id}">
@@ -314,6 +316,10 @@ loaders.ai = async () => {
                 <td><span class="badge">${esc(m.provider_label)}</span></td>
                 <td class="mono" style="font-size:.75rem">${esc(m.model_id)}</td>
                 <td><label class="switch"><input type="checkbox" data-act="toggle" ${m.enabled ? 'checked' : ''}> ${m.enabled ? 'فعال' : 'خاموش'}</label></td>
+                <td><select class="select" data-act="tier" style="min-width:6.5rem;font-size:.8rem;padding:.3rem .5rem">
+                      <option value="basic" ${m.min_tier !== 'premium' ? 'selected' : ''}>همه</option>
+                      <option value="premium" ${m.min_tier === 'premium' ? 'selected' : ''}>فقط ویژه</option>
+                    </select></td>
                 <td><button class="btn btn-sm btn-ghost" data-act="del" style="color:var(--danger)">حذف</button></td>
               </tr>`).join('')}
           </tbody>
@@ -550,6 +556,16 @@ loaders.ai = async () => {
     finally { e.target.disabled = false; }
   };
 
+  $('#modelRows').onchange = async e => {
+    const sel = e.target.closest('select[data-act="tier"]');
+    if (!sel) return;
+    const id = sel.closest('tr').dataset.id;
+    try {
+      await api.put(`/api/admin/models/${id}`, { min_tier: sel.value });
+      toast(sel.value === 'premium' ? 'این مدل حالا فقط برای گروه ویژه است.' : 'این مدل برای همه گروه‌ها باز شد.', 'ok');
+    } catch (err) { toast(err.message, 'err'); }
+  };
+
   $('#modelRows').onclick = async e => {
     const row = e.target.closest('tr');
     if (!row) return;
@@ -710,12 +726,18 @@ loaders.users = async () => {
   const host = $('#p-users');
   host.innerHTML = `
     <h2 class="sec-h">کاربران</h2>
-    <p class="sec-p">نقش، وضعیت و سهمیه روزانه هر کاربر را اینجا مدیریت کنید.</p>
+    <p class="sec-p">
+      گروه، نقش، وضعیت و مصرف هر کاربر. سقف‌ها از گروه به ارث می‌رسند؛
+      عددی که با <span class="badge">استثنا</span> نشان داده شده یعنی برای آن کاربر دستی تنظیم شده است.
+    </p>
     <div class="row" style="margin-bottom:1rem">
       <input class="input" id="uq" style="max-width:320px" type="search" placeholder="جست‌وجو در نام یا ایمیل…">
     </div>
     <div class="table-wrap"><table>
-      <thead><tr><th>کاربر</th><th>نقش</th><th>وضعیت</th><th>سهمیه</th><th>تحلیل</th><th>آخرین ورود</th><th></th></tr></thead>
+      <thead><tr>
+        <th>کاربر</th><th>گروه</th><th>نقش</th><th>وضعیت</th>
+        <th>سهمیه روزانه</th><th>توکن این ماه</th><th>کل توکن</th><th>تحلیل</th><th></th>
+      </tr></thead>
       <tbody id="uRows"></tbody></table></div>
     <div class="pager" id="uPager" style="display:flex;justify-content:center;gap:.4rem;margin-top:1rem"></div>`;
 
@@ -725,16 +747,32 @@ loaders.users = async () => {
     const p = new URLSearchParams({ page: upage });
     if (uq) p.set('q', uq);
     const d = await api.get('/api/admin/users?' + p);
-    $('#uRows').innerHTML = d.items.map(u => `
+    const fmtT = n => n >= 1000 ? faNum((n / 1000).toFixed(n >= 10000 ? 0 : 1)) + 'K' : faNum(n);
+
+    $('#uRows').innerHTML = d.items.map(u => {
+      const lvl = u.tokenPercent === null ? '' :
+        u.tokenPercent >= 90 ? 'badge-danger' : u.tokenPercent >= 70 ? 'badge-warn' : 'badge-success';
+      return `
       <tr data-id="${u.id}">
         <td><strong>${esc(u.name)}</strong><br><small class="mono" style="color:var(--text-muted)">${esc(u.email)}</small></td>
+        <td><span class="badge ${u.tier === 'premium' ? 'badge-primary' : ''}">${esc(u.tierLabel)}</span></td>
         <td>${u.role === 'admin' ? '<span class="badge badge-primary">مدیر</span>' : '<span class="badge">کاربر</span>'}</td>
         <td>${u.status === 'active' ? '<span class="badge badge-success">فعال</span>' : '<span class="badge badge-danger">مسدود</span>'}</td>
-        <td>${faNum(u.daily_quota)}</td>
+        <td>${faNum(u.todayAnalyses)} / ${faNum(u.effectiveQuota)}
+            ${u.quota_override !== null ? '<br><span class="badge">استثنا</span>' : ''}</td>
+        <td>${u.effectiveTokens > 0
+              ? `${fmtT(u.monthTokens)} / ${fmtT(u.effectiveTokens)}
+                 <br><span class="badge ${lvl}">${faNum(u.tokenPercent)}٪</span>`
+              : `${fmtT(u.monthTokens)}<br><span class="badge">بی‌نهایت</span>`}
+            ${u.token_override !== null ? '<br><span class="badge">استثنا</span>' : ''}</td>
+        <td class="mono" style="font-size:.8rem">${fmtT(u.totalTokens)}</td>
         <td>${faNum(u.analyses)}</td>
-        <td style="font-size:.78rem;color:var(--text-muted)">${u.last_login_at ? relTime(u.last_login_at) : 'هرگز'}</td>
         <td><button class="btn btn-sm" data-act="edit">ویرایش</button></td>
-      </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">کاربری یافت نشد</td></tr>';
+      </tr>`;
+    }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted)">کاربری یافت نشد</td></tr>';
+
+    window.__tiers = d.tiers || [];
+    window.__users = Object.fromEntries(d.items.map(u => [u.id, u]));
 
     $('#uPager').innerHTML = d.pages > 1
       ? Array.from({ length: d.pages }, (_, i) =>
@@ -752,31 +790,63 @@ loaders.users = async () => {
   $('#uRows').onclick = async e => {
     const b = e.target.closest('button[data-act="edit"]');
     if (!b) return;
-    const row = b.closest('tr');
-    const id = row.dataset.id;
-    const name = row.querySelector('strong').textContent;
-    const isAdmin = row.children[1].textContent.includes('مدیر');
-    const isActive = row.children[2].textContent.includes('فعال');
-    const quota = row.children[3].textContent;
+    const id = b.closest('tr').dataset.id;
+    const u = (window.__users || {})[id];
+    if (!u) return toast('اطلاعات کاربر در دسترس نیست — صفحه را تازه کنید.', 'err');
+
+    const tiers = window.__tiers || [];
+    const fmtT = n => n >= 1000 ? faNum((n / 1000).toFixed(n >= 10000 ? 0 : 1)) + 'K' : faNum(n);
 
     modal({
-      title: `ویرایش ${name}`,
+      title: `ویرایش ${u.name}`,
       body: `
-        <div class="field"><label for="eu-name">نام</label><input class="input" id="eu-name" value="${esc(name)}"></div>
+        <div class="field"><label for="eu-name">نام</label>
+          <input class="input" id="eu-name" value="${esc(u.name)}"></div>
+
         <div class="grid-2">
+          <div class="field"><label for="eu-tier">گروه کاربری</label>
+            <select class="select" id="eu-tier">
+              ${tiers.map(t => `<option value="${esc(t.key)}" ${t.key === u.tier ? 'selected' : ''}>
+                ${esc(t.label)} — ${faNum(t.daily_quota)} تحلیل، ${t.monthly_tokens > 0 ? fmtT(t.monthly_tokens) + ' توکن' : 'توکن بی‌نهایت'}
+              </option>`).join('')}
+            </select></div>
           <div class="field"><label for="eu-role">نقش</label>
             <select class="select" id="eu-role">
-              <option value="user" ${!isAdmin ? 'selected' : ''}>کاربر عادی</option>
-              <option value="admin" ${isAdmin ? 'selected' : ''}>مدیر سامانه</option>
-            </select></div>
-          <div class="field"><label for="eu-status">وضعیت</label>
-            <select class="select" id="eu-status">
-              <option value="active" ${isActive ? 'selected' : ''}>فعال</option>
-              <option value="suspended" ${!isActive ? 'selected' : ''}>مسدود</option>
+              <option value="user" ${u.role !== 'admin' ? 'selected' : ''}>کاربر عادی</option>
+              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>مدیر سامانه</option>
             </select></div>
         </div>
-        <div class="field"><label for="eu-quota">سهمیه روزانه تحلیل</label>
-          <input class="input" id="eu-quota" type="number" min="0" max="1000" value="${quota.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))}"></div>
+
+        <div class="field"><label for="eu-status">وضعیت</label>
+          <select class="select" id="eu-status">
+            <option value="active" ${u.status === 'active' ? 'selected' : ''}>فعال</option>
+            <option value="suspended" ${u.status !== 'active' ? 'selected' : ''}>مسدود</option>
+          </select></div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:1.2rem 0">
+
+        <p class="hint" style="margin-bottom:.8rem">
+          <strong>استثنای فردی:</strong> این دو فیلد را خالی بگذارید تا کاربر سقف‌های گروهش را
+          به ارث ببرد. عدد بگذارید تا فقط برای همین کاربر متفاوت باشد.
+        </p>
+
+        <div class="grid-2">
+          <div class="field"><label for="eu-quota">سقف تحلیل روزانه</label>
+            <input class="input" id="eu-quota" type="number" min="0" max="10000"
+                   placeholder="از گروه" value="${u.quota_override ?? ''}">
+            <span class="hint">اکنون مؤثر: ${faNum(u.effectiveQuota)} تحلیل</span></div>
+          <div class="field"><label for="eu-tokens">سقف توکن ماهانه</label>
+            <input class="input" id="eu-tokens" type="number" min="0" step="10000"
+                   placeholder="از گروه" value="${u.token_override ?? ''}">
+            <span class="hint">اکنون مؤثر: ${u.effectiveTokens > 0 ? fmtT(u.effectiveTokens) : 'بی‌نهایت'} — ۰ یعنی بی‌نهایت</span></div>
+        </div>
+
+        <div class="alert alert-info" style="font-size:.83rem">
+          مصرف این ماه: <strong>${fmtT(u.monthTokens)}</strong> توکن •
+          مجموع کل: <strong>${fmtT(u.totalTokens)}</strong> توکن •
+          ${faNum(u.analyses)} تحلیل
+        </div>
+
         <hr style="border:none;border-top:1px solid var(--border);margin:1.1rem 0">
         <div class="field"><label for="eu-pass">تعیین رمز تازه (اختیاری)</label>
           <input class="input" id="eu-pass" type="password" placeholder="خالی بگذارید تا تغییری نکند"></div>`,
@@ -785,9 +855,11 @@ loaders.users = async () => {
             try {
               await api.put(`/api/admin/users/${id}`, {
                 name: root.querySelector('#eu-name').value.trim(),
+                tier: root.querySelector('#eu-tier').value,
                 role: root.querySelector('#eu-role').value,
                 status: root.querySelector('#eu-status').value,
-                daily_quota: root.querySelector('#eu-quota').value
+                quota_override: root.querySelector('#eu-quota').value,
+                token_override: root.querySelector('#eu-tokens').value
               });
               const pw = root.querySelector('#eu-pass').value;
               if (pw) await api.post(`/api/admin/users/${id}/reset-password`, { password: pw });
@@ -796,7 +868,7 @@ loaders.users = async () => {
             } catch (err) { toast(err.message, 'err'); return 'keep'; }
           } },
         { label: 'حذف کاربر', className: 'btn-danger', onClick: async () => {
-            if (!await confirmDialog('حذف کاربر', `${name} و همه تحلیل‌هایش برای همیشه حذف می‌شوند.`, 'حذف کن')) return 'keep';
+            if (!await confirmDialog('حذف کاربر', `${u.name} و همه تحلیل‌هایش برای همیشه حذف می‌شوند.`, 'حذف کن')) return 'keep';
             try { await api.del(`/api/admin/users/${id}`); toast('حذف شد.', 'ok'); loadUsers(); }
             catch (err) { toast(err.message, 'err'); return 'keep'; }
           } },
@@ -806,6 +878,76 @@ loaders.users = async () => {
   };
 
   loadUsers();
+};
+
+/* ---------------- گروه‌های کاربری ---------------- */
+loaders.tiers = async () => {
+  const host = $('#p-tiers');
+  host.innerHTML = '<div class="skeleton" style="height:8rem"></div>';
+  const d = await api.get('/api/admin/tiers');
+
+  const fmt = n => n > 0 ? n.toLocaleString('en') : 'بی‌نهایت';
+
+  host.innerHTML = `
+    <h2 class="sec-h">گروه‌های کاربری</h2>
+    <p class="sec-p">
+      هر کاربر در یکی از این گروه‌هاست و سقف‌هایش را از گروه به ارث می‌برد.
+      تغییر سقف یک گروه بلافاصله روی همه اعضایش اثر می‌گذارد — مگر کسانی که
+      در تب «کاربران» برایشان استثنای فردی گذاشته باشید.
+    </p>
+
+    <div class="stat-grid" style="margin-bottom:1.25rem">
+      ${d.items.map(t => `
+        <div class="stat">
+          <div class="stat-label">🎟️ ${esc(t.label)}</div>
+          <div class="stat-value">${faNum(t.users)}</div>
+          <div class="stat-sub">کاربر در این گروه</div>
+        </div>`).join('')}
+    </div>
+
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>گروه</th><th>نام نمایشی</th><th>تحلیل روزانه</th>
+        <th>توکن ماهانه</th><th>کاربران</th><th>مدل اختصاصی</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${d.items.map(t => `
+          <tr data-id="${t.id}">
+            <td><span class="badge ${t.key === 'premium' ? 'badge-primary' : ''}">${esc(t.key)}</span></td>
+            <td><input class="input" data-f="label" value="${esc(t.label)}" style="min-width:8rem"></td>
+            <td><input class="input" data-f="daily_quota" type="number" min="0" max="10000"
+                       value="${t.daily_quota}" style="width:6.5rem"></td>
+            <td><input class="input" data-f="monthly_tokens" type="number" min="0" step="10000"
+                       value="${t.monthly_tokens}" style="width:9rem">
+                <div class="hint">${fmt(t.monthly_tokens)} — ۰ یعنی بی‌نهایت</div></td>
+            <td>${faNum(t.users)}</td>
+            <td>${t.key === 'basic' ? '—' : faNum(t.exclusiveModels) + ' مدل'}</td>
+            <td><button class="btn btn-sm btn-primary" data-act="save">ذخیره</button></td>
+          </tr>`).join('')}
+      </tbody></table></div>
+
+    <div class="alert alert-info" style="margin-top:1.1rem">
+      برای اینکه مدلی فقط در دسترس گروه ویژه باشد، به تب «مدل و کلید» بروید و
+      «دسترسی» آن مدل را روی <strong>ویژه</strong> بگذارید.
+    </div>`;
+
+  host.querySelector('tbody').onclick = async e => {
+    const btn = e.target.closest('[data-act="save"]');
+    if (!btn) return;
+    const row = btn.closest('tr');
+    const val = f => row.querySelector(`[data-f="${f}"]`).value;
+    btn.disabled = true;
+    try {
+      await api.put(`/api/admin/tiers/${row.dataset.id}`, {
+        label: val('label'),
+        daily_quota: val('daily_quota'),
+        monthly_tokens: val('monthly_tokens')
+      });
+      toast('گروه ذخیره شد.', 'ok');
+      loaded.delete('tiers'); show('tiers');
+    } catch (err) { toast(err.message, 'err'); }
+    finally { btn.disabled = false; }
+  };
 };
 
 /* ---------------- تحلیل‌ها ---------------- */

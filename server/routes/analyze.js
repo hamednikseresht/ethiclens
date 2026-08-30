@@ -4,17 +4,19 @@ import { requireAuth } from '../middleware/auth.js';
 import { streamChat } from '../services/llm.js';
 import { parseSections, makeTitle } from '../services/parser.js';
 import { activePrompt, getSetting } from '../services/settings.js';
-import { enabledModels, resolveModel, modelRef } from '../services/providers.js';
+import { enabledModels, modelsForTier, resolveModel, modelRef } from '../services/providers.js';
+import { checkAllowance, allowanceSummary } from '../services/tiers.js';
 import { USER_TEMPLATE } from '../services/default-prompt.js';
 import { SCHOOLS, GATES } from '../services/schools.js';
 
 export const router = express.Router();
 
 router.get('/meta', (req, res) => {
-  const models = enabledModels();
+  const models = req.user ? modelsForTier(req.user.tier) : enabledModels();
   const fallback = models[0] ? modelRef(models[0]) : '';
   const configured = getSetting('default_model');
-  const defaultModel = resolveModel(configured) ? configured : fallback;
+  const tierKey = req.user ? req.user.tier : null;
+  const defaultModel = resolveModel(configured, tierKey) ? configured : fallback;
 
   res.json({
     schools: SCHOOLS,
@@ -39,14 +41,8 @@ function groupByProvider(models) {
   return out;
 }
 
-function usedToday(userId) {
-  return db.prepare(`SELECT COUNT(*) c FROM analyses
-                     WHERE user_id = ? AND date(created_at) = date('now')`).get(userId).c;
-}
-
 router.get('/quota', requireAuth, (req, res) => {
-  const used = usedToday(req.user.id);
-  res.json({ used, limit: req.user.daily_quota, remaining: Math.max(0, req.user.daily_quota - used) });
+  res.json(allowanceSummary(req.user));
 });
 
 function fill(template, vars) {
@@ -66,9 +62,9 @@ router.post('/stream', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'شرح دوراهی خیلی بلند است (حداکثر ۸۰۰۰ نویسه).' });
   }
 
-  const used = usedToday(req.user.id);
-  if (used >= req.user.daily_quota) {
-    return res.status(429).json({ error: `سهمیه امروز شما (${req.user.daily_quota} تحلیل) تمام شده است.` });
+  const allowance = checkAllowance(req.user);
+  if (!allowance.ok) {
+    return res.status(429).json({ error: allowance.error, reason: allowance.reason });
   }
 
   const ctx = {
@@ -79,9 +75,24 @@ router.post('/stream', requireAuth, async (req, res) => {
     values: String(req.body?.values || '').slice(0, 1000)
   };
 
-  const chosen = resolveModel(req.body?.model) || resolveModel(getSetting('default_model')) || enabledModels()[0];
+  const tier = req.user.tier;
+  const allowed = modelsForTier(tier);
+
+  // اگر کاربر مدلی خواسته که مجاز گروهش نیست، صریح بگو — نه اینکه بی‌صدا عوضش کنیم
+  if (req.body?.model && !resolveModel(req.body.model, tier)) {
+    const existsForOthers = resolveModel(req.body.model);
+    return res.status(403).json({
+      error: existsForOthers
+        ? 'این مدل فقط برای کاربران ویژه در دسترس است.'
+        : 'مدل انتخاب‌شده در سامانه فعال نیست.'
+    });
+  }
+
+  const chosen = resolveModel(req.body?.model, tier)
+              || resolveModel(getSetting('default_model'), tier)
+              || allowed[0];
   if (!chosen) {
-    return res.status(503).json({ error: 'هیچ مدلی در سامانه فعال نیست. با مدیر سامانه تماس بگیرید.' });
+    return res.status(503).json({ error: 'هیچ مدلی برای گروه شما فعال نیست. با مدیر سامانه تماس بگیرید.' });
   }
 
   const provider = {

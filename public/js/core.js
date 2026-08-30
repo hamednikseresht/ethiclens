@@ -81,7 +81,7 @@ export function toast(message, kind = '') {
 }
 
 /* ---------------- API ---------------- */
-export const state = { user: null, csrf: null, settings: {} };
+export const state = { user: null, csrf: null, settings: {}, allowance: null };
 
 async function request(path, { method = 'GET', body, raw = false } = {}) {
   const headers = {};
@@ -123,6 +123,7 @@ export async function loadSession() {
   state.user = data.user;
   state.csrf = data.csrf;
   state.settings = data.settings || {};
+  state.allowance = data.allowance || null;
   return state;
 }
 
@@ -245,7 +246,8 @@ const NAV = [
   { href: '/app',       label: 'تحلیل تازه' },
   { href: '/dashboard', label: 'داشبورد' },
   { href: '/history',   label: 'تاریخچه' },
-  { href: '/guide',     label: 'دانشنامه' }
+  { href: '/guide',     label: 'دانشنامه' },
+  { href: '/about',     label: 'درباره ما' }
 ];
 
 export function renderTopbar(activePath) {

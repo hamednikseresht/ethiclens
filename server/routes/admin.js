@@ -5,6 +5,7 @@ import { requireAdmin } from '../middleware/auth.js';
 import { getSettings, setSetting, getSetting } from '../services/settings.js';
 import { listRemoteModels, pingModel } from '../services/llm.js';
 import { PRESETS, listProviders, getProvider, enabledModels, resolveModel, modelRef } from '../services/providers.js';
+import { listTiers, TIER_ORDER, usageByUser, limitsFor, usageFor } from '../services/tiers.js';
 import { DEFAULT_PROMPT } from '../services/default-prompt.js';
 
 export const router = express.Router();
@@ -153,6 +154,41 @@ router.get('/providers/:id/remote-models', async (req, res) => {
   }
 });
 
+/* ---------------- گروه‌های کاربری ---------------- */
+router.get('/tiers', (req, res) => {
+  const counts = Object.fromEntries(
+    db.prepare('SELECT tier, COUNT(*) c FROM users GROUP BY tier').all().map(r => [r.tier, r.c]));
+  const models = Object.fromEntries(
+    db.prepare('SELECT min_tier, COUNT(*) c FROM models WHERE enabled = 1 GROUP BY min_tier').all()
+      .map(r => [r.min_tier, r.c]));
+
+  res.json({
+    order: TIER_ORDER,
+    items: listTiers().map(t => ({
+      ...t,
+      users: counts[t.key] || 0,
+      exclusiveModels: models[t.key] || 0
+    }))
+  });
+});
+
+router.put('/tiers/:id', (req, res) => {
+  const t = db.prepare('SELECT * FROM tiers WHERE id = ?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'گروه یافت نشد.' });
+
+  const daily = req.body?.daily_quota === undefined
+    ? t.daily_quota : Math.max(0, Math.min(10000, Number(req.body.daily_quota) || 0));
+  const tokens = req.body?.monthly_tokens === undefined
+    ? t.monthly_tokens : Math.max(0, Number(req.body.monthly_tokens) || 0);
+  const label = String(req.body?.label ?? t.label).trim() || t.label;
+
+  db.prepare('UPDATE tiers SET label = ?, daily_quota = ?, monthly_tokens = ? WHERE id = ?')
+    .run(label, daily, tokens, t.id);
+
+  audit(req.user.id, 'tier_update', { key: t.key, daily, tokens }, req.ip);
+  res.json({ ok: true });
+});
+
 /* ---------------- تنظیمات ---------------- */
 
 /**
@@ -213,8 +249,9 @@ router.post('/models', (req, res) => {
   const items = Array.isArray(req.body?.models) ? req.body.models
     : [{ model_id: req.body?.model_id, label: req.body?.label, note: req.body?.note }];
 
-  const ins = db.prepare(`INSERT INTO models (provider_id, model_id, label, note, enabled, sort_order)
-                          VALUES (?,?,?,?,?,?) ON CONFLICT(provider_id, model_id) DO NOTHING`);
+  const minTier = TIER_ORDER.includes(req.body?.min_tier) ? req.body.min_tier : 'basic';
+  const ins = db.prepare(`INSERT INTO models (provider_id, model_id, label, note, enabled, min_tier, sort_order)
+                          VALUES (?,?,?,?,?,?,?) ON CONFLICT(provider_id, model_id) DO NOTHING`);
   let added = 0, skipped = 0;
   const baseSort = Number(req.body?.sort_order) || 100;
 
@@ -223,7 +260,8 @@ router.post('/models', (req, res) => {
       const mid = String(it?.model_id || '').trim();
       if (!mid) { skipped++; return; }
       const r = ins.run(p.id, mid, String(it?.label || '').trim() || mid.split('/').pop(),
-                        String(it?.note || ''), req.body?.enabled === false ? 0 : 1, baseSort + i);
+                        String(it?.note || ''), req.body?.enabled === false ? 0 : 1,
+                        minTier, baseSort + i);
       if (r.changes) added++; else skipped++;
     });
   })();
@@ -236,10 +274,11 @@ router.post('/models', (req, res) => {
 router.put('/models/:id', (req, res) => {
   const m = db.prepare('SELECT * FROM models WHERE id = ?').get(req.params.id);
   if (!m) return res.status(404).json({ error: 'مدل یافت نشد.' });
-  db.prepare('UPDATE models SET label = ?, note = ?, enabled = ?, sort_order = ? WHERE id = ?')
+  const minTier = TIER_ORDER.includes(req.body?.min_tier) ? req.body.min_tier : m.min_tier;
+  db.prepare('UPDATE models SET label = ?, note = ?, enabled = ?, min_tier = ?, sort_order = ? WHERE id = ?')
     .run(req.body?.label ?? m.label, req.body?.note ?? m.note,
          req.body?.enabled === undefined ? m.enabled : (req.body.enabled ? 1 : 0),
-         Number(req.body?.sort_order ?? m.sort_order), m.id);
+         minTier, Number(req.body?.sort_order ?? m.sort_order), m.id);
   res.json({ ok: true });
 });
 
@@ -351,13 +390,33 @@ router.get('/users', (req, res) => {
   const params = q ? [`%${q}%`, `%${q}%`] : [];
 
   const total = db.prepare(`SELECT COUNT(*) c FROM users u ${where}`).get(...params).c;
-  const items = db.prepare(
-    `SELECT u.id, u.email, u.name, u.role, u.status, u.daily_quota, u.created_at, u.last_login_at,
-            (SELECT COUNT(*) FROM analyses a WHERE a.user_id = u.id) analyses
+  const rows = db.prepare(
+    `SELECT u.id, u.email, u.name, u.role, u.tier, u.status,
+            u.quota_override, u.token_override, u.created_at, u.last_login_at
      FROM users u ${where} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`
   ).all(...params, perPage, (page - 1) * perPage);
 
-  res.json({ items, total, page, pages: Math.ceil(total / perPage) || 1 });
+  const usage = Object.fromEntries(usageByUser().map(u => [u.id, u]));
+  const tiers = Object.fromEntries(listTiers().map(t => [t.key, t]));
+
+  const items = rows.map(u => {
+    const lim = limitsFor(u);
+    const use = usage[u.id] || { analyses: 0, totalTokens: 0, monthTokens: 0, todayAnalyses: 0 };
+    return {
+      ...u,
+      tierLabel: tiers[u.tier]?.label || u.tier,
+      analyses: use.analyses,
+      todayAnalyses: use.todayAnalyses,
+      totalTokens: use.totalTokens,
+      monthTokens: use.monthTokens,
+      effectiveQuota: lim.dailyQuota,
+      effectiveTokens: lim.monthlyTokens,
+      tokenPercent: lim.monthlyTokens > 0
+        ? Math.min(100, Math.round((use.monthTokens / lim.monthlyTokens) * 100)) : null
+    };
+  });
+
+  res.json({ items, total, page, pages: Math.ceil(total / perPage) || 1, tiers: listTiers() });
 });
 
 router.put('/users/:id', (req, res) => {
@@ -375,9 +434,28 @@ router.put('/users/:id', (req, res) => {
     if (admins <= 1) return res.status(400).json({ error: 'حداقل یک مدیر فعال باید باقی بماند.' });
   }
 
-  db.prepare('UPDATE users SET role = ?, status = ?, daily_quota = ?, name = ? WHERE id = ?')
-    .run(role, status, Number(req.body?.daily_quota ?? u.daily_quota), String(req.body?.name ?? u.name), u.id);
-  audit(req.user.id, 'user_update', { targetId: u.id, role, status }, req.ip);
+  const tier = TIER_ORDER.includes(req.body?.tier) ? req.body.tier : u.tier;
+
+  // رشته خالی یعنی «استثنا را بردار و از گروه ارث ببر»
+  const asOverride = v => {
+    if (v === undefined) return undefined;
+    if (v === null || String(v).trim() === '') return null;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0 ? Math.min(n, 100000000) : null;
+  };
+
+  const quota = asOverride(req.body?.quota_override);
+  const tokens = asOverride(req.body?.token_override);
+
+  db.prepare(`UPDATE users SET role = ?, status = ?, tier = ?, name = ?,
+              quota_override = ?, token_override = ? WHERE id = ?`)
+    .run(role, status, tier, String(req.body?.name ?? u.name),
+         quota === undefined ? u.quota_override : quota,
+         tokens === undefined ? u.token_override : tokens,
+         u.id);
+
+  audit(req.user.id, 'user_update',
+        { targetId: u.id, role, status, tier, quota, tokens }, req.ip);
   res.json({ ok: true });
 });
 

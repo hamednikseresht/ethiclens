@@ -1,4 +1,5 @@
 import { db } from '../db.js';
+import { tierRank } from './tiers.js';
 
 /**
  * ارائه‌دهندگان سرویس هوش مصنوعی.
@@ -43,7 +44,7 @@ export function providerForModel(modelRowId) {
 /** مدل‌های فعالِ ارائه‌دهندگان فعال، همراه اطلاعات ارائه‌دهنده */
 export function enabledModels() {
   return db.prepare(`
-    SELECT m.id, m.model_id, m.label, m.note, m.sort_order,
+    SELECT m.id, m.model_id, m.label, m.note, m.sort_order, m.min_tier,
            p.id AS provider_id, p.key AS provider_key, p.label AS provider_label,
            p.base_url, p.api_key
     FROM models m
@@ -52,16 +53,26 @@ export function enabledModels() {
     ORDER BY p.sort_order, m.sort_order, m.id`).all();
 }
 
-/** یافتن یک مدل فعال بر اساس شناسه ردیف یا رشته "providerKey:modelId" */
-export function resolveModel(ref) {
+/** مدل‌هایی که یک گروه کاربری به آن‌ها دسترسی دارد */
+export function modelsForTier(tierKey) {
+  const rank = tierRank(tierKey);
+  return enabledModels().filter(m => tierRank(m.min_tier) <= rank);
+}
+
+/**
+ * یافتن یک مدل بر اساس شناسه ردیف یا رشته "providerKey:modelId".
+ * اگر tierKey داده شود، فقط میان مدل‌های مجاز آن گروه می‌گردد.
+ */
+export function resolveModel(ref, tierKey = null) {
   if (ref === null || ref === undefined || ref === '') return null;
 
+  const models = tierKey === null ? enabledModels() : modelsForTier(tierKey);
+
   if (typeof ref === 'number' || /^\d+$/.test(String(ref))) {
-    return enabledModels().find(m => m.id === Number(ref)) || null;
+    return models.find(m => m.id === Number(ref)) || null;
   }
 
   const s = String(ref);
-  const models = enabledModels();
 
   const sep = s.indexOf(':');
   if (sep > 0) {

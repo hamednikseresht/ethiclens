@@ -10,14 +10,26 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
 db.exec(`
+CREATE TABLE IF NOT EXISTS tiers (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  key            TEXT    NOT NULL UNIQUE,        -- basic | premium
+  label          TEXT    NOT NULL,
+  daily_quota    INTEGER NOT NULL DEFAULT 10,    -- تحلیل در روز
+  monthly_tokens INTEGER NOT NULL DEFAULT 0,     -- ۰ = بی‌نهایت
+  sort_order     INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   email         TEXT    NOT NULL UNIQUE,
   name          TEXT    NOT NULL,
   password_hash TEXT    NOT NULL,
   role          TEXT    NOT NULL DEFAULT 'user',      -- user | admin
+  tier          TEXT    NOT NULL DEFAULT 'basic',     -- basic | premium
   status        TEXT    NOT NULL DEFAULT 'active',    -- active | suspended
-  daily_quota   INTEGER NOT NULL DEFAULT 30,
+  -- NULL یعنی «از گروه ارث ببر»؛ عدد یعنی این کاربر استثناست
+  quota_override INTEGER,
+  token_override INTEGER,
   created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
   last_login_at TEXT
 );
@@ -76,6 +88,7 @@ CREATE TABLE IF NOT EXISTS models (
   label       TEXT NOT NULL,
   note        TEXT,
   enabled     INTEGER NOT NULL DEFAULT 1,
+  min_tier    TEXT NOT NULL DEFAULT 'basic',   -- کمترین گروهی که به این مدل دسترسی دارد
   sort_order  INTEGER NOT NULL DEFAULT 0,
   UNIQUE(provider_id, model_id)
 );
@@ -184,6 +197,14 @@ function addMissingColumns() {
       decision:     'TEXT',   // گزینه‌ای که کاربر واقعاً انتخاب کرد
       reflection:   'TEXT',   // بعداً چه شد و چه آموخت
       reflected_at: 'TEXT'
+    },
+    users: {
+      tier:           "TEXT NOT NULL DEFAULT 'basic'",
+      quota_override: 'INTEGER',
+      token_override: 'INTEGER'
+    },
+    models: {
+      min_tier: "TEXT NOT NULL DEFAULT 'basic'"
     }
   };
 
@@ -197,6 +218,24 @@ function addMissingColumns() {
   }
 }
 addMissingColumns();
+
+/**
+ * سهمیه‌ای که پیش از مفهوم «گروه» مستقیم روی کاربر بود، به استثنای فردی
+ * تبدیل می‌شود تا رفتار هیچ کاربری با این ارتقا عوض نشود. سپس ستون قدیمی
+ * حذف می‌شود چون دیگر خوانده نمی‌شود و ماندنش گمراه‌کننده است.
+ */
+function migrateDailyQuota() {
+  const cols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
+  if (!cols.includes('daily_quota')) return;
+
+  const moved = db.prepare(
+    'UPDATE users SET quota_override = daily_quota WHERE quota_override IS NULL'
+  ).run().changes;
+
+  db.exec('ALTER TABLE users DROP COLUMN daily_quota');
+  console.log(`[migrate] سهمیه ${moved} کاربر به استثنای فردی منتقل و ستون قدیمی حذف شد.`);
+}
+migrateDailyQuota();
 
 export function audit(userId, action, detail, ip) {
   try {
