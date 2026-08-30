@@ -1,22 +1,43 @@
 import express from 'express';
 import { db, audit } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { streamChat } from '../services/nvidia.js';
+import { streamChat } from '../services/llm.js';
 import { parseSections, makeTitle } from '../services/parser.js';
-import { activePrompt, getSetting, enabledModels } from '../services/settings.js';
+import { activePrompt, getSetting } from '../services/settings.js';
+import { enabledModels, resolveModel, modelRef } from '../services/providers.js';
 import { USER_TEMPLATE } from '../services/default-prompt.js';
 import { SCHOOLS, GATES } from '../services/schools.js';
 
 export const router = express.Router();
 
 router.get('/meta', (req, res) => {
+  const models = enabledModels();
+  const fallback = models[0] ? modelRef(models[0]) : '';
+  const configured = getSetting('default_model');
+  const defaultModel = resolveModel(configured) ? configured : fallback;
+
   res.json({
     schools: SCHOOLS,
     gates: GATES,
-    models: enabledModels().map(m => ({ id: m.model_id, label: m.label, note: m.note })),
-    defaultModel: getSetting('default_model')
+    defaultModel,
+    // مدل‌ها گروه‌بندی‌شده بر اساس ارائه‌دهنده، برای نمایش در optgroup
+    providers: groupByProvider(models),
+    models: models.map(m => ({
+      ref: modelRef(m), label: m.label, note: m.note,
+      provider: m.provider_label, providerKey: m.provider_key
+    }))
   });
 });
+
+function groupByProvider(models) {
+  const out = [];
+  for (const m of models) {
+    let g = out.find(x => x.key === m.provider_key);
+    if (!g) { g = { key: m.provider_key, label: m.provider_label, models: [] }; out.push(g); }
+    g.models.push({ ref: modelRef(m), label: m.label, note: m.note });
+  }
+  return out;
+}
 
 function usedToday(userId) {
   return db.prepare(`SELECT COUNT(*) c FROM analyses
@@ -35,7 +56,7 @@ function fill(template, vars) {
   });
 }
 
-/** استریم SSE: رویدادها = delta | section | done | error */
+/** استریم SSE: رویدادها = start | delta | done | error */
 router.post('/stream', requireAuth, async (req, res) => {
   const dilemma = String(req.body?.dilemma || '').trim();
   if (dilemma.length < 20) {
@@ -58,10 +79,14 @@ router.post('/stream', requireAuth, async (req, res) => {
     values: String(req.body?.values || '').slice(0, 1000)
   };
 
-  const allowed = enabledModels().map(m => m.model_id);
-  const requested = String(req.body?.model || '');
-  const model = allowed.includes(requested) ? requested : (getSetting('default_model') || allowed[0]);
-  if (!model) return res.status(500).json({ error: 'هیچ مدلی در سامانه فعال نیست.' });
+  const chosen = resolveModel(req.body?.model) || resolveModel(getSetting('default_model')) || enabledModels()[0];
+  if (!chosen) {
+    return res.status(503).json({ error: 'هیچ مدلی در سامانه فعال نیست. با مدیر سامانه تماس بگیرید.' });
+  }
+
+  const provider = {
+    label: chosen.provider_label, base_url: chosen.base_url, api_key: chosen.api_key
+  };
 
   const prompt = activePrompt();
   const messages = [
@@ -69,9 +94,10 @@ router.post('/stream', requireAuth, async (req, res) => {
     { role: 'user', content: fill(USER_TEMPLATE, { dilemma, ...ctx }) }
   ];
 
+  const stored = modelRef(chosen);
   const row = db.prepare(`INSERT INTO analyses (user_id, title, dilemma, context, model, prompt_key, status)
                           VALUES (?,?,?,?,?,?, 'pending')`)
-    .run(req.user.id, makeTitle(dilemma), dilemma, JSON.stringify(ctx), model, prompt.key);
+    .run(req.user.id, makeTitle(dilemma), dilemma, JSON.stringify(ctx), stored, prompt.key);
   const analysisId = Number(row.lastInsertRowid);
 
   res.writeHead(200, {
@@ -81,16 +107,20 @@ router.post('/stream', requireAuth, async (req, res) => {
     'X-Accel-Buffering': 'no'
   });
   const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-  send('start', { analysisId, model });
+  send('start', { analysisId, model: stored, label: chosen.label, provider: chosen.provider_label });
 
+  // قطع اتصال کاربر را از روی پاسخ تشخیص می‌دهیم، نه درخواست:
+  // req رویداد close را به‌محض کامل‌شدن بدنه درخواست هم می‌فرستد.
   const ac = new AbortController();
-  req.on('close', () => ac.abort());
+  let finished = false;
+  res.on('close', () => { if (!finished) ac.abort(); });
+
   const heartbeat = setInterval(() => res.write(': ping\n\n'), 15000);
   const started = Date.now();
 
   try {
     const { text, usage } = await streamChat({
-      messages, model, signal: ac.signal,
+      provider, messages, model: chosen.model_id, signal: ac.signal,
       onDelta: chunk => send('delta', { t: chunk })
     });
 
@@ -102,7 +132,7 @@ router.post('/stream', requireAuth, async (req, res) => {
       .run(text, JSON.stringify(sections), usage?.prompt_tokens ?? 0, usage?.completion_tokens ?? 0, duration, analysisId);
 
     send('done', { analysisId, sections, usage, durationMs: duration });
-    audit(req.user.id, 'analyze', { analysisId, model, durationMs: duration }, req.ip);
+    audit(req.user.id, 'analyze', { analysisId, model: stored, durationMs: duration }, req.ip);
   } catch (err) {
     const message = ac.signal.aborted ? 'تحلیل توسط کاربر لغو شد.' : (err.message || 'خطای ناشناخته.');
     db.prepare("UPDATE analyses SET status = 'error', error = ? WHERE id = ?").run(message, analysisId);
@@ -112,6 +142,7 @@ router.post('/stream', requireAuth, async (req, res) => {
     }
   } finally {
     clearInterval(heartbeat);
+    finished = true;
     res.end();
   }
 });

@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 import { db, audit } from '../db.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { getSettings, setSetting, getSetting } from '../services/settings.js';
-import { listRemoteModels, streamChat } from '../services/nvidia.js';
+import { listRemoteModels, pingModel } from '../services/llm.js';
+import { PRESETS, listProviders, getProvider, enabledModels, resolveModel, modelRef } from '../services/providers.js';
 import { DEFAULT_PROMPT } from '../services/default-prompt.js';
 
 export const router = express.Router();
@@ -36,19 +37,151 @@ router.get('/overview', (req, res) => {
       FROM users u LEFT JOIN analyses a ON a.user_id = u.id
       GROUP BY u.id ORDER BY c DESC LIMIT 8`).all();
 
-  res.json({ users, analyses, daily, byModel, topUsers, apiKeySet: !!getSetting('nvidia_api_key') });
+  const providers = listProviders().map(p => ({
+    key: p.key, label: p.label, enabled: !!p.enabled, hasKey: !!p.api_key,
+    models: db.prepare('SELECT COUNT(*) c FROM models WHERE provider_id = ? AND enabled = 1').get(p.id).c
+  }));
+
+  const activeModels = enabledModels().length;
+  const defaultOk = !!resolveModel(getSetting('default_model'));
+
+  res.json({ users, analyses, daily, byModel, topUsers, providers, activeModels, defaultOk });
+});
+
+/* ---------------- ارائه‌دهندگان ---------------- */
+router.get('/providers', (req, res) => {
+  res.json({
+    presets: PRESETS,
+    items: listProviders().map(p => ({
+      ...p, api_key: p.api_key ? MASK : '',
+      models: db.prepare('SELECT COUNT(*) c FROM models WHERE provider_id = ?').get(p.id).c,
+      modelsEnabled: db.prepare('SELECT COUNT(*) c FROM models WHERE provider_id = ? AND enabled = 1').get(p.id).c
+    }))
+  });
+});
+
+router.post('/providers', (req, res) => {
+  const key = String(req.body?.key || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  const label = String(req.body?.label || '').trim() || key;
+  const base_url = String(req.body?.base_url || '').trim();
+
+  if (!key) return res.status(400).json({ error: 'شناسه ارائه‌دهنده لازم است.' });
+  if (!/^https?:\/\//i.test(base_url)) return res.status(400).json({ error: 'آدرس پایه باید با http:// یا https:// شروع شود.' });
+
+  try {
+    const info = db.prepare(
+      `INSERT INTO providers (key, label, base_url, api_key, enabled, sort_order)
+       VALUES (?,?,?,?,?,?)`
+    ).run(key, label, base_url.replace(/\/+$/, ''), String(req.body?.api_key || ''),
+          req.body?.enabled === false ? 0 : 1, Number(req.body?.sort_order) || 100);
+    audit(req.user.id, 'provider_add', { key, base_url }, req.ip);
+    res.json({ ok: true, id: Number(info.lastInsertRowid) });
+  } catch {
+    res.status(409).json({ error: 'ارائه‌دهنده‌ای با این شناسه از قبل وجود دارد.' });
+  }
+});
+
+router.put('/providers/:id', (req, res) => {
+  const p = getProvider(req.params.id);
+  if (!p) return res.status(404).json({ error: 'ارائه‌دهنده یافت نشد.' });
+
+  const base_url = req.body?.base_url !== undefined
+    ? String(req.body.base_url).trim().replace(/\/+$/, '') : p.base_url;
+  if (base_url && !/^https?:\/\//i.test(base_url)) {
+    return res.status(400).json({ error: 'آدرس پایه باید با http:// یا https:// شروع شود.' });
+  }
+
+  // کلید ماسک‌شده یعنی «دست نزن»
+  const rawKey = req.body?.api_key;
+  const api_key = (rawKey === undefined || rawKey === MASK || rawKey === '') ? p.api_key : String(rawKey).trim();
+
+  db.prepare(`UPDATE providers SET label = ?, base_url = ?, api_key = ?, enabled = ?, sort_order = ?
+              WHERE id = ?`)
+    .run(String(req.body?.label ?? p.label), base_url, api_key,
+         req.body?.enabled === undefined ? p.enabled : (req.body.enabled ? 1 : 0),
+         Number(req.body?.sort_order ?? p.sort_order), p.id);
+
+  audit(req.user.id, 'provider_update', { key: p.key }, req.ip);
+  res.json({ ok: true });
+});
+
+router.delete('/providers/:id', (req, res) => {
+  const p = getProvider(req.params.id);
+  if (!p) return res.status(404).json({ error: 'ارائه‌دهنده یافت نشد.' });
+
+  const count = db.prepare('SELECT COUNT(*) c FROM models WHERE provider_id = ?').get(p.id).c;
+  if (count && !req.query.force) {
+    return res.status(400).json({
+      error: `این ارائه‌دهنده ${count} مدل ثبت‌شده دارد. با حذف آن، همه این مدل‌ها هم حذف می‌شوند.`,
+      needsForce: true, models: count
+    });
+  }
+
+  db.prepare('DELETE FROM providers WHERE id = ?').run(p.id);   // مدل‌ها با CASCADE می‌روند
+  audit(req.user.id, 'provider_delete', { key: p.key, models: count }, req.ip);
+  res.json({ ok: true });
+});
+
+/** آزمایش اتصال — با مدل داده‌شده یا اولین مدل فعال آن ارائه‌دهنده */
+router.post('/providers/:id/test', async (req, res) => {
+  const p = getProvider(req.params.id);
+  if (!p) return res.status(404).json({ error: 'ارائه‌دهنده یافت نشد.' });
+
+  const model = String(req.body?.model || '').trim()
+    || db.prepare('SELECT model_id FROM models WHERE provider_id = ? AND enabled = 1 ORDER BY sort_order LIMIT 1')
+         .get(p.id)?.model_id;
+  if (!model) return res.status(400).json({ error: 'مدلی برای آزمایش مشخص نشده و این ارائه‌دهنده مدل فعالی ندارد.' });
+
+  try {
+    const r = await pingModel(p, model);
+    res.json({ ok: true, provider: p.label, model, ...r });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: e.message, detail: e.detail });
+  }
+});
+
+/** فهرست مدل‌های در دسترس روی حساب یک ارائه‌دهنده */
+router.get('/providers/:id/remote-models', async (req, res) => {
+  const p = getProvider(req.params.id);
+  if (!p) return res.status(404).json({ error: 'ارائه‌دهنده یافت نشد.' });
+  try {
+    const remote = await listRemoteModels(p);
+    const known = new Set(db.prepare('SELECT model_id FROM models WHERE provider_id = ?').all(p.id).map(r => r.model_id));
+    res.json({ provider: p.label, models: remote.map(id => ({ id, added: known.has(id) })) });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
 });
 
 /* ---------------- تنظیمات ---------------- */
+
+/**
+ * فقط همین کلیدها به کلاینت می‌روند. فهرست سفید است تا اگر روزی ردیف حساسی
+ * (مثلاً کلید API نسخه‌های قدیمی) در جدول settings مانده باشد، نشت نکند.
+ */
+const PUBLIC_SETTINGS = [
+  'site_title', 'site_tagline', 'default_model',
+  'temperature', 'top_p', 'max_tokens', 'active_prompt_key',
+  'allow_registration', 'default_daily_quota'
+];
+
 router.get('/settings', (req, res) => {
   const s = getSettings();
-  res.json({ ...s, nvidia_api_key: s.nvidia_api_key ? MASK : '' });
+  const out = {};
+  for (const k of PUBLIC_SETTINGS) out[k] = s[k];
+
+  const models = enabledModels();
+  res.json({
+    ...out,
+    modelOptions: models.map(m => ({ ref: modelRef(m), label: `${m.provider_label} — ${m.label}` })),
+    defaultModelValid: !!resolveModel(s.default_model)
+  });
 });
 
 const ALLOWED_SETTINGS = new Set([
-  'site_title', 'site_tagline', 'nvidia_api_key', 'nvidia_base_url', 'default_model',
+  'site_title', 'site_tagline', 'default_model',
   'temperature', 'top_p', 'max_tokens', 'active_prompt_key',
-  'allow_registration', 'default_daily_quota', 'guest_preview'
+  'allow_registration', 'default_daily_quota'
 ]);
 
 router.post('/settings', (req, res) => {
@@ -56,7 +189,6 @@ router.post('/settings', (req, res) => {
   const changed = [];
   for (const [k, v] of Object.entries(patch)) {
     if (!ALLOWED_SETTINGS.has(k)) continue;
-    if (k === 'nvidia_api_key' && (v === MASK || v === '')) continue;
     setSetting(k, v);
     changed.push(k);
   }
@@ -64,44 +196,41 @@ router.post('/settings', (req, res) => {
   res.json({ ok: true, changed });
 });
 
-router.post('/test-key', async (req, res) => {
-  try {
-    const model = String(req.body?.model || getSetting('default_model'));
-    const started = Date.now();
-    const { text } = await streamChat({
-      model,
-      messages: [{ role: 'user', content: 'فقط و فقط بنویس: سالم' }],
-      overrides: { max_tokens: 16, temperature: 0 }
-    });
-    res.json({ ok: true, model, reply: text.trim().slice(0, 120), latencyMs: Date.now() - started });
-  } catch (e) {
-    res.status(400).json({ ok: false, error: e.message, detail: e.detail });
-  }
-});
-
 /* ---------------- مدل‌ها ---------------- */
 router.get('/models', (req, res) => {
-  res.json(db.prepare('SELECT * FROM models ORDER BY sort_order, id').all());
-});
-
-router.get('/models/remote', async (req, res) => {
-  try { res.json({ models: await listRemoteModels() }); }
-  catch (e) { res.status(400).json({ error: e.message }); }
+  res.json(db.prepare(`
+    SELECT m.*, p.key AS provider_key, p.label AS provider_label, p.enabled AS provider_enabled
+    FROM models m JOIN providers p ON p.id = m.provider_id
+    ORDER BY p.sort_order, m.sort_order, m.id`).all());
 });
 
 router.post('/models', (req, res) => {
-  const model_id = String(req.body?.model_id || '').trim();
-  const label = String(req.body?.label || '').trim() || model_id;
-  if (!model_id) return res.status(400).json({ error: 'شناسه مدل لازم است.' });
-  try {
-    db.prepare('INSERT INTO models (model_id, label, note, enabled, sort_order) VALUES (?,?,?,?,?)')
-      .run(model_id, label, String(req.body?.note || ''), req.body?.enabled === false ? 0 : 1,
-           Number(req.body?.sort_order) || 100);
-    audit(req.user.id, 'model_add', { model_id }, req.ip);
-    res.json({ ok: true });
-  } catch {
-    res.status(409).json({ error: 'این مدل قبلاً ثبت شده است.' });
-  }
+  const provider_id = Number(req.body?.provider_id);
+  const p = getProvider(provider_id);
+  if (!p) return res.status(400).json({ error: 'ارائه‌دهنده معتبر انتخاب نشده است.' });
+
+  // پذیرش هم یک مدل، هم فهرستی از مدل‌ها
+  const items = Array.isArray(req.body?.models) ? req.body.models
+    : [{ model_id: req.body?.model_id, label: req.body?.label, note: req.body?.note }];
+
+  const ins = db.prepare(`INSERT INTO models (provider_id, model_id, label, note, enabled, sort_order)
+                          VALUES (?,?,?,?,?,?) ON CONFLICT(provider_id, model_id) DO NOTHING`);
+  let added = 0, skipped = 0;
+  const baseSort = Number(req.body?.sort_order) || 100;
+
+  db.transaction(() => {
+    items.forEach((it, i) => {
+      const mid = String(it?.model_id || '').trim();
+      if (!mid) { skipped++; return; }
+      const r = ins.run(p.id, mid, String(it?.label || '').trim() || mid.split('/').pop(),
+                        String(it?.note || ''), req.body?.enabled === false ? 0 : 1, baseSort + i);
+      if (r.changes) added++; else skipped++;
+    });
+  })();
+
+  if (!added && !skipped) return res.status(400).json({ error: 'شناسه مدل لازم است.' });
+  audit(req.user.id, 'model_add', { provider: p.key, added, skipped }, req.ip);
+  res.json({ ok: true, added, skipped });
 });
 
 router.put('/models/:id', (req, res) => {
@@ -115,14 +244,50 @@ router.put('/models/:id', (req, res) => {
 });
 
 router.delete('/models/:id', (req, res) => {
-  const m = db.prepare('SELECT * FROM models WHERE id = ?').get(req.params.id);
+  const m = db.prepare(`SELECT m.*, p.key AS provider_key FROM models m
+                        JOIN providers p ON p.id = m.provider_id WHERE m.id = ?`).get(req.params.id);
   if (!m) return res.status(404).json({ error: 'مدل یافت نشد.' });
-  if (m.model_id === getSetting('default_model')) {
+  if (`${m.provider_key}:${m.model_id}` === getSetting('default_model')) {
     return res.status(400).json({ error: 'مدل پیش‌فرض را نمی‌توان حذف کرد. ابتدا پیش‌فرض را عوض کنید.' });
   }
   db.prepare('DELETE FROM models WHERE id = ?').run(m.id);
-  audit(req.user.id, 'model_delete', { model_id: m.model_id }, req.ip);
+  audit(req.user.id, 'model_delete', { model_id: m.model_id, provider: m.provider_key }, req.ip);
   res.json({ ok: true });
+});
+
+/** آزمایش دسته‌جمعی همه مدل‌ها — مدل‌های خراب را نشان می‌دهد */
+router.post('/models/probe', async (req, res) => {
+  const rows = db.prepare(`
+    SELECT m.id, m.model_id, m.label, m.enabled,
+           p.id AS pid, p.label AS provider_label, p.base_url, p.api_key, p.key AS provider_key
+    FROM models m JOIN providers p ON p.id = m.provider_id
+    WHERE p.enabled = 1 ${req.body?.onlyEnabled === false ? '' : 'AND m.enabled = 1'}
+    ORDER BY p.sort_order, m.sort_order`).all();
+
+  const disableBroken = req.body?.disableBroken === true;
+  const results = [];
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < rows.length) {
+      const r = rows[cursor++];
+      const provider = { label: r.provider_label, base_url: r.base_url, api_key: r.api_key };
+      try {
+        const ping = await pingModel(provider, r.model_id, 45000);
+        results.push({ id: r.id, model: r.model_id, label: r.label, provider: r.provider_label, ok: true, ...ping });
+      } catch (e) {
+        results.push({ id: r.id, model: r.model_id, label: r.label, provider: r.provider_label,
+                       ok: false, error: e.message });
+        if (disableBroken) db.prepare('UPDATE models SET enabled = 0 WHERE id = ?').run(r.id);
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(6, rows.length || 1) }, worker));
+
+  results.sort((a, b) => (b.ok - a.ok) || ((a.latencyMs ?? 1e9) - (b.latencyMs ?? 1e9)));
+  const broken = results.filter(r => !r.ok).length;
+  audit(req.user.id, 'models_probe', { total: results.length, broken, disableBroken }, req.ip);
+  res.json({ results, total: results.length, ok: results.length - broken, broken });
 });
 
 /* ---------------- دستورهای مدل ---------------- */

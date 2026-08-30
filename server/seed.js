@@ -4,37 +4,104 @@ import { db } from './db.js';
 import { DEFAULT_PROMPT, DEFAULT_PROMPT_KEY } from './services/default-prompt.js';
 import { setSetting, getSetting } from './services/settings.js';
 
-const CATALOG = [
-  ['nvidia/llama-3.1-nemotron-70b-instruct', 'Llama 3.1 Nemotron 70B', 'پیش‌فرض — تعادل خوب میان کیفیت استدلال و سرعت', 1, 10],
-  ['nvidia/llama-3.3-nemotron-super-49b-v1', 'Llama 3.3 Nemotron Super 49B', 'سریع‌تر، مناسب تحلیل‌های کوتاه‌تر', 1, 20],
-  ['meta/llama-3.3-70b-instruct',            'Llama 3.3 70B Instruct',      'مدل عمومی متا', 1, 30],
-  ['qwen/qwen2.5-72b-instruct',              'Qwen 2.5 72B',                'چندزبانه قوی', 1, 40],
-  ['mistralai/mistral-large-2-instruct',     'Mistral Large 2',             'استدلال ساختارمند', 0, 50],
-  ['deepseek-ai/deepseek-r1',                'DeepSeek R1',                 'استدلال عمیق، کندتر و پرهزینه‌تر', 0, 60]
+/**
+ * مدل‌های پیش‌فرض هر ارائه‌دهنده.
+ * این‌ها فقط نقطه شروع‌اند؛ مدیر از پنل می‌تواند مدل اضافه/کم کند
+ * یا با «دریافت فهرست مدل‌های حساب» فهرست واقعی را ببیند.
+ */
+const CATALOG = {
+  nvidia: [
+    ['nvidia/nemotron-3-super-120b-a12b',              'Nemotron 3 Super 120B',  'تعادل خوب کیفیت استدلال، فارسی روان و سرعت', 1, 10],
+    ['nvidia/nemotron-3-ultra-550b-a55b',              'Nemotron 3 Ultra 550B',  'بزرگ‌ترین مدل — برای دوراهی‌های پیچیده و چندلایه', 1, 20],
+    ['moonshotai/kimi-k3',                             'Kimi K3',                'چندزبانه قوی — نثر فارسی طبیعی‌تر، کمی کندتر', 1, 30],
+    ['nvidia/nemotron-3-nano-omni-30b-a3b-reasoning',  'Nemotron 3 Nano Reasoning', 'نسخه استدلالی سبک', 1, 40],
+    ['nvidia/nemotron-3.5-lightning-30b-a3b',          'Nemotron 3.5 Lightning', 'سریع — مناسب وقتی تصمیم فوری است', 1, 50],
+    ['nvidia/nemotron-3-nano-30b-a3b',                 'Nemotron 3 Nano 30B',    'سبک‌ترین و کم‌هزینه‌ترین گزینه', 1, 60],
+    ['openai/gpt-oss-120b',                            'GPT-OSS 120B',           'مدل باز — پیروی دقیق از قالب', 1, 70],
+    ['minimaxai/minimax-m3',                           'MiniMax M3',             'گزینه جایگزین چندزبانه — کندتر', 1, 80],
+    ['openai/gpt-oss-20b',                             'GPT-OSS 20B',            'نسخه کوچک — سریع ولی سطحی‌تر', 0, 90]
+  ],
+  openai: [
+    ['gpt-4o',          'GPT-4o',          'چندزبانه قوی — فارسی بسیار روان', 1, 10],
+    ['gpt-4o-mini',     'GPT-4o mini',     'ارزان و سریع — برای حجم بالا', 1, 20],
+    ['gpt-4.1',         'GPT-4.1',         'پیروی دقیق‌تر از دستور و قالب', 1, 30],
+    ['gpt-4.1-mini',    'GPT-4.1 mini',    'نسخه سبک ۴٫۱', 1, 40],
+    ['o4-mini',         'o4-mini',         'مدل استدلالی — برای دوراهی‌های پیچیده', 1, 50],
+    ['gpt-5',           'GPT-5',           'در صورت دسترسی روی حساب شما', 0, 60],
+    ['gpt-5-mini',      'GPT-5 mini',      'در صورت دسترسی روی حساب شما', 0, 70],
+    ['o3',              'o3',              'استدلال عمیق — پرهزینه', 0, 80]
+  ]
+};
+
+const PROVIDER_SEED = [
+  { key: 'nvidia', label: 'NVIDIA NIM', base_url: 'https://integrate.api.nvidia.com/v1',
+    envKey: 'NVIDIA_API_KEY', envUrl: 'NVIDIA_BASE_URL', sort: 10 },
+  { key: 'openai', label: 'OpenAI', base_url: 'https://api.openai.com/v1',
+    envKey: 'OPENAI_API_KEY', envUrl: 'OPENAI_BASE_URL', sort: 20 }
 ];
 
 export function seed() {
-  // مدل‌ها
-  const insModel = db.prepare(`INSERT INTO models (model_id, label, note, enabled, sort_order)
-                               VALUES (?,?,?,?,?) ON CONFLICT(model_id) DO NOTHING`);
-  for (const m of CATALOG) insModel.run(...m);
+  /* ---- ارائه‌دهندگان ---- */
+  const insProvider = db.prepare(
+    `INSERT INTO providers (key, label, base_url, api_key, enabled, sort_order)
+     VALUES (?,?,?,?,?,?) ON CONFLICT(key) DO NOTHING`);
 
-  // پرامپت پیش‌فرض
-  const exists = db.prepare('SELECT id FROM prompts WHERE key = ?').get(DEFAULT_PROMPT_KEY);
-  if (!exists) {
+  for (const p of PROVIDER_SEED) {
+    const envKeyValue = process.env[p.envKey] || '';
+    const baseUrl = process.env[p.envUrl] || p.base_url;
+    // ارائه‌دهنده‌ای که کلیدش را نداریم، ساخته ولی خاموش می‌ماند
+    insProvider.run(p.key, p.label, baseUrl, envKeyValue, envKeyValue ? 1 : 0, p.sort);
+
+    // اگر ردیف از قبل بود ولی کلید نداشت و حالا در env هست، پرش کن
+    if (envKeyValue) {
+      const row = db.prepare('SELECT id, api_key FROM providers WHERE key = ?').get(p.key);
+      if (row && !row.api_key) {
+        db.prepare('UPDATE providers SET api_key = ?, enabled = 1 WHERE id = ?').run(envKeyValue, row.id);
+      }
+    }
+  }
+
+  /* ---- مدل‌ها ---- */
+  const insModel = db.prepare(
+    `INSERT INTO models (provider_id, model_id, label, note, enabled, sort_order)
+     VALUES (?,?,?,?,?,?) ON CONFLICT(provider_id, model_id) DO NOTHING`);
+
+  for (const [providerKey, models] of Object.entries(CATALOG)) {
+    const p = db.prepare('SELECT id FROM providers WHERE key = ?').get(providerKey);
+    if (!p) continue;
+    for (const [id, label, note, enabled, sort] of models) {
+      insModel.run(p.id, id, label, note, enabled, sort);
+    }
+  }
+
+  /* ---- پرامپت پیش‌فرض ---- */
+  if (!db.prepare('SELECT id FROM prompts WHERE key = ?').get(DEFAULT_PROMPT_KEY)) {
     db.prepare('INSERT INTO prompts (key, label, content, is_active) VALUES (?,?,?,1)')
       .run(DEFAULT_PROMPT_KEY, 'دستور پیش‌فرض فارسی', DEFAULT_PROMPT);
   }
-
-  // تنظیمات اولیه از متغیرهای محیطی
-  if (!getSetting('nvidia_api_key') && process.env.NVIDIA_API_KEY) setSetting('nvidia_api_key', process.env.NVIDIA_API_KEY);
-  if (process.env.NVIDIA_BASE_URL) setSetting('nvidia_base_url', process.env.NVIDIA_BASE_URL);
-  if (process.env.DEFAULT_MODEL && !getSetting('default_model')) setSetting('default_model', process.env.DEFAULT_MODEL);
   if (!db.prepare('SELECT 1 FROM settings WHERE key = ?').get('active_prompt_key')) {
     setSetting('active_prompt_key', DEFAULT_PROMPT_KEY);
   }
 
-  // مدیر اولیه
+  /* ---- مدل پیش‌فرض: اولین مدل فعالِ یک ارائه‌دهنده فعال ---- */
+  const current = getSetting('default_model');
+  const stillValid = current && db.prepare(`
+    SELECT 1 FROM models m JOIN providers p ON p.id = m.provider_id
+    WHERE m.enabled = 1 AND p.enabled = 1 AND p.key || ':' || m.model_id = ?`).get(current);
+
+  if (!stillValid) {
+    const first = db.prepare(`
+      SELECT p.key || ':' || m.model_id AS ref FROM models m
+      JOIN providers p ON p.id = m.provider_id
+      WHERE m.enabled = 1 AND p.enabled = 1
+      ORDER BY p.sort_order, m.sort_order LIMIT 1`).get();
+    if (first) {
+      setSetting('default_model', first.ref);
+      console.log(`[seed] مدل پیش‌فرض روی ${first.ref} تنظیم شد.`);
+    }
+  }
+
+  /* ---- مدیر اولیه ---- */
   const adminCount = db.prepare("SELECT COUNT(*) c FROM users WHERE role = 'admin'").get().c;
   if (adminCount === 0) {
     const email = (process.env.ADMIN_EMAIL || 'admin@example.com').toLowerCase();

@@ -1,76 +1,150 @@
 /* ==========================================================================
-   نمایش نتیجه تحلیل اخلاقی
+   نمایش نتیجه تحلیل — ساختار مرحله‌به‌مرحله بر پایه فلوچارت
    ========================================================================== */
-.result{display:flex;flex-direction:column;gap:1.1rem}
-.pair{display:grid;grid-template-columns:1fr;gap:1.1rem}
-@media (min-width:900px){.pair{grid-template-columns:1fr 1fr}}
+.result{display:flex;flex-direction:column;gap:1.6rem}
 
+/* ---------- فاز ---------- */
+.phase{display:flex;flex-direction:column;gap:.9rem}
+.phase-label{
+  display:inline-flex;align-items:center;gap:.5rem;align-self:flex-start;
+  font-size:.78rem;font-weight:800;color:var(--primary);
+  background:var(--primary-soft);border-radius:999px;padding:.3rem .85rem;
+}
+.phase-lead{
+  font-size:.87rem;line-height:1.95;color:var(--text-muted);
+  background:var(--bg-surface);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:.95rem 1.1rem;
+}
+.phase-lead strong{color:var(--text)}
+.phase-body{display:flex;flex-direction:column;gap:.9rem}
+
+/* ---------- بلوک متنی ---------- */
 .res-block{
   background:var(--bg-surface);border:1px solid var(--border);
   border-radius:var(--r);padding:1.3rem;box-shadow:var(--shadow-sm);
 }
+.res-block[data-empty="1"] .res-body::after{
+  content:"";display:block;height:1rem;border-radius:6px;
+  background:linear-gradient(90deg,var(--bg-subtle) 25%,var(--bg-inset) 50%,var(--bg-subtle) 75%);
+  background-size:200% 100%;animation:shimmer 1.4s infinite;
+}
+.res-block[data-empty="0"] .res-body::after{display:none}
 .res-block.featured{
   border-color:var(--primary);
   box-shadow:0 0 0 1px var(--primary), var(--shadow-md);
-  background:linear-gradient(180deg,var(--primary-soft) 0%,var(--bg-surface) 120px);
+  background:linear-gradient(180deg,var(--primary-soft) 0%,var(--bg-surface) 130px);
 }
-.res-h{display:flex;align-items:center;gap:.5rem;font-size:1rem;font-weight:800;margin-bottom:.3rem}
-.res-h span{font-size:1.1rem}
-.res-sub{font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6}
-.res-block .prose{margin-top:.7rem}
+.res-h{display:flex;align-items:center;gap:.5rem;font-size:1rem;font-weight:800;margin-bottom:.25rem}
+.res-ic{font-size:1.1rem}
+.res-sub{font-size:.8rem;color:var(--text-muted);margin-bottom:.9rem;line-height:1.7}
 
-/* ---------- دروازه‌های فلوچارت ---------- */
-.gates{
-  display:grid;grid-template-columns:1fr;gap:.7rem;align-items:stretch;
-}
-.gate-arrow{display:none}
-@media (min-width:1000px){
-  .gates{display:flex;align-items:stretch;gap:.35rem}
-  .gate{flex:1}
-  .gate-arrow{display:flex;align-items:center;color:var(--border-strong);font-size:1.1rem;flex-shrink:0}
+/* ==========================================================================
+   مراحل فلوچارت
+   ========================================================================== */
+.stages{display:flex;flex-direction:column}
+
+.stage-link{
+  width:2px;height:22px;margin-inline-start:19px;
+  background:linear-gradient(180deg,var(--border-strong),var(--border));
 }
 
-.gate{
-  position:relative;background:var(--bg-subtle);border:1px solid var(--border);
-  border-radius:var(--r-sm);padding:.85rem .9rem;transition:all .25s;
-  border-top:3px solid var(--border-strong);
+.stage{
+  display:grid;grid-template-columns:40px 1fr;gap:.9rem;align-items:start;
 }
-.gate-badge{
-  position:absolute;top:.6rem;inset-inline-end:.7rem;font-size:.65rem;font-weight:700;
-  color:var(--text-faint);background:var(--bg-surface);border:1px solid var(--border);
-  padding:.05rem .4rem;border-radius:999px;
+.stage-rail{display:flex;flex-direction:column;align-items:center;gap:.4rem;padding-top:.2rem}
+.stage-num{
+  width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+  font-size:1rem;font-weight:900;flex-shrink:0;
+  background:var(--bg-subtle);color:var(--text-muted);
+  border:2px solid var(--border-strong);transition:all .25s;
 }
-.gate-title{font-size:.92rem;font-weight:800;margin-bottom:.05rem;padding-inline-end:3.5rem}
-.gate-sub{font-size:.72rem;color:var(--text-muted);margin-bottom:.5rem}
-.gate-verdict{font-size:.85rem;font-weight:800;color:var(--text-faint)}
-.gate-note{font-size:.8rem;line-height:1.7;margin-top:.35rem;color:var(--text-muted)}
-.gate-note p{margin-bottom:.3rem}
 
-.gate[data-state="yes"]{border-top-color:var(--success);background:var(--success-soft)}
-.gate[data-state="yes"] .gate-verdict{color:var(--success)}
-.gate[data-state="maybe"]{border-top-color:var(--warn);background:var(--warn-soft)}
-.gate[data-state="maybe"] .gate-verdict{color:var(--warn)}
-.gate[data-state="no"]{border-top-color:var(--danger);background:var(--danger-soft)}
-.gate[data-state="no"] .gate-verdict{color:var(--danger)}
+.stage-main{
+  background:var(--bg-surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.15rem 1.25rem;box-shadow:var(--shadow-sm);
+  border-inline-start:3px solid var(--border-strong);transition:border-color .25s;
+}
 
-/* ---------- کارت مکاتب ---------- */
-.schools{display:grid;grid-template-columns:1fr;gap:.85rem}
-@media (min-width:760px){.schools{grid-template-columns:1fr 1fr}}
-@media (min-width:1200px){.schools{grid-template-columns:1fr 1fr 1fr}}
+.stage-head{display:flex;align-items:flex-start;gap:.6rem;flex-wrap:wrap;margin-bottom:.5rem}
+.stage-title{font-size:1.02rem;font-weight:800;line-height:1.4}
+.stage-thinker{font-size:.76rem;color:var(--text-muted)}
+.stage-kind{
+  font-size:.68rem;font-weight:800;padding:.15rem .5rem;border-radius:999px;
+  background:var(--bg-subtle);color:var(--text-faint);border:1px solid var(--border);
+  white-space:nowrap;align-self:center;
+}
+.stage-state{
+  font-size:.76rem;font-weight:800;padding:.25rem .7rem;border-radius:999px;
+  background:var(--bg-subtle);color:var(--text-faint);border:1px solid var(--border);
+  white-space:nowrap;align-self:center;
+}
 
+.stage-question{
+  font-size:.89rem;font-weight:600;line-height:1.8;color:var(--text);
+  background:var(--bg-subtle);border-inline-start:3px solid var(--accent);
+  border-radius:0 var(--r-xs) var(--r-xs) 0;padding:.6rem .85rem;margin-bottom:.9rem;
+}
+
+.stage-gate{
+  border:1px dashed var(--border-strong);border-radius:var(--r-sm);
+  padding:.75rem .9rem;margin-bottom:.9rem;background:var(--bg-subtle);
+}
+.stage-gate-label{font-size:.72rem;font-weight:800;color:var(--text-faint);margin-bottom:.25rem}
+.stage-gate-note{font-size:.87rem;line-height:1.85}
+.stage-gate-note:empty::after{
+  content:"";display:block;height:.9rem;border-radius:6px;
+  background:linear-gradient(90deg,var(--bg-inset) 25%,var(--border) 50%,var(--bg-inset) 75%);
+  background-size:200% 100%;animation:shimmer 1.4s infinite;
+}
+
+.stage-schools{display:grid;grid-template-columns:1fr;gap:.7rem;margin-bottom:.85rem}
+@media (min-width:900px){.stage-schools:has(.school + .school){grid-template-columns:1fr 1fr}}
+
+.stage-rule{
+  font-size:.76rem;color:var(--text-muted);line-height:1.75;
+  padding-top:.65rem;border-top:1px solid var(--border);
+}
+
+/* ---- رنگ‌بندی بر اساس نتیجه مرحله ---- */
+.stage[data-state="yes"]   .stage-num{background:var(--success-soft);color:var(--success);border-color:var(--success)}
+.stage[data-state="yes"]   .stage-main{border-inline-start-color:var(--success)}
+.stage[data-state="yes"]   .stage-state{background:var(--success-soft);color:var(--success);border-color:transparent}
+
+.stage[data-state="maybe"] .stage-num{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.stage[data-state="maybe"] .stage-main{border-inline-start-color:var(--warn)}
+.stage[data-state="maybe"] .stage-state{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+
+.stage[data-state="no"]    .stage-num{background:var(--danger-soft);color:var(--danger);border-color:var(--danger)}
+.stage[data-state="no"]    .stage-main{border-inline-start-color:var(--danger)}
+.stage[data-state="no"]    .stage-state{background:var(--danger-soft);color:var(--danger);border-color:transparent}
+
+.stage[data-state="neutral"] .stage-num{background:var(--primary-soft);color:var(--primary);border-color:var(--primary)}
+.stage[data-state="neutral"] .stage-main{border-inline-start-color:var(--primary)}
+.stage[data-state="neutral"] .stage-state{background:var(--primary-soft);color:var(--primary);border-color:transparent}
+
+@media (max-width:640px){
+  .stage{grid-template-columns:32px 1fr;gap:.6rem}
+  .stage-num{width:32px;height:32px;font-size:.85rem}
+  .stage-link{margin-inline-start:15px}
+  .stage-main{padding:1rem}
+}
+
+/* ==========================================================================
+   کارت مکاتب
+   ========================================================================== */
 .school{
-  background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-sm);
-  padding:1rem 1.1rem;border-top:3px solid var(--sc,var(--primary));
-  transition:box-shadow .2s,transform .2s;display:flex;flex-direction:column;
+  background:var(--bg-body);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:.9rem 1rem;border-top:3px solid var(--sc,var(--primary));
+  display:flex;flex-direction:column;transition:box-shadow .2s;
 }
-.school.filled:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.school.filled:hover{box-shadow:var(--shadow-md)}
 .school.pending{opacity:.55}
-.school header{display:flex;align-items:flex-start;gap:.6rem;margin-bottom:.6rem}
-.school-icon{font-size:1.25rem;line-height:1.4;flex-shrink:0}
-.school-name{font-size:.95rem;font-weight:800;line-height:1.4}
-.school-thinker{font-size:.75rem;color:var(--text-muted)}
+.school header{display:flex;align-items:flex-start;gap:.55rem;margin-bottom:.5rem}
+.school-icon{font-size:1.15rem;line-height:1.4;flex-shrink:0}
+.school-name{font-size:.92rem;font-weight:800;line-height:1.4}
+.school-thinker{font-size:.73rem;color:var(--text-muted)}
 .school-verdict{
-  font-size:.74rem;font-weight:800;padding:.2rem .55rem;border-radius:999px;
+  font-size:.72rem;font-weight:800;padding:.18rem .5rem;border-radius:999px;
   background:var(--bg-subtle);color:var(--text-faint);white-space:nowrap;flex-shrink:0;
   border:1px solid var(--border);
 }
@@ -78,45 +152,112 @@
 .school-verdict.v-no{background:var(--danger-soft);color:var(--danger);border-color:transparent}
 .school-verdict.v-maybe{background:var(--warn-soft);color:var(--warn);border-color:transparent}
 .school-verdict.v-neutral{background:var(--primary-soft);color:var(--primary);border-color:transparent}
-.school-body{font-size:.87rem;line-height:1.85;color:var(--text)}
+.school-body{font-size:.86rem;line-height:1.85}
 
-/* ---------- نوار پیشرفت استریم ---------- */
+/* ==========================================================================
+   نوار پیشرفت استریم
+   ========================================================================== */
 .streambar{
   position:sticky;top:calc(var(--nav-h) + .5rem);z-index:50;
   background:var(--bg-surface);border:1px solid var(--primary);border-radius:var(--r-sm);
   padding:.75rem 1rem;box-shadow:var(--shadow-md);margin-bottom:1.1rem;
 }
-.streambar .row-between{gap:.6rem}
 .streambar-label{font-size:.87rem;font-weight:700;display:flex;align-items:center;gap:.5rem}
 .progress{height:5px;background:var(--bg-inset);border-radius:99px;overflow:hidden;margin-top:.6rem}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:99px;transition:width .35s ease;width:0}
-
-/* پیش‌نمایش خام هنگام استریم */
 .raw-peek{
-  margin-top:.6rem;max-height:110px;overflow:hidden;position:relative;
+  margin-top:.6rem;max-height:110px;overflow:hidden;
   font-size:.78rem;line-height:1.7;color:var(--text-muted);
   -webkit-mask-image:linear-gradient(180deg,#000 30%,transparent);
   mask-image:linear-gradient(180deg,#000 30%,transparent);
   white-space:pre-wrap;word-break:break-word;
 }
 
-/* ---------- سربرگ نتیجه ---------- */
+/* ==========================================================================
+   سربرگ نتیجه
+   ========================================================================== */
 .result-head{
   background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);
-  padding:1.3rem;margin-bottom:1.1rem;box-shadow:var(--shadow-sm);
+  padding:1.3rem;margin-bottom:1.3rem;box-shadow:var(--shadow-sm);
 }
-.result-head h1{font-size:1.2rem;font-weight:900;line-height:1.5;margin-bottom:.5rem}
+.result-head h1{font-size:1.2rem;font-weight:900;line-height:1.55;margin-bottom:.5rem}
 .result-dilemma{
   background:var(--bg-subtle);border-inline-start:3px solid var(--accent);
   border-radius:0 var(--r-sm) var(--r-sm) 0;padding:.85rem 1rem;
-  font-size:.88rem;line-height:1.85;white-space:pre-wrap;margin-top:.8rem;
-  max-height:180px;overflow:auto;
+  font-size:.88rem;line-height:1.9;white-space:pre-wrap;margin-top:.8rem;
 }
-.meta-row{display:flex;flex-wrap:wrap;gap:.4rem;font-size:.76rem;color:var(--text-muted);margin-top:.6rem}
+.meta-row{display:flex;flex-wrap:wrap;gap:.4rem;font-size:.76rem;margin-top:.7rem}
+
+/* خلاصه دروازه‌ها در سربرگ */
+.gate-strip{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.9rem}
+.gate-pill{
+  display:flex;align-items:center;gap:.35rem;font-size:.74rem;font-weight:700;
+  padding:.3rem .65rem;border-radius:999px;border:1px solid var(--border);
+  background:var(--bg-subtle);color:var(--text-muted);
+}
+.gate-pill b{font-weight:900}
+.gate-pill[data-state="yes"]{background:var(--success-soft);color:var(--success);border-color:transparent}
+.gate-pill[data-state="maybe"]{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.gate-pill[data-state="no"]{background:var(--danger-soft);color:var(--danger);border-color:transparent}
+.gate-pill[data-state="neutral"]{background:var(--primary-soft);color:var(--primary);border-color:transparent}
 
 /* ---------- سلب مسئولیت ---------- */
 .disclaimer{
-  font-size:.78rem;color:var(--text-muted);line-height:1.75;
+  font-size:.78rem;color:var(--text-muted);line-height:1.85;
   background:var(--bg-subtle);border:1px dashed var(--border-strong);
-  border-radius:var(--r-sm);padding:.8rem 1rem;margin-top:1.2rem;
+  border-radius:var(--r-sm);padding:.85rem 1.05rem;margin-top:1.3rem;
 }
+
+/* ==========================================================================
+   چاپ / خروجی PDF
+   ========================================================================== */
+@page { size: A4; margin: 14mm 12mm; }
+
+@media print{
+  /* رنگ‌ها را روی حالت روشن قفل کن تا PDF همیشه خوانا باشد */
+  :root, :root[data-theme="dark"]{
+    --bg-body:#fff; --bg-surface:#fff; --bg-subtle:#f5f7fa; --bg-inset:#eef2f7;
+    --border:#d7dee8; --border-strong:#b9c4d2;
+    --text:#0f172a; --text-muted:#4b5563; --text-faint:#6b7280;
+    --primary:#1d4ed8; --primary-soft:#eef4ff;
+    --accent:#0f766e; --accent-soft:#effcf9;
+    --success:#15803d; --success-soft:#f0fdf4;
+    --warn:#b45309; --warn-soft:#fffbeb;
+    --danger:#b91c1c; --danger-soft:#fef2f2;
+    --shadow-sm:none; --shadow-md:none; --shadow-lg:none;
+  }
+  html,body{background:#fff !important;font-size:10.5pt}
+  .topbar,.fab,#toasts,.no-print,.streambar,.modal-backdrop{display:none !important}
+
+  .wrap,.wrap-narrow{max-width:none;padding:0;margin:0}
+  .result{gap:10mm}
+  .card,.res-block,.stage-main,.result-head{box-shadow:none !important}
+
+  /* هر مرحله یکپارچه بماند و وسط صفحه نشکند */
+  .stage,.res-block,.school,.result-head{break-inside:avoid;page-break-inside:avoid}
+  .phase{break-inside:auto}
+  .phase-label{break-after:avoid;page-break-after:avoid}
+  .res-h,.stage-head{break-after:avoid;page-break-after:avoid}
+
+  .res-block.featured{
+    background:var(--primary-soft) !important;
+    border:1.5pt solid var(--primary) !important;
+  }
+  .stage-num{border-width:1.5pt}
+  .stage-main{border-inline-start-width:2.5pt}
+
+  /* در PDF اسکلت‌های در حال بارگذاری دیده نشوند */
+  .res-block[data-empty="1"] .res-body::after,
+  .stage-gate-note:empty::after{display:none !important}
+
+  a{color:var(--text) !important;text-decoration:none}
+  .result-dilemma{max-height:none;overflow:visible}
+
+  /* سربرگ چاپ */
+  .print-head{display:block !important}
+}
+
+/* سربرگ مخصوص چاپ — در نمایش عادی پنهان */
+.print-head{display:none;margin-bottom:6mm;padding-bottom:3mm;border-bottom:1.5pt solid var(--border-strong)}
+.print-head .ph-brand{font-size:12pt;font-weight:900}
+.print-head .ph-sub{font-size:8.5pt;color:var(--text-muted);margin-top:1mm}

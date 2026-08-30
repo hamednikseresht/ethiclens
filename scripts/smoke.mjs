@@ -121,7 +121,60 @@ check('GET /api/admin/overview', ov.status === 200 && ov.data.users?.total >= 1)
 
 const aset = await req('/api/admin/settings');
 check('GET /api/admin/settings', aset.status === 200 && 'default_model' in aset.data);
-check('کلید API در پاسخ ماسک می‌شود', !String(aset.data.nvidia_api_key).startsWith('nvapi-'), String(aset.data.nvidia_api_key));
+const settingsBlob = JSON.stringify(aset.data);
+check('هیچ کلید API در پاسخ تنظیمات نیست',
+  !/nvapi-|sk-[A-Za-z0-9]{16}/.test(settingsBlob),
+  settingsBlob.slice(0, 160));
+
+console.log('\n── ارائه‌دهندگان ──');
+const provs = await req('/api/admin/providers');
+check('GET /api/admin/providers', provs.status === 200 && provs.data.items.length >= 1);
+check('پیش‌تنظیم‌ها ارائه شده', (provs.data.presets || []).some(p => p.key === 'openai'));
+const provBlob = JSON.stringify(provs.data.items);
+check('کلیدهای ارائه‌دهندگان ماسک شده‌اند',
+  !/nvapi-|sk-[A-Za-z0-9]{16}/.test(provBlob), provBlob.slice(0, 160));
+
+const newProv = await req('/api/admin/providers', {
+  method: 'POST', csrf,
+  body: { key: 'smoketest', label: 'سرویس آزمایشی', base_url: 'https://example.invalid/v1', api_key: 'test-key' }
+});
+check('افزودن ارائه‌دهنده', newProv.status === 200, JSON.stringify(newProv.data));
+const provId = newProv.data?.id;
+
+const badUrl = await req('/api/admin/providers', {
+  method: 'POST', csrf, body: { key: 'badurl', label: 'x', base_url: 'not-a-url' }
+});
+check('آدرس پایه نامعتبر رد می‌شود', badUrl.status === 400);
+
+if (provId) {
+  const addM = await req('/api/admin/models', {
+    method: 'POST', csrf,
+    body: { provider_id: provId, model_id: 'test/smoke-model', label: 'مدل آزمایشی' }
+  });
+  check('افزودن مدل به ارائه‌دهنده', addM.status === 200 && addM.data.added === 1, JSON.stringify(addM.data));
+
+  const dupe2 = await req('/api/admin/models', {
+    method: 'POST', csrf,
+    body: { provider_id: provId, model_id: 'test/smoke-model', label: 'تکراری' }
+  });
+  check('مدل تکراری دوباره اضافه نمی‌شود', dupe2.status === 200 && dupe2.data.added === 0);
+
+  const bulk = await req('/api/admin/models', {
+    method: 'POST', csrf,
+    body: { provider_id: provId, models: [{ model_id: 'test/a' }, { model_id: 'test/b' }] }
+  });
+  check('افزودن دسته‌ای مدل', bulk.status === 200 && bulk.data.added === 2, JSON.stringify(bulk.data));
+
+  const delBlocked = await req(`/api/admin/providers/${provId}`, { method: 'DELETE', csrf });
+  check('حذف ارائه‌دهنده دارای مدل بدون force رد می‌شود', delBlocked.status === 400 && delBlocked.data.needsForce);
+
+  const delForced = await req(`/api/admin/providers/${provId}?force=1`, { method: 'DELETE', csrf });
+  check('حذف با force انجام می‌شود', delForced.status === 200);
+
+  const after = await req('/api/admin/models');
+  check('مدل‌های ارائه‌دهنده حذف‌شده هم رفتند',
+    !after.data.some(m => String(m.model_id).startsWith('test/')));
+}
 
 const prompts = await req('/api/admin/prompts');
 check('GET /api/admin/prompts', prompts.status === 200 && prompts.data.items.length >= 1);
@@ -129,16 +182,6 @@ check('متن کارخانه در دسترس است', String(prompts.data.factor
 
 const amodels = await req('/api/admin/models');
 check('GET /api/admin/models', amodels.status === 200 && amodels.data.length >= 1);
-
-const addModel = await req('/api/admin/models', { method: 'POST', csrf, body: { model_id: 'test/smoke-model', label: 'مدل آزمایشی' } });
-check('افزودن مدل', addModel.status === 200);
-const models2 = await req('/api/admin/models');
-const added = models2.data.find(m => m.model_id === 'test/smoke-model');
-check('مدل تازه در فهرست هست', !!added);
-if (added) {
-  const del = await req(`/api/admin/models/${added.id}`, { method: 'DELETE', csrf });
-  check('حذف مدل', del.status === 200);
-}
 
 const users = await req('/api/admin/users');
 check('GET /api/admin/users', users.status === 200 && users.data.items.length >= 1);

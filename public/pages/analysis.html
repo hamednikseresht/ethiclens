@@ -13,14 +13,15 @@
 <body>
 <header class="topbar" id="topbar"></header>
 
-<main class="wrap-narrow" style="max-width:1180px">
+<main class="wrap">
   <div id="headHost"></div>
   <div id="resultHost"></div>
 </main>
 
 <script type="module">
 import { $, api, boot, esc, faNum, faDate, duration, toast, confirmDialog } from '/js/core.js';
-import { buildSkeleton, applySections, verdictChips } from '/js/result.js';
+import { buildSkeleton, applySections, verdictChips, gateSummary } from '/js/result.js';
+import { exportBar, wireExport } from '/js/export.js';
 
 if (!await boot()) throw new Error('unauthenticated');
 
@@ -36,21 +37,24 @@ try {
   throw e;
 }
 
+const sections = a.sections || {};
 const ctx = a.context || {};
-const ctxBits = [
-  ctx.domain && `حوزه: ${ctx.domain}`,
-  ctx.urgency && `فوریت: ${ctx.urgency}`
-].filter(Boolean);
+const ctxBits = [ctx.domain && `حوزه: ${ctx.domain}`, ctx.urgency && `فوریت: ${ctx.urgency}`].filter(Boolean);
+
+const gateStrip = a.status === 'done'
+  ? `<div class="gate-strip">${gateSummary(sections).map(g =>
+      `<span class="gate-pill" data-state="${g.state}"><b>${g.n}</b> ${esc(g.title)}: ${esc(g.label)}</span>`).join('')}</div>`
+  : '';
 
 $('#headHost').innerHTML = `
   <div class="result-head">
-    <div class="row-between" style="margin-bottom:.5rem">
+    <div class="row-between" style="margin-bottom:.6rem">
       <a href="/history" class="btn btn-sm btn-ghost no-print">→ بازگشت به تاریخچه</a>
-      <div class="row no-print" style="gap:.4rem">
-        <button class="btn btn-sm" id="favBtn">${a.is_favorite ? '⭐ نشان‌شده' : '☆ نشان کردن'}</button>
-        <a class="btn btn-sm" href="/api/history/${a.id}/export">دانلود</a>
-        <button class="btn btn-sm" onclick="print()">چاپ</button>
-        <button class="btn btn-sm" id="delBtn" style="color:var(--danger)">حذف</button>
+      <div id="actionBar">
+        ${exportBar({
+          analysisId: a.id,
+          extra: `<button class="btn btn-sm" id="favBtn">${a.is_favorite ? '⭐ نشان‌شده' : '☆ نشان کردن'}</button>`
+        })}
       </div>
     </div>
     <h1>${esc(a.title)}</h1>
@@ -59,9 +63,13 @@ $('#headHost').innerHTML = `
       <span class="badge">${esc(a.model)}</span>
       <span class="badge">${duration(a.duration_ms)}</span>
       ${ctxBits.map(b => `<span class="badge">${esc(b)}</span>`).join('')}
-      ${a.status === 'done' ? verdictChips(a.sections || {}) : ''}
+      ${a.status === 'done' ? verdictChips(sections) : ''}
     </div>
+    ${gateStrip}
     <div class="result-dilemma">${esc(a.dilemma)}</div>
+    <div class="row no-print" style="margin-top:.8rem;justify-content:flex-start">
+      <button class="btn btn-sm btn-ghost" id="delBtn" style="color:var(--danger)">حذف این تحلیل</button>
+    </div>
   </div>`;
 
 if (a.status === 'error') {
@@ -74,15 +82,21 @@ if (a.status === 'error') {
     <a class="btn btn-primary" href="/app">دوباره تحلیل کنید</a>`;
 } else {
   buildSkeleton($('#resultHost'));
-  applySections(a.sections || {}, { streaming: false });
+  applySections(sections, { streaming: false });
   $('#resultHost').insertAdjacentHTML('beforeend',
     '<div class="disclaimer">این تحلیل توسط یک مدل زبانی تولید شده و می‌تواند خطا داشته باشد. تصمیم نهایی و مسئولیت آن با شماست. اتیکا جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</div>');
+
+  wireExport($('#actionBar'), {
+    analysisId: a.id,
+    sections,
+    meta: { analysisId: a.id, title: a.title, createdAt: a.created_at, model: a.model }
+  });
 }
 
 $('#favBtn')?.addEventListener('click', async e => {
   try {
     const r = await api.post(`/api/history/${a.id}/favorite`);
-    e.target.textContent = r.isFavorite ? '⭐ نشان‌شده' : '☆ نشان کردن';
+    e.currentTarget.textContent = r.isFavorite ? '⭐ نشان‌شده' : '☆ نشان کردن';
   } catch (err) { toast(err.message, 'err'); }
 });
 

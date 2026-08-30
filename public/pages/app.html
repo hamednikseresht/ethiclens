@@ -102,6 +102,7 @@
                 <div class="field">
                   <label for="model">مدل تحلیل</label>
                   <select class="select" id="model"></select>
+                  <span class="hint" id="modelNote"></span>
                 </div>
               </div>
 
@@ -139,7 +140,8 @@
 
 <script type="module">
 import { $, api, boot, toast, esc, faNum, state } from '/js/core.js';
-import { buildSkeleton, parseSections, applySections, progressOf } from '/js/result.js';
+import { buildSkeleton, parseSections, applySections, progressOf, gateSummary } from '/js/result.js';
+import { exportBar, wireExport } from '/js/export.js';
 
 if (!await boot()) throw new Error('unauthenticated');
 
@@ -152,9 +154,32 @@ const EXAMPLES = [
 /* ---------- مقداردهی اولیه ---------- */
 const meta = await api.get('/api/analyze/meta');
 const modelSel = $('#model');
-modelSel.innerHTML = meta.models.map(m =>
-  `<option value="${esc(m.id)}" ${m.id === meta.defaultModel ? 'selected' : ''}>${esc(m.label)}</option>`
-).join('') || '<option value="">مدلی فعال نیست</option>';
+
+if (!meta.models.length) {
+  modelSel.innerHTML = '<option value="">مدلی فعال نیست</option>';
+  modelSel.disabled = true;
+  $('#submitBtn').disabled = true;
+  $('#quotaLine').innerHTML = '<span style="color:var(--danger)">هیچ مدلی فعال نیست — با مدیر سامانه تماس بگیرید.</span>';
+} else if (meta.providers.length > 1) {
+  // چند ارائه‌دهنده → گروه‌بندی در فهرست
+  modelSel.innerHTML = meta.providers.map(p => `
+    <optgroup label="${esc(p.label)}">
+      ${p.models.map(m => `<option value="${esc(m.ref)}" ${m.ref === meta.defaultModel ? 'selected' : ''}
+        title="${esc(m.note || '')}">${esc(m.label)}</option>`).join('')}
+    </optgroup>`).join('');
+} else {
+  modelSel.innerHTML = meta.models.map(m =>
+    `<option value="${esc(m.ref)}" ${m.ref === meta.defaultModel ? 'selected' : ''}
+      title="${esc(m.note || '')}">${esc(m.label)}</option>`).join('');
+}
+
+const modelNote = $('#modelNote');
+const showNote = () => {
+  const m = meta.models.find(x => x.ref === modelSel.value);
+  modelNote.textContent = m?.note || '';
+};
+modelSel.addEventListener('change', showNote);
+showNote();
 
 $('#examples').innerHTML = EXAMPLES.map((t, i) =>
   `<button type="button" data-i="${i}">نمونه ${faNum(i + 1)}</button>`).join('');
@@ -316,24 +341,42 @@ $('#analyzeForm').onsubmit = async e => {
     const sections = info.sections && Object.keys(info.sections).length ? info.sections : parseSections(acc);
     applySections(sections, { streaming: false });
     const secs = info.durationMs ? (info.durationMs / 1000).toFixed(1) : null;
+    const title = payload.dilemma.replace(/\s+/g, ' ').slice(0, 70);
+
+    const gates = gateSummary(sections)
+      .map(g => `<span class="gate-pill" data-state="${g.state}"><b>${g.n}</b> ${esc(g.title)}: ${esc(g.label)}</span>`)
+      .join('');
+
     $('#streambar').outerHTML = `
-      <div class="card no-print" style="margin-bottom:1.1rem">
-        <div class="card-body" style="padding:.9rem 1.2rem">
-          <div class="row-between">
-            <span style="font-size:.87rem;font-weight:700;color:var(--success)">✓ تحلیل کامل شد${secs ? ` — ${faNum(secs)} ثانیه` : ''}</span>
-            <div class="row" style="gap:.4rem">
-              <a class="btn btn-sm" href="/analysis?id=${info.analysisId}">صفحه اختصاصی</a>
-              <a class="btn btn-sm" href="/api/history/${info.analysisId}/export">دانلود</a>
-              <button class="btn btn-sm" onclick="print()">چاپ</button>
+      <div class="card no-print" style="margin-bottom:1.1rem" id="doneBar">
+        <div class="card-body" style="padding:1rem 1.2rem">
+          <div class="row-between" style="margin-bottom:.6rem">
+            <span style="font-size:.88rem;font-weight:800;color:var(--success)">
+              ✓ تحلیل کامل شد${secs ? ` — ${faNum(secs)} ثانیه` : ''}
+            </span>
+            <div id="actionBar">
+              ${exportBar({
+                analysisId: info.analysisId,
+                extra: `<a class="btn btn-sm" href="/analysis?id=${info.analysisId}">صفحه اختصاصی</a>`
+              })}
             </div>
           </div>
+          <div class="gate-strip" style="margin:0">${gates}</div>
         </div>
       </div>`;
+
     const host = $('#resultHost');
     if (host && !host.querySelector('.disclaimer')) {
       host.insertAdjacentHTML('beforeend',
         '<div class="disclaimer">این تحلیل توسط یک مدل زبانی تولید شده و می‌تواند خطا داشته باشد. تصمیم نهایی و مسئولیت آن با شماست. اتیکا جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</div>');
     }
+
+    wireExport($('#actionBar'), {
+      analysisId: info.analysisId,
+      sections,
+      meta: { analysisId: info.analysisId, title, createdAt: new Date().toISOString(), model: modelSel.value }
+    });
+
     toast('تحلیل ذخیره شد.', 'ok');
   }
 };
