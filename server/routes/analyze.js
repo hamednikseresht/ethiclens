@@ -1,6 +1,6 @@
 import express from 'express';
 import { db, audit } from '../db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireVerified } from '../middleware/auth.js';
 import { streamChat } from '../services/llm.js';
 import { parseSections, makeTitle } from '../services/parser.js';
 import { activePrompt, getSetting } from '../services/settings.js';
@@ -53,7 +53,7 @@ function fill(template, vars) {
 }
 
 /** استریم SSE: رویدادها = start | delta | done | error */
-router.post('/stream', requireAuth, async (req, res) => {
+router.post('/stream', requireAuth, requireVerified, async (req, res) => {
   const dilemma = String(req.body?.dilemma || '').trim();
   if (dilemma.length < 20) {
     return res.status(400).json({ error: 'شرح دوراهی باید حداقل ۲۰ نویسه باشد تا تحلیل معناداری ممکن شود.' });

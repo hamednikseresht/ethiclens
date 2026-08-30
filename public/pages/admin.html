@@ -90,6 +90,7 @@
       <button data-tab="users">👥 کاربران</button>
       <button data-tab="tiers">🎟️ گروه‌ها</button>
       <button data-tab="analyses">🗂️ تحلیل‌ها</button>
+      <button data-tab="mail">✉️ ایمیل و تأیید</button>
       <button data-tab="site">⚙️ تنظیمات سایت</button>
       <button data-tab="audit">🔒 گزارش رخدادها</button>
     </nav>
@@ -101,6 +102,7 @@
       <section class="panel" id="p-users"></section>
       <section class="panel" id="p-tiers"></section>
       <section class="panel" id="p-analyses"></section>
+      <section class="panel" id="p-mail"></section>
       <section class="panel" id="p-site"></section>
       <section class="panel" id="p-audit"></section>
     </div>
@@ -736,7 +738,7 @@ loaders.users = async () => {
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
-        <th>کاربر</th><th>گروه</th><th>نقش</th><th>وضعیت</th>
+        <th>کاربر</th><th>ایمیل</th><th>گروه</th><th>نقش</th><th>وضعیت</th>
         <th>سهمیه روزانه</th><th>توکن این ماه</th><th>کل توکن</th><th>تحلیل</th><th></th>
       </tr></thead>
       <tbody id="uRows"></tbody></table></div>
@@ -756,6 +758,9 @@ loaders.users = async () => {
       return `
       <tr data-id="${u.id}">
         <td><strong>${esc(u.name)}</strong><br><small class="mono" style="color:var(--text-muted)">${esc(u.email)}</small></td>
+        <td>${u.email_verified
+              ? '<span class="badge badge-success">تأییدشده</span>'
+              : '<button class="btn btn-sm btn-ghost" data-act="verify" style="color:var(--warn)">تأیید دستی</button>'}</td>
         <td><span class="badge ${u.tier === 'premium' ? 'badge-primary' : ''}">${esc(u.tierLabel)}</span></td>
         <td>${u.role === 'admin' ? '<span class="badge badge-primary">مدیر</span>' : '<span class="badge">کاربر</span>'}</td>
         <td>${u.status === 'active' ? '<span class="badge badge-success">فعال</span>' : '<span class="badge badge-danger">مسدود</span>'}</td>
@@ -770,7 +775,7 @@ loaders.users = async () => {
         <td>${faNum(u.analyses)}</td>
         <td><button class="btn btn-sm" data-act="edit">ویرایش</button></td>
       </tr>`;
-    }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted)">کاربری یافت نشد</td></tr>';
+    }).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text-muted)">کاربری یافت نشد</td></tr>';
 
     window.__tiers = d.tiers || [];
     window.__users = Object.fromEntries(d.items.map(u => [u.id, u]));
@@ -789,6 +794,17 @@ loaders.users = async () => {
   };
 
   $('#uRows').onclick = async e => {
+    const v = e.target.closest('button[data-act="verify"]');
+    if (v) {
+      const uid = v.closest('tr').dataset.id;
+      try {
+        await api.post(`/api/admin/users/${uid}/verify-email`, { verified: true });
+        toast('ایمیل کاربر دستی تأیید شد.', 'ok');
+        loadUsers();
+      } catch (err) { toast(err.message, 'err'); }
+      return;
+    }
+
     const b = e.target.closest('button[data-act="edit"]');
     if (!b) return;
     const id = b.closest('tr').dataset.id;
@@ -987,6 +1003,126 @@ loaders.analyses = async () => {
     if (b) { apage = +b.dataset.page; loadA(); }
   };
   loadA();
+};
+
+/* ---------------- ایمیل و تأیید حساب ---------------- */
+loaders.mail = async () => {
+  const host = $('#p-mail');
+  host.innerHTML = '<div class="skeleton" style="height:8rem"></div>';
+  const s = await api.get('/api/admin/settings');
+
+  host.innerHTML = `
+    <h2 class="sec-h">ایمیل و تأیید حساب</h2>
+    <p class="sec-p">
+      ایمیل‌های تأیید از راه API میل‌گان فرستاده می‌شوند. کلید فقط روی سرور می‌ماند
+      و هرگز به مرورگر فرستاده نمی‌شود.
+    </p>
+
+    ${s.mailConfigured ? '' : '<div class="alert alert-warn">سرویس ایمیل هنوز تنظیم نشده است. تا وقتی کلید و دامنه را وارد نکنید، حساب‌های تازه بدون تأیید ایمیل فعال می‌شوند.</div>'}
+
+    <div class="card" style="margin-bottom:1.1rem">
+      <div class="card-head"><h3>📮 اتصال میل‌گان</h3>
+        ${s.mailKeySet ? '<span class="badge badge-success">کلید ثبت شده</span>' : '<span class="badge badge-danger">بدون کلید</span>'}
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label for="mg-key">کلید API میل‌گان</label>
+          <input class="input mono" id="mg-key" type="password" placeholder="${s.mailKeySet ? 'برای حفظ کلید فعلی خالی بگذارید' : 'key-… یا کلید Sending'}">
+          <span class="hint">در پنل میل‌گان: Settings ← API Keys</span>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="mg-domain">دامنه ارسال</label>
+            <input class="input mono" id="mg-domain" value="${esc(s.mailgun_domain || '')}" placeholder="mg.example.com">
+          </div>
+          <div class="field">
+            <label for="mg-base">منطقه حساب</label>
+            <select class="select" id="mg-base">
+              <option value="https://api.mailgun.net" ${s.mailgun_base_url !== 'https://api.eu.mailgun.net' ? 'selected' : ''}>آمریکا — api.mailgun.net</option>
+              <option value="https://api.eu.mailgun.net" ${s.mailgun_base_url === 'https://api.eu.mailgun.net' ? 'selected' : ''}>اروپا — api.eu.mailgun.net</option>
+            </select>
+            <span class="hint">اگر حسابتان اروپایی است و این را اشتباه بگذارید، خطای ۴۰۱ می‌گیرید.</span>
+          </div>
+          <div class="field">
+            <label for="mg-fname">نام فرستنده</label>
+            <input class="input" id="mg-fname" value="${esc(s.mail_from_name || '')}" placeholder="اتیکا">
+          </div>
+          <div class="field">
+            <label for="mg-femail">ایمیل فرستنده</label>
+            <input class="input mono" id="mg-femail" value="${esc(s.mail_from_email || '')}" placeholder="no-reply@mg.example.com">
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn btn-primary" id="saveMail">ذخیره</button>
+          <button class="btn" id="testMail">✉️ ارسال ایمیل آزمایشی</button>
+        </div>
+        <div id="mailOut" style="margin-top:.9rem"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>🔒 سیاست تأیید</h3></div>
+      <div class="card-body">
+        <label class="switch" style="margin-bottom:1.1rem">
+          <input type="checkbox" id="vr-req" ${s.require_verification === '1' ? 'checked' : ''}>
+          تأیید ایمیل الزامی باشد
+        </label>
+        <div class="field">
+          <label for="vr-gate">تا وقتی تأیید نشده، چه چیزی بسته باشد؟</label>
+          <select class="select" id="vr-gate">
+            <option value="analysis" ${(s.verification_gate || 'analysis') === 'analysis' ? 'selected' : ''}>
+              فقط اجرای تحلیل — کاربر وارد می‌شود و می‌گردد (پیشنهادی)
+            </option>
+            <option value="login" ${s.verification_gate === 'login' ? 'selected' : ''}>
+              کل سامانه — تا تأیید نکند هیچ کاری نمی‌تواند بکند
+            </option>
+          </select>
+          <span class="hint">
+            گزینه اول ریسک واقعی را می‌بندد (سوزاندن اعتبار API با حساب‌های جعلی)
+            بدون اینکه کاربری که ایمیلش را اشتباه تایپ کرده کاملاً بیرون بماند.
+          </span>
+        </div>
+        <button class="btn btn-primary" id="saveGate">ذخیره سیاست</button>
+      </div>
+    </div>`;
+
+  $('#saveMail').onclick = async () => {
+    const body = {
+      mailgun_domain: $('#mg-domain').value.trim(),
+      mailgun_base_url: $('#mg-base').value,
+      mail_from_name: $('#mg-fname').value.trim(),
+      mail_from_email: $('#mg-femail').value.trim()
+    };
+    const key = $('#mg-key').value.trim();
+    if (key) body.mailgun_api_key = key;
+    try {
+      await api.post('/api/admin/settings', body);
+      toast('ذخیره شد.', 'ok');
+      loaded.delete('mail'); show('mail');
+    } catch (e) { toast(e.message, 'err'); }
+  };
+
+  $('#saveGate').onclick = async () => {
+    try {
+      await api.post('/api/admin/settings', {
+        require_verification: $('#vr-req').checked ? '1' : '0',
+        verification_gate: $('#vr-gate').value
+      });
+      toast('سیاست تأیید ذخیره شد.', 'ok');
+    } catch (e) { toast(e.message, 'err'); }
+  };
+
+  $('#testMail').onclick = async e => {
+    const out = $('#mailOut');
+    e.target.disabled = true;
+    out.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> در حال ارسال…</div>';
+    try {
+      const r = await api.post('/api/admin/test-mail', {});
+      out.innerHTML = `<div class="alert alert-success">✓ ایمیل آزمایشی به <span class="mono">${esc(r.to)}</span> فرستاده شد. صندوق ورودی و هرزنامه را ببینید.</div>`;
+    } catch (err) {
+      out.innerHTML = `<div class="alert alert-danger">✗ ${esc(err.message)}${err.data?.detail ? `<br><small class="mono">${esc(err.data.detail)}</small>` : ''}</div>`;
+    } finally { e.target.disabled = false; }
+  };
 };
 
 /* ---------------- تنظیمات سایت ---------------- */

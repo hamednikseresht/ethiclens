@@ -4,6 +4,10 @@ import rateLimit from 'express-rate-limit';
 import { db, audit } from '../db.js';
 import { getSetting } from '../services/settings.js';
 import { allowanceSummary } from '../services/tiers.js';
+import { absoluteUrl } from '../services/seo.js';
+import {
+  mailConfigured, createToken, consumeToken, sendVerification, secondsSinceLastToken
+} from '../services/mail.js';
 import { requireAuth, csrfToken } from '../middleware/auth.js';
 
 export const router = express.Router();
@@ -21,11 +25,12 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 function publicUser(u) {
   return {
     id: u.id, email: u.email, name: u.name, role: u.role,
-    tier: u.tier || 'basic', createdAt: u.created_at
+    tier: u.tier || 'basic', createdAt: u.created_at,
+    emailVerified: !!u.email_verified
   };
 }
 
-router.post('/register', loginLimiter, (req, res) => {
+router.post('/register', loginLimiter, async (req, res) => {
   if (getSetting('allow_registration') !== '1') {
     return res.status(403).json({ error: 'ثبت‌نام در حال حاضر بسته است.' });
   }
@@ -48,7 +53,25 @@ router.post('/register', loginLimiter, (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
   req.session.userId = user.id;
   audit(user.id, 'register', { email }, req.ip);
-  res.json({ user: publicUser(user), csrf: csrfToken(req) });
+
+  // اگر سرویس ایمیل تنظیم نشده باشد، ثبت‌نام نباید بشکند؛ حساب
+  // تأییدشده در نظر گرفته می‌شود تا کاربر پشت دری قفل نماند.
+  let verificationSent = false;
+  if (!mailConfigured()) {
+    db.prepare("UPDATE users SET email_verified = 1, verified_at = datetime('now') WHERE id = ?").run(user.id);
+    user.email_verified = 1;
+  } else {
+    try {
+      const token = createToken(user.id, 'verify', req.ip);
+      await sendVerification({ user, url: absoluteUrl(req, `/verify?token=${token}`) });
+      verificationSent = true;
+    } catch (e) {
+      console.error('[verify] ارسال ایمیل ناموفق:', e.message);
+      audit(user.id, 'verify_send_failed', { error: e.message }, req.ip);
+    }
+  }
+
+  res.json({ user: publicUser(user), csrf: csrfToken(req), verificationSent });
 });
 
 router.post('/login', loginLimiter, (req, res) => {
@@ -114,4 +137,77 @@ router.post('/profile', requireAuth, (req, res) => {
   if (name.length < 2) return res.status(400).json({ error: 'نام باید حداقل ۲ نویسه باشد.' });
   db.prepare('UPDATE users SET name = ? WHERE id = ?').run(name, req.user.id);
   res.json({ ok: true, name });
+});
+
+/* ==========================================================================
+   تأیید ایمیل
+   ========================================================================== */
+
+/** وضعیت تأیید و اینکه آیا سامانه اصلاً ایمیل می‌فرستد */
+router.get('/verification', requireAuth, (req, res) => {
+  const wait = Math.max(0, 60 - secondsSinceLastToken(req.user.id, 'verify'));
+  res.json({
+    verified: !!req.user.email_verified,
+    required: getSetting('require_verification') === '1',
+    gate: getSetting('verification_gate') || 'analysis',
+    mailEnabled: mailConfigured(),
+    email: req.user.email,
+    resendInSeconds: wait
+  });
+});
+
+/** ارسال دوباره ایمیل تأیید — با فاصله اجباری تا ایمیل کسی بمباران نشود */
+router.post('/resend-verification', requireAuth, async (req, res) => {
+  if (req.user.email_verified) {
+    return res.status(400).json({ error: 'ایمیل شما از قبل تأیید شده است.' });
+  }
+  if (!mailConfigured()) {
+    return res.status(503).json({ error: 'سرویس ایمیل تنظیم نشده است. با مدیر سامانه تماس بگیرید.' });
+  }
+
+  const since = secondsSinceLastToken(req.user.id, 'verify');
+  if (since < 60) {
+    return res.status(429).json({
+      error: `کمی صبر کنید. ${Math.ceil(60 - since)} ثانیه دیگر می‌توانید دوباره درخواست دهید.`,
+      resendInSeconds: Math.ceil(60 - since)
+    });
+  }
+
+  try {
+    const token = createToken(req.user.id, 'verify', req.ip);
+    await sendVerification({ user: req.user, url: absoluteUrl(req, `/verify?token=${token}`) });
+    audit(req.user.id, 'verify_resend', null, req.ip);
+    res.json({ ok: true, resendInSeconds: 60 });
+  } catch (e) {
+    console.error('[verify] ارسال دوباره ناموفق:', e.message);
+    res.status(502).json({ error: e.message });
+  }
+});
+
+/** مصرف توکن — صفحه /verify این را صدا می‌زند */
+router.post('/verify', (req, res) => {
+  const result = consumeToken(String(req.body?.token || ''), 'verify');
+
+  if (!result.ok) {
+    const messages = {
+      missing: 'پیوند تأیید ناقص است.',
+      invalid: 'این پیوند تأیید معتبر نیست.',
+      used:    'این پیوند قبلاً استفاده شده است. اگر حسابتان تأیید نشده، پیوند تازه بخواهید.',
+      expired: 'این پیوند منقضی شده است. از حسابتان پیوند تازه بخواهید.'
+    };
+    return res.status(400).json({ error: messages[result.reason] || 'پیوند تأیید معتبر نیست.', reason: result.reason });
+  }
+
+  const u = result.user;
+  if (!u.email_verified) {
+    db.prepare("UPDATE users SET email_verified = 1, verified_at = datetime('now') WHERE id = ?").run(u.id);
+    audit(u.id, 'email_verified', { email: u.email }, req.ip);
+  }
+
+  // تأیید، کاربر را وارد هم می‌کند تا مسیر بدون اصطکاک باشد
+  req.session.regenerate(err => {
+    if (err) return res.json({ ok: true, signedIn: false });
+    req.session.userId = u.id;
+    res.json({ ok: true, signedIn: true, user: publicUser({ ...u, email_verified: 1 }) });
+  });
 });

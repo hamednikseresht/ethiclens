@@ -11,6 +11,13 @@ const DEFAULTS = {
   max_tokens: '4096',
   active_prompt_key: DEFAULT_PROMPT_KEY,
   allow_registration: '1',
+  require_verification: '1',        // تأیید ایمیل لازم است؟
+  verification_gate: 'analysis',    // analysis = فقط تحلیل بسته | login = ورود بسته
+  mailgun_api_key: '',
+  mailgun_domain: '',
+  mailgun_base_url: 'https://api.mailgun.net',
+  mail_from_name: 'اتیکا',
+  mail_from_email: '',
   default_daily_quota: '30'
 };
 

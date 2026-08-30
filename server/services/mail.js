@@ -1,0 +1,225 @@
+import crypto from 'node:crypto';
+import { db } from '../db.js';
+import { getSetting } from './settings.js';
+import { escapeHtml as esc } from './seo.js';
+
+/**
+ * ارسال ایمیل از راه API میل‌گان.
+ *
+ * عمداً از API استفاده می‌شود نه SMTP: یک درخواست fetch ساده است و
+ * وابستگی تازه‌ای به پروژه اضافه نمی‌کند. حساب‌های اروپایی میل‌گان
+ * دامنه api.eu.mailgun.net دارند، پس آدرس پایه قابل تنظیم است.
+ */
+
+export function mailConfig() {
+  return {
+    apiKey: getSetting('mailgun_api_key') || process.env.MAILGUN_API_KEY || '',
+    domain: getSetting('mailgun_domain') || process.env.MAILGUN_DOMAIN || '',
+    baseUrl: (getSetting('mailgun_base_url') || process.env.MAILGUN_BASE_URL
+              || 'https://api.mailgun.net').replace(/\/+$/, ''),
+    fromName: getSetting('mail_from_name') || 'اتیکا',
+    fromEmail: getSetting('mail_from_email') || ''
+  };
+}
+
+export function mailConfigured() {
+  const c = mailConfig();
+  return !!(c.apiKey && c.domain);
+}
+
+/** نشانی فرستنده؛ اگر تنظیم نشده باشد از دامنه میل‌گان ساخته می‌شود */
+function fromAddress(c) {
+  const email = c.fromEmail || `no-reply@${c.domain}`;
+  return c.fromName ? `${c.fromName} <${email}>` : email;
+}
+
+export async function sendMail({ to, subject, html, text, tag }) {
+  const c = mailConfig();
+  if (!c.apiKey || !c.domain) {
+    const e = new Error('سرویس ایمیل تنظیم نشده است. در پنل مدیریت کلید و دامنه میل‌گان را وارد کنید.');
+    e.code = 'MAIL_NOT_CONFIGURED';
+    throw e;
+  }
+
+  const form = new URLSearchParams({
+    from: fromAddress(c),
+    to,
+    subject,
+    text: text || stripHtml(html || ''),
+    ...(html ? { html } : {})
+  });
+  if (tag) form.append('o:tag', tag);
+
+  const res = await fetch(`${c.baseUrl}/v3/${encodeURIComponent(c.domain)}/messages`, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Basic ' + Buffer.from(`api:${c.apiKey}`).toString('base64'),
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: form,
+    signal: AbortSignal.timeout(20000)
+  });
+
+  const body = await res.text().catch(() => '');
+  if (!res.ok) {
+    const e = new Error(mailgunMessage(res.status, body, c));
+    e.status = res.status;
+    e.detail = body.slice(0, 400);
+    throw e;
+  }
+
+  let id = '';
+  try { id = JSON.parse(body).id || ''; } catch { /* پاسخ غیر JSON */ }
+  return { ok: true, id };
+}
+
+function mailgunMessage(status, body, c) {
+  let msg = '';
+  try { msg = JSON.parse(body)?.message || ''; } catch { msg = String(body).slice(0, 160); }
+
+  if (status === 401) return 'کلید API میل‌گان نامعتبر است. اگر حساب اروپایی دارید، آدرس پایه را روی api.eu.mailgun.net بگذارید.';
+  if (status === 404) return `دامنه «${c.domain}» در میل‌گان پیدا نشد. املای دامنه را بررسی کنید.`;
+  if (status === 400 && /free accounts|authorized recipient/i.test(msg)) {
+    return 'حساب آزمایشی میل‌گان فقط به گیرندگان تأییدشده ایمیل می‌فرستد. گیرنده را در پنل میل‌گان مجاز کنید یا دامنه‌تان را تأیید کنید.';
+  }
+  if (status === 429) return 'محدودیت نرخ میل‌گان فعال شد. کمی بعد دوباره تلاش کنید.';
+  return msg ? `میل‌گان: ${msg}` : `خطای سرویس ایمیل (کد ${status}).`;
+}
+
+function stripHtml(h) {
+  return String(h)
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/* ==========================================================================
+   توکن‌های ایمیل
+   ========================================================================== */
+const TOKEN_TTL_HOURS = 24;
+
+const hash = t => crypto.createHash('sha256').update(String(t)).digest('hex');
+
+/**
+ * توکن تازه می‌سازد و فقط چکیده‌اش را ذخیره می‌کند.
+ * خود توکن تنها یک بار — در ایمیل — از سامانه بیرون می‌رود؛ اگر پایگاه
+ * داده لو برود، با محتوای جدول نمی‌شود حسابی را تأیید یا تصاحب کرد.
+ */
+export function createToken(userId, purpose = 'verify', ip = null) {
+  const token = crypto.randomBytes(32).toString('base64url');
+
+  // توکن‌های استفاده‌نشده قبلی همان کاربر باطل می‌شوند
+  db.prepare(`UPDATE email_tokens SET used_at = datetime('now')
+              WHERE user_id = ? AND purpose = ? AND used_at IS NULL`).run(userId, purpose);
+
+  db.prepare(`INSERT INTO email_tokens (user_id, token_hash, purpose, expires_at, ip)
+              VALUES (?,?,?, datetime('now', '+${TOKEN_TTL_HOURS} hours'), ?)`)
+    .run(userId, hash(token), purpose, ip);
+
+  return token;
+}
+
+/** توکن را مصرف می‌کند؛ در صورت اعتبار، کاربر را برمی‌گرداند */
+export function consumeToken(token, purpose = 'verify') {
+  if (!token) return { ok: false, reason: 'missing' };
+
+  const row = db.prepare(
+    `SELECT * FROM email_tokens WHERE token_hash = ? AND purpose = ?`
+  ).get(hash(token), purpose);
+
+  if (!row) return { ok: false, reason: 'invalid' };
+  if (row.used_at) return { ok: false, reason: 'used' };
+
+  const expired = db.prepare("SELECT datetime('now') > ? AS x").get(row.expires_at).x;
+  if (expired) return { ok: false, reason: 'expired' };
+
+  db.prepare("UPDATE email_tokens SET used_at = datetime('now') WHERE id = ?").run(row.id);
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(row.user_id);
+  if (!user) return { ok: false, reason: 'invalid' };
+
+  return { ok: true, user };
+}
+
+/** آخرین باری که برای این کاربر توکن ساخته شده — برای محدودکردن ارسال دوباره */
+export function lastTokenAt(userId, purpose = 'verify') {
+  return db.prepare(
+    `SELECT created_at FROM email_tokens WHERE user_id = ? AND purpose = ?
+     ORDER BY id DESC LIMIT 1`).get(userId, purpose)?.created_at || null;
+}
+
+export function secondsSinceLastToken(userId, purpose = 'verify') {
+  const row = db.prepare(
+    `SELECT CAST((julianday('now') - julianday(created_at)) * 86400 AS INTEGER) s
+     FROM email_tokens WHERE user_id = ? AND purpose = ? ORDER BY id DESC LIMIT 1`
+  ).get(userId, purpose);
+  return row ? row.s : Infinity;
+}
+
+/* ==========================================================================
+   قالب ایمیل
+   ========================================================================== */
+function layout({ title, intro, buttonLabel, buttonUrl, footer, rawUrl }) {
+  const brand = getSetting('site_title') || 'اتیکا';
+  return `<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head><meta charset="UTF-8"><title>${esc(title)}</title></head>
+<body style="margin:0;padding:0;background:#f6f8fb;font-family:Tahoma,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f8fb;padding:32px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+             style="max-width:560px;background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+        <tr><td style="background:linear-gradient(135deg,#2563eb,#0d9488);padding:22px 28px;">
+          <div style="color:#ffffff;font-size:19px;font-weight:bold;">${esc(brand)}</div>
+        </td></tr>
+        <tr><td style="padding:28px;">
+          <h1 style="margin:0 0 14px;font-size:19px;color:#0f172a;line-height:1.6;">${esc(title)}</h1>
+          <p style="margin:0 0 22px;font-size:14px;color:#475569;line-height:2;">${intro}</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">
+            <tr><td style="background:#2563eb;border-radius:10px;">
+              <a href="${esc(buttonUrl)}"
+                 style="display:inline-block;padding:13px 30px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;">
+                ${esc(buttonLabel)}
+              </a>
+            </td></tr>
+          </table>
+          <p style="margin:0 0 8px;font-size:12px;color:#64748b;line-height:1.9;">
+            اگر دکمه کار نکرد، این نشانی را در مرورگر باز کنید:
+          </p>
+          <p style="margin:0 0 22px;font-size:12px;color:#2563eb;direction:ltr;text-align:left;word-break:break-all;">
+            ${esc(rawUrl)}
+          </p>
+          <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.9;border-top:1px solid #e2e8f0;padding-top:16px;">
+            ${footer}
+          </p>
+        </td></tr>
+      </table>
+      <p style="margin:16px 0 0;font-size:11px;color:#94a3b8;">${esc(brand)} — دستیار تصمیم‌گیری اخلاقی</p>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+export function verificationEmail({ name, url }) {
+  return {
+    subject: `${getSetting('site_title') || 'اتیکا'} — تأیید نشانی ایمیل`,
+    html: layout({
+      title: 'نشانی ایمیل خود را تأیید کنید',
+      intro: `${esc(name || 'سلام')}، برای فعال‌شدن حساب و شروع تحلیل، روی دکمه زیر بزنید.
+              این پیوند تا ${TOKEN_TTL_HOURS} ساعت معتبر است.`,
+      buttonLabel: 'تأیید ایمیل',
+      buttonUrl: url,
+      rawUrl: url,
+      footer: 'اگر شما در اتیکا ثبت‌نام نکرده‌اید، این ایمیل را نادیده بگیرید؛ بدون تأیید، حسابی فعال نمی‌شود.'
+    })
+  };
+}
+
+export async function sendVerification({ user, url, tag = 'verify' }) {
+  const { subject, html } = verificationEmail({ name: user.name, url });
+  return sendMail({ to: user.email, subject, html, tag });
+}

@@ -409,6 +409,52 @@ for (const p of ['/app', '/dashboard', '/history', '/admin', '/login', '/setting
 }
 
 
+/* ---------------- تأیید ایمیل ---------------- */
+console.log('\n── تأیید ایمیل ──');
+{
+  const st = await req('/api/admin/settings');
+  check('وضعیت پیکربندی ایمیل گزارش می‌شود', typeof st.data.mailConfigured === 'boolean');
+  check('کلید میل‌گان در پاسخ تنظیمات نیست',
+    !/mailgun_api_key/.test(JSON.stringify(st.data)) || !st.data.mailgun_api_key,
+    JSON.stringify(st.data).slice(0, 120));
+
+  // مدیر خودش تأییدشده است (کاربر قدیمی)
+  const v = await req('/api/auth/verification');
+  check('GET /api/auth/verification', v.status === 200 && typeof v.data.verified === 'boolean');
+  check('کاربر قدیمی تأییدشده است', v.data.verified === true, String(v.data.verified));
+
+  const users = await req('/api/admin/users');
+  check('وضعیت تأیید در فهرست کاربران هست',
+    users.data.items.every(u => u.email_verified !== undefined));
+
+  const target = users.data.items.find(u => u.role !== 'admin');
+  if (target) {
+    const off = await req(`/api/admin/users/${target.id}/verify-email`, {
+      method: 'POST', csrf, body: { verified: false }
+    });
+    check('لغو تأیید دستی', off.status === 200 && off.data.verified === false);
+
+    const on = await req(`/api/admin/users/${target.id}/verify-email`, {
+      method: 'POST', csrf, body: { verified: true }
+    });
+    check('تأیید دستی توسط مدیر', on.status === 200 && on.data.verified === true);
+  }
+
+  const noMail = await req('/api/auth/resend-verification', { method: 'POST', csrf });
+  check('ارسال دوباره برای کاربر تأییدشده رد می‌شود', noMail.status === 400, `status=${noMail.status}`);
+
+  const badToken = await req('/api/auth/verify', { method: 'POST', csrf, body: { token: 'not-a-real-token' } });
+  check('توکن نامعتبر رد می‌شود', badToken.status === 400 && badToken.data.reason === 'invalid');
+
+  const noToken = await req('/api/auth/verify', { method: 'POST', csrf, body: {} });
+  check('توکن خالی رد می‌شود', noToken.status === 400 && noToken.data.reason === 'missing');
+
+  const page = await req('/verify');
+  check('صفحه /verify سرو می‌شود', page.status === 200 && /تأیید/.test(String(page.data)));
+  check('صفحه /verify نباید ایندکس شود', /noindex/.test(String(page.data)));
+}
+
+
 console.log(`\n${'═'.repeat(46)}`);
 console.log(`  موفق: ${pass}   ناموفق: ${fail}`);
 console.log(`${'═'.repeat(46)}\n`);

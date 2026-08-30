@@ -30,9 +30,23 @@ CREATE TABLE IF NOT EXISTS users (
   -- NULL یعنی «از گروه ارث ببر»؛ عدد یعنی این کاربر استثناست
   quota_override INTEGER,
   token_override INTEGER,
+  email_verified INTEGER NOT NULL DEFAULT 0,
+  verified_at   TEXT,
   created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
   last_login_at TEXT
 );
+
+CREATE TABLE IF NOT EXISTS email_tokens (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT    NOT NULL UNIQUE,     -- فقط چکیده ذخیره می‌شود، نه خود توکن
+  purpose    TEXT    NOT NULL DEFAULT 'verify',
+  expires_at TEXT    NOT NULL,
+  used_at    TEXT,
+  ip         TEXT,
+  created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_email_tokens_user ON email_tokens(user_id, purpose);
 
 CREATE TABLE IF NOT EXISTS sessions (
   sid     TEXT PRIMARY KEY,
@@ -215,6 +229,8 @@ function addMissingColumns() {
     },
     users: {
       tier:           "TEXT NOT NULL DEFAULT 'basic'",
+      email_verified: 'INTEGER NOT NULL DEFAULT 0',
+      verified_at:    'TEXT',
       quota_override: 'INTEGER',
       token_override: 'INTEGER'
     },
@@ -263,6 +279,23 @@ function migrateDailyQuota() {
   console.log(`[migrate] سهمیه ${moved} کاربر به استثنای فردی منتقل و ستون قدیمی حذف شد.`);
 }
 migrateDailyQuota();
+
+/**
+ * کاربرانی که پیش از افزودن تأیید ایمیل ثبت‌نام کرده‌اند، تأییدشده حساب
+ * می‌شوند. وگرنه با روشن‌شدن این قابلیت، همه حساب‌های موجود ناگهان
+ * مسدود می‌شدند — که برای کسی که ایمیلش را دیگر ندارد بازگشت‌ناپذیر است.
+ */
+function grandfatherVerifiedUsers() {
+  if (db.prepare("SELECT value FROM settings WHERE key = 'email_verify_migrated'").get()) return;
+
+  const n = db.prepare(
+    "UPDATE users SET email_verified = 1, verified_at = COALESCE(verified_at, created_at) WHERE email_verified = 0"
+  ).run().changes;
+
+  db.prepare("INSERT INTO settings (key, value) VALUES ('email_verify_migrated', '1')").run();
+  if (n) console.log(`[migrate] ${n} کاربر موجود تأییدشده علامت خورد (پیش از فعال‌شدن تأیید ایمیل ساخته شده بودند).`);
+}
+grandfatherVerifiedUsers();
 
 export function audit(userId, action, detail, ip) {
   try {

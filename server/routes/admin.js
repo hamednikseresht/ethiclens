@@ -6,6 +6,7 @@ import { getSettings, setSetting, getSetting } from '../services/settings.js';
 import { listRemoteModels, pingModel } from '../services/llm.js';
 import { PRESETS, listProviders, getProvider, enabledModels, resolveModel, modelRef } from '../services/providers.js';
 import { listTiers, TIER_ORDER, usageByUser, limitsFor, usageFor } from '../services/tiers.js';
+import { mailConfigured, sendMail } from '../services/mail.js';
 import { DEFAULT_PROMPT } from '../services/default-prompt.js';
 
 export const router = express.Router();
@@ -18,7 +19,8 @@ router.get('/overview', (req, res) => {
   const users = db.prepare(`SELECT COUNT(*) total,
       SUM(role = 'admin') admins,
       SUM(status = 'suspended') suspended,
-      SUM(created_at >= datetime('now','-7 days')) newWeek FROM users`).get();
+      SUM(created_at >= datetime('now','-7 days')) newWeek,
+      SUM(email_verified = 0) unverified FROM users`).get();
 
   const analyses = db.prepare(`SELECT COUNT(*) total,
       SUM(status = 'done') done,
@@ -46,7 +48,8 @@ router.get('/overview', (req, res) => {
   const activeModels = enabledModels().length;
   const defaultOk = !!resolveModel(getSetting('default_model'));
 
-  res.json({ users, analyses, daily, byModel, topUsers, providers, activeModels, defaultOk });
+  res.json({ users, analyses, daily, byModel, topUsers, providers, activeModels, defaultOk,
+             mailConfigured: mailConfigured() });
 });
 
 /* ---------------- ارائه‌دهندگان ---------------- */
@@ -198,7 +201,9 @@ router.put('/tiers/:id', (req, res) => {
 const PUBLIC_SETTINGS = [
   'site_title', 'site_tagline', 'site_url', 'default_model',
   'temperature', 'top_p', 'max_tokens', 'active_prompt_key',
-  'allow_registration', 'default_daily_quota'
+  'allow_registration', 'default_daily_quota',
+  'require_verification', 'verification_gate',
+  'mailgun_domain', 'mailgun_base_url', 'mail_from_name', 'mail_from_email'
 ];
 
 router.get('/settings', (req, res) => {
@@ -210,14 +215,18 @@ router.get('/settings', (req, res) => {
   res.json({
     ...out,
     modelOptions: models.map(m => ({ ref: modelRef(m), label: `${m.provider_label} — ${m.label}` })),
-    defaultModelValid: !!resolveModel(s.default_model)
+    defaultModelValid: !!resolveModel(s.default_model),
+    mailConfigured: mailConfigured(),
+    mailKeySet: !!getSetting('mailgun_api_key')
   });
 });
 
 const ALLOWED_SETTINGS = new Set([
   'site_title', 'site_tagline', 'site_url', 'default_model',
   'temperature', 'top_p', 'max_tokens', 'active_prompt_key',
-  'allow_registration', 'default_daily_quota'
+  'allow_registration', 'default_daily_quota',
+  'require_verification', 'verification_gate',
+  'mailgun_api_key', 'mailgun_domain', 'mailgun_base_url', 'mail_from_name', 'mail_from_email'
 ]);
 
 router.post('/settings', (req, res) => {
@@ -230,6 +239,40 @@ router.post('/settings', (req, res) => {
   }
   audit(req.user.id, 'settings_update', { changed }, req.ip);
   res.json({ ok: true, changed });
+});
+
+/** ارسال ایمیل آزمایشی به خود مدیر */
+router.post('/test-mail', async (req, res) => {
+  const to = String(req.body?.to || req.user.email).trim();
+  try {
+    const r = await sendMail({
+      to,
+      subject: 'اتیکا — ایمیل آزمایشی',
+      html: `<div style="font-family:Tahoma,sans-serif;direction:rtl;padding:20px">
+               <h2 style="color:#2563eb">اتصال ایمیل سالم است ✅</h2>
+               <p>این پیام آزمایشی از پنل مدیریت اتیکا فرستاده شده است.
+                  اگر آن را می‌بینید، تنظیمات میل‌گان درست است و ایمیل‌های تأیید حساب ارسال می‌شوند.</p>
+             </div>`,
+      tag: 'test'
+    });
+    audit(req.user.id, 'mail_test', { to, id: r.id }, req.ip);
+    res.json({ ok: true, to, id: r.id });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: e.message, detail: e.detail });
+  }
+});
+
+/** تأیید دستی ایمیل یک کاربر */
+router.post('/users/:id/verify-email', (req, res) => {
+  const u = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
+  if (!u) return res.status(404).json({ error: 'کاربر یافت نشد.' });
+
+  const verify = req.body?.verified !== false;
+  db.prepare(`UPDATE users SET email_verified = ?, verified_at = ? WHERE id = ?`)
+    .run(verify ? 1 : 0, verify ? new Date().toISOString().slice(0, 19).replace('T', ' ') : null, u.id);
+
+  audit(req.user.id, 'user_verify_email', { targetId: u.id, verified: verify }, req.ip);
+  res.json({ ok: true, verified: verify });
 });
 
 /* ---------------- مدل‌ها ---------------- */
@@ -392,6 +435,7 @@ router.get('/users', (req, res) => {
   const total = db.prepare(`SELECT COUNT(*) c FROM users u ${where}`).get(...params).c;
   const rows = db.prepare(
     `SELECT u.id, u.email, u.name, u.role, u.tier, u.status,
+            u.email_verified, u.verified_at,
             u.quota_override, u.token_override, u.created_at, u.last_login_at
      FROM users u ${where} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`
   ).all(...params, perPage, (page - 1) * perPage);

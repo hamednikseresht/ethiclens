@@ -88,7 +88,8 @@ const PAGES = {
   '/settings': 'pages/settings.html',
   '/admin': 'pages/admin.html',
   '/guide': 'pages/guide.html',
-  '/about': 'pages/about.html'
+  '/about': 'pages/about.html',
+  '/verify': 'pages/verify.html'
 };
 for (const [route, file] of Object.entries(PAGES)) {
   app.get(route, (_req, res) => res.sendFile(path.join(PUBLIC, file)));

@@ -327,6 +327,63 @@ export function renderTopbar(activePath) {
   }
 }
 
+/* ---------------- نوار «ایمیلت را تأیید کن» ---------------- */
+/**
+ * اگر کاربر تأییدنشده است، بالای صفحه نواری با دکمه ارسال دوباره نشان می‌دهد.
+ * روی هر صفحه‌ای که boot() صدا زده شود خودکار ظاهر می‌شود.
+ */
+export async function mountVerifyBanner() {
+  if (!state.user || state.user.emailVerified) return;
+
+  let info;
+  try { info = await api.get('/api/auth/verification'); } catch { return; }
+  if (info.verified || !info.required) return;
+
+  const bar = document.createElement('div');
+  bar.className = 'verify-bar';
+  bar.innerHTML = `
+    <span class="verify-ic">✉️</span>
+    <span class="grow">
+      <strong>ایمیلتان هنوز تأیید نشده است.</strong>
+      پیوند تأیید به <span class="mono">${esc(info.email)}</span> فرستاده شده —
+      پوشه هرزنامه را هم نگاه کنید.
+      ${info.gate === 'analysis' ? 'تا تأیید نکنید، تحلیل تازه اجرا نمی‌شود.' : ''}
+    </span>
+    <button class="btn btn-sm" id="resendVerify">ارسال دوباره</button>`;
+
+  document.body.insertBefore(bar, document.body.firstChild);
+
+  const btn = bar.querySelector('#resendVerify');
+  let cooldown = info.resendInSeconds || 0;
+
+  const tick = () => {
+    if (cooldown > 0) {
+      btn.disabled = true;
+      btn.textContent = `ارسال دوباره (${faNum(cooldown)})`;
+      cooldown--;
+      setTimeout(tick, 1000);
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'ارسال دوباره';
+    }
+  };
+  tick();
+
+  btn.onclick = async () => {
+    btn.disabled = true;
+    try {
+      const r = await api.post('/api/auth/resend-verification');
+      toast('ایمیل تأیید دوباره فرستاده شد.', 'ok');
+      cooldown = r.resendInSeconds || 60;
+      tick();
+    } catch (e) {
+      toast(e.message, 'err');
+      cooldown = e.data?.resendInSeconds || 0;
+      tick();
+    }
+  };
+}
+
 /* ---------------- دکمه بازگشت به بالا ---------------- */
 export function mountBackToTop() {
   const b = document.createElement('button');
@@ -349,5 +406,6 @@ export async function boot({ auth = true, admin = false } = {}) {
   if (auth && !requireUser(admin)) return false;
   renderTopbar();
   mountBackToTop();
+  mountVerifyBanner();
   return true;
 }
