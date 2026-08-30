@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/motion.css">
 <style>
   .toolbar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1.1rem}
   .toolbar .input{max-width:340px}
@@ -42,6 +43,7 @@
   <div class="toolbar">
     <input class="input" id="q" type="search" placeholder="جست‌وجو در عنوان و متن دوراهی…">
     <label class="switch"><input type="checkbox" id="favOnly"> فقط نشان‌شده‌ها</label>
+    <label class="switch"><input type="checkbox" id="needsReflect"> منتظر بازنگری</label>
     <span class="grow"></span>
   </div>
 
@@ -51,10 +53,11 @@
 
 <script type="module">
 import { $, api, boot, esc, faNum, relTime, duration, toast, confirmDialog, modal } from '/js/core.js';
+import { initMotion, revealOnScroll } from '/js/motion.js';
 
 if (!await boot()) throw new Error('unauthenticated');
 
-let page = 1, q = '', fav = false;
+let page = 1, q = '', fav = false, needsReflect = false;
 
 async function load() {
   const host = $('#listHost');
@@ -64,6 +67,7 @@ async function load() {
   const params = new URLSearchParams({ page, perPage: 12 });
   if (q) params.set('q', q);
   if (fav) params.set('favorite', '1');
+  if (needsReflect) params.set('reflected', '0');
 
   const data = await api.get('/api/history?' + params);
   $('#countLine').textContent = data.total
@@ -74,8 +78,8 @@ async function load() {
     host.innerHTML = `
       <div class="card"><div class="empty">
         <div class="empty-icon">🔍</div>
-        <h3>${q || fav ? 'چیزی پیدا نشد' : 'تاریخچه خالی است'}</h3>
-        <p>${q || fav ? 'فیلترها را تغییر دهید یا جست‌وجو را پاک کنید.' : 'اولین دوراهی اخلاقی‌تان را تحلیل کنید تا اینجا ذخیره شود.'}</p>
+        <h3>${q || fav || needsReflect ? 'چیزی پیدا نشد' : 'تاریخچه خالی است'}</h3>
+        <p>${q || fav || needsReflect ? 'فیلترها را تغییر دهید یا جست‌وجو را پاک کنید.' : 'اولین دوراهی اخلاقی‌تان را تحلیل کنید تا اینجا ذخیره شود.'}</p>
         <a class="btn btn-primary" href="/app">شروع تحلیل</a>
       </div></div>`;
     $('#pager').innerHTML = '';
@@ -94,6 +98,9 @@ async function load() {
         <span>${duration(it.duration_ms)}</span>
         ${it.status === 'error' ? '<span class="badge badge-danger">ناموفق</span>' : ''}
         ${it.status === 'pending' ? '<span class="badge badge-warn">ناتمام</span>' : ''}
+        ${it.reflected_at
+          ? `<span class="badge badge-reflect" title="${esc(it.decision || '')}">📔 بازنگری شد</span>`
+          : it.status === 'done' ? '<span class="badge">منتظر بازنگری</span>' : ''}
         <span class="grow"></span>
         <button class="btn btn-sm btn-ghost" data-act="rename">تغییر نام</button>
         <a class="btn btn-sm btn-ghost" href="/api/history/${it.id}/export">دانلود</a>
@@ -101,6 +108,8 @@ async function load() {
       </div>
     </article>`).join('');
 
+  host.classList.add('stagger');
+  revealOnScroll('.item', host);
   $('#pager').innerHTML = data.pages > 1 ? renderPager(data.page, data.pages) : '';
 }
 
@@ -131,6 +140,7 @@ $('#q').oninput = e => {
   searchTimer = setTimeout(() => { q = e.target.value.trim(); page = 1; load(); }, 320);
 };
 $('#favOnly').onchange = e => { fav = e.target.checked; page = 1; load(); };
+$('#needsReflect').onchange = e => { needsReflect = e.target.checked; page = 1; load(); };
 
 $('#listHost').onclick = async e => {
   const btn = e.target.closest('[data-act]');
@@ -176,6 +186,7 @@ $('#listHost').onclick = async e => {
 };
 
 load();
+initMotion({ reveal: null });
 </script>
 </body>
 </html>

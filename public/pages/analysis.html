@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/result.css">
+<link rel="stylesheet" href="/css/motion.css">
 </head>
 <body>
 <header class="topbar" id="topbar"></header>
@@ -22,6 +23,7 @@
 import { $, api, boot, esc, faNum, faDate, duration, toast, confirmDialog } from '/js/core.js';
 import { buildSkeleton, applySections, verdictChips, gateSummary } from '/js/result.js';
 import { exportBar, wireExport } from '/js/export.js';
+import { initMotion, revealOnScroll } from '/js/motion.js';
 
 if (!await boot()) throw new Error('unauthenticated');
 
@@ -83,8 +85,22 @@ if (a.status === 'error') {
 } else {
   buildSkeleton($('#resultHost'));
   applySections(sections, { streaming: false });
+
+  // فاز پنجم: ثبت تصمیم واقعی و بازنگری بعدی
+  $('#resultHost').insertAdjacentHTML('beforeend', `
+    <section class="res-block reflect" id="reflectBlock">
+      <h3 class="res-h"><span class="res-ic">📔</span> دفترچه بازنگری</h3>
+      <p class="res-sub">
+        تحلیل، نیمه اول کار است. اینجا ثبت کنید واقعاً چه تصمیمی گرفتید و بعداً چه شد —
+        این تنها بخشی از فرایند است که هیچ مدلی نمی‌تواند جایتان انجام دهد.
+      </p>
+      <div id="reflectBody"></div>
+    </section>`);
+
   $('#resultHost').insertAdjacentHTML('beforeend',
     '<div class="disclaimer">این تحلیل توسط یک مدل زبانی تولید شده و می‌تواند خطا داشته باشد. تصمیم نهایی و مسئولیت آن با شماست. اتیکا جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</div>');
+
+  renderReflection(a);
 
   wireExport($('#actionBar'), {
     analysisId: a.id,
@@ -93,12 +109,75 @@ if (a.status === 'error') {
   });
 }
 
+revealOnScroll('.res-block, .stage');
+initMotion({ reveal: null });
+
 $('#favBtn')?.addEventListener('click', async e => {
   try {
     const r = await api.post(`/api/history/${a.id}/favorite`);
     e.currentTarget.textContent = r.isFavorite ? '⭐ نشان‌شده' : '☆ نشان کردن';
   } catch (err) { toast(err.message, 'err'); }
 });
+
+/* ---------------- دفترچه بازنگری ---------------- */
+function renderReflection(rec) {
+  const host = $('#reflectBody');
+  if (!host) return;
+
+  if (rec.reflected_at && !host.dataset.editing) {
+    host.innerHTML = `
+      <div class="reflect-saved">
+        <div class="reflect-meta">ثبت‌شده در ${faDate(rec.reflected_at)}</div>
+        ${rec.decision ? `<div class="reflect-decision"><span>تصمیمی که گرفتم</span><strong>${esc(rec.decision)}</strong></div>` : ''}
+        ${rec.reflection ? `<div class="prose reflect-text">${esc(rec.reflection).replace(/\n/g, '<br>')}</div>` : ''}
+        <button class="btn btn-sm no-print" id="editReflect">ویرایش</button>
+      </div>`;
+    $('#editReflect').onclick = () => { host.dataset.editing = '1'; renderReflection(rec); };
+    return;
+  }
+
+  host.innerHTML = `
+    <div class="no-print">
+      <div class="field">
+        <label for="rf-decision">در نهایت چه تصمیمی گرفتید؟</label>
+        <input class="input" id="rf-decision" maxlength="300"
+               value="${esc(rec.decision || '')}" placeholder="مثلاً: گزینه د — توقف فروش تا اصلاح الگوریتم">
+      </div>
+      <div class="field">
+        <label for="rf-text">چه شد و چه آموختید؟</label>
+        <textarea class="textarea" id="rf-text" rows="4" maxlength="4000"
+          placeholder="نتیجه واقعی چه بود؟ چه چیزی را درست پیش‌بینی کرده بودید و چه چیزی غافلگیرتان کرد؟ اگر دوباره در همین موقعیت بودید چه می‌کردید؟">${esc(rec.reflection || '')}</textarea>
+        <span class="hint">هر وقت خواستید برگردید و کامل‌ترش کنید.</span>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary btn-sm" id="saveReflect">ذخیره بازنگری</button>
+        ${rec.reflected_at ? '<button class="btn btn-sm btn-ghost" id="cancelReflect">انصراف</button>' : ''}
+      </div>
+    </div>`;
+
+  $('#saveReflect').onclick = async e => {
+    e.target.disabled = true;
+    try {
+      const r = await api.post(`/api/history/${rec.id}/reflection`, {
+        decision: $('#rf-decision').value,
+        reflection: $('#rf-text').value
+      });
+      Object.assign(rec, {
+        decision: r.decision ?? null,
+        reflection: r.reflection ?? null,
+        reflected_at: r.reflected_at ?? null
+      });
+      delete host.dataset.editing;
+      renderReflection(rec);
+      toast(r.cleared ? 'بازنگری پاک شد.' : 'بازنگری ذخیره شد.', 'ok');
+    } catch (err) { toast(err.message, 'err'); e.target.disabled = false; }
+  };
+
+  $('#cancelReflect')?.addEventListener('click', () => {
+    delete host.dataset.editing;
+    renderReflection(rec);
+  });
+}
 
 $('#delBtn')?.addEventListener('click', async () => {
   if (!await confirmDialog('حذف تحلیل', 'این تحلیل برای همیشه حذف می‌شود. مطمئنید؟', 'حذف کن')) return;

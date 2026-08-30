@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/result.css">
+<link rel="stylesheet" href="/css/motion.css">
 <style>
   .layout{display:grid;grid-template-columns:1fr;gap:1.25rem;align-items:start}
   @media (min-width:1080px){
@@ -142,6 +143,7 @@
 import { $, api, boot, toast, esc, faNum, state } from '/js/core.js';
 import { buildSkeleton, parseSections, applySections, progressOf, gateSummary } from '/js/result.js';
 import { exportBar, wireExport } from '/js/export.js';
+import { initMotion, revealOnScroll, scrollToEl, reduced } from '/js/motion.js';
 
 if (!await boot()) throw new Error('unauthenticated');
 
@@ -235,14 +237,20 @@ $('#analyzeForm').onsubmit = async e => {
   col.innerHTML = `
     <div class="streambar" id="streambar">
       <div class="row-between">
-        <span class="streambar-label"><span class="spinner"></span> <span id="stStatus">در حال اتصال به مدل…</span></span>
+        <span class="streambar-label">
+          <span class="spinner"></span>
+          <span id="stStatus">در حال اتصال به مدل…</span>
+          <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        </span>
         <button class="btn btn-sm btn-ghost" id="cancelBtn">لغو</button>
       </div>
       <div class="progress"><div class="progress-fill" id="stFill"></div></div>
+      <div class="stream-steps" id="streamSteps" aria-hidden="true"></div>
       <div class="raw-peek" id="rawPeek"></div>
     </div>
     <div id="resultHost"></div>`;
   buildSkeleton($('#resultHost'));
+  revealOnScroll('.res-block');
 
   $('#cancelBtn').onclick = () => { controller?.abort(); };
 
@@ -253,6 +261,11 @@ $('#analyzeForm').onsubmit = async e => {
   const fill = $('#stFill');
   const status = $('#stStatus');
   let rafPending = false;
+  let lastDone = 0;
+
+  const stepsHost = $('#streamSteps');
+  stepsHost.innerHTML = gateSummary({}).map(g =>
+    `<span class="stream-step" data-key="${g.key}"><b>${g.n}</b></span>`).join('');
 
   const rerender = () => {
     if (rafPending) return;
@@ -264,6 +277,20 @@ $('#analyzeForm').onsubmit = async e => {
       const p = progressOf(sections);
       fill.style.width = p + '%';
       status.textContent = p > 0 ? `در حال نوشتن تحلیل… ${faNum(p)}٪` : 'مدل در حال فکر کردن است…';
+
+      // نشانگر مراحل و اسکرول ملایم به تازه‌ترین مرحله‌ای که نتیجه گرفت
+      const gs = gateSummary(sections);
+      let decided = 0;
+      for (const g of gs) {
+        const chip = stepsHost.querySelector(`[data-key="${g.key}"]`);
+        if (chip) chip.dataset.state = g.state || '';
+        if (g.state) decided++;
+      }
+      if (decided > lastDone) {
+        lastDone = decided;
+        const el = document.getElementById(`stage-${gs[decided - 1].key}`);
+        if (el && !reduced) scrollToEl(el, 130);
+      }
       peek.textContent = acc.slice(-600);
       peek.scrollTop = peek.scrollHeight;
     });

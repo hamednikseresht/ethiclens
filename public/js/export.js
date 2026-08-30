@@ -161,11 +161,16 @@ function plainText(meta, sections = {}) {
   for (const g of gateSummary(sections)) L.push(`${g.n}. ${g.title}: ${g.label}`);
   L.push('', '— متن تحلیل —', '');
 
-  const order = ['reframe', 'stakeholders', 'options',
-    'gate:dignity', 'school:deontology', 'gate:justice', 'school:contractualism',
-    'gate:utility', 'school:utilitarianism', 'gate:carevirtue', 'school:care', 'school:virtue',
+  const order = [
+    'issue', 'reframe', 'facts', 'stakeholders', 'options', 'matrix',
+    'gate:dignity', 'school:deontology',
+    'gate:justice', 'school:contractualism',
+    'gate:utility', 'school:utilitarianism', 'school:commongood',
+    'gate:carevirtue', 'school:care', 'school:virtue',
     'gate:authenticity', 'school:existentialism', 'school:nietzsche',
-    'tensions', 'recommendation', 'questions', 'blindspots'];
+    'tensions', 'recommendation', 'test',
+    'implementation', 'questions', 'blindspots', 'revisit'
+  ];
 
   for (const k of order) {
     if (sections[k]) L.push(`### ${k}`, sections[k], '');

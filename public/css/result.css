@@ -5,6 +5,7 @@
 
 /* ---------- فاز ---------- */
 .phase{display:flex;flex-direction:column;gap:.9rem}
+.phase-n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:.7rem;font-weight:900}
 .phase-label{
   display:inline-flex;align-items:center;gap:.5rem;align-self:flex-start;
   font-size:.78rem;font-weight:800;color:var(--primary);
@@ -154,6 +155,59 @@
 .school-verdict.v-neutral{background:var(--primary-soft);color:var(--primary);border-color:transparent}
 .school-body{font-size:.86rem;line-height:1.85}
 
+
+/* ==========================================================================
+   ماتریس مقایسه گزینه‌ها
+   ========================================================================== */
+.mx-wrap{margin-top:.4rem}
+.mx{width:100%;border-collapse:separate;border-spacing:3px;font-size:.82rem}
+.mx th{
+  background:transparent;border:none;padding:.3rem .35rem;font-size:.73rem;
+  color:var(--text-muted);font-weight:700;text-align:center;white-space:nowrap;
+}
+.mx th.mx-opt{text-align:right}
+.mx td{border:none;padding:0}
+.mx .mx-opt{
+  text-align:right;font-size:.84rem;font-weight:700;padding:.5rem .7rem;
+  background:var(--bg-subtle);border-radius:8px;min-width:9rem;line-height:1.5;
+}
+.mx-cell{
+  text-align:center;font-weight:800;font-variant-numeric:tabular-nums;
+  padding:.5rem .3rem;border-radius:8px;min-width:2.6rem;
+  background:var(--bg-subtle);color:var(--text-faint);
+}
+.mx-cell[data-v='2']{background:#16a34a;color:#fff}
+.mx-cell[data-v='1']{background:#86efac;color:#14532d}
+.mx-cell[data-v='0']{background:var(--bg-inset);color:var(--text-faint)}
+.mx-cell[data-v='-1']{background:#fca5a5;color:#7f1d1d}
+.mx-cell[data-v='-2']{background:#dc2626;color:#fff}
+[data-theme='dark'] .mx-cell[data-v='1']{background:#166534;color:#dcfce7}
+[data-theme='dark'] .mx-cell[data-v='-1']{background:#7f1d1d;color:#fee2e2}
+.mx-total{
+  text-align:center;font-weight:900;font-variant-numeric:tabular-nums;
+  padding:.5rem .4rem;border-radius:8px;background:var(--bg-inset);min-width:3rem;
+}
+.mx-total[data-t='pos']{color:var(--success)}
+.mx-total[data-t='neg']{color:var(--danger)}
+.mx-best .mx-opt{background:var(--primary-soft);color:var(--primary);box-shadow:inset 0 0 0 1.5px var(--primary)}
+.mx-badge{font-size:.65rem;font-weight:800;background:var(--primary);color:#fff;border-radius:999px;padding:.05rem .4rem;vertical-align:middle}
+.mx-legend{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .5rem;margin-top:.7rem;font-size:.72rem;color:var(--text-muted)}
+.mx-key{display:inline-grid;place-items:center;min-width:1.8rem;padding:.1rem .3rem;border-radius:5px;font-weight:800}
+.mx-key[data-v='2']{background:#16a34a;color:#fff}
+.mx-key[data-v='1']{background:#86efac;color:#14532d}
+.mx-key[data-v='0']{background:var(--bg-inset);color:var(--text-faint)}
+.mx-key[data-v='-1']{background:#fca5a5;color:#7f1d1d}
+.mx-key[data-v='-2']{background:#dc2626;color:#fff}
+.mx-note{font-size:.75rem;color:var(--text-muted);line-height:1.8;margin-top:.6rem;
+         padding-top:.6rem;border-top:1px solid var(--border)}
+.mx-note strong{color:var(--text)}
+#rs-matrix .res-body{overflow-x:auto}
+@media (max-width:720px){
+  .mx{font-size:.75rem;border-spacing:2px}
+  .mx .mx-opt{min-width:7rem;font-size:.78rem;padding:.4rem .5rem}
+  .mx-cell{min-width:2.1rem;padding:.4rem .2rem}
+}
+
 /* ==========================================================================
    نوار پیشرفت استریم
    ========================================================================== */
@@ -234,7 +288,8 @@
   .card,.res-block,.stage-main,.result-head{box-shadow:none !important}
 
   /* هر مرحله یکپارچه بماند و وسط صفحه نشکند */
-  .stage,.res-block,.school,.result-head{break-inside:avoid;page-break-inside:avoid}
+  .stage,.res-block,.school,.result-head,.mx-wrap{break-inside:avoid;page-break-inside:avoid}
+  .mx-cell,.mx-key,.mx-total{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .phase{break-inside:auto}
   .phase-label{break-after:avoid;page-break-after:avoid}
   .res-h,.stage-head{break-after:avoid;page-break-after:avoid}
@@ -261,3 +316,24 @@
 .print-head{display:none;margin-bottom:6mm;padding-bottom:3mm;border-bottom:1.5pt solid var(--border-strong)}
 .print-head .ph-brand{font-size:12pt;font-weight:900}
 .print-head .ph-sub{font-size:8.5pt;color:var(--text-muted);margin-top:1mm}
+
+/* ==========================================================================
+   دفترچه بازنگری (فاز پنجم)
+   ========================================================================== */
+.res-block.reflect{
+  border-style:dashed;border-color:var(--accent);
+  background:linear-gradient(180deg,var(--accent-soft) 0%,var(--bg-surface) 120px);
+}
+.reflect-saved{display:flex;flex-direction:column;gap:.7rem}
+.reflect-meta{font-size:.74rem;color:var(--text-muted);font-weight:700}
+.reflect-decision{
+  background:var(--bg-subtle);border-inline-start:3px solid var(--accent);
+  border-radius:0 var(--r-xs) var(--r-xs) 0;padding:.6rem .85rem;
+}
+.reflect-decision span{display:block;font-size:.72rem;color:var(--text-muted);font-weight:700;margin-bottom:.15rem}
+.reflect-decision strong{font-size:.92rem;font-weight:800;line-height:1.6}
+.reflect-text{font-size:.88rem;line-height:1.9;white-space:normal}
+.reflect-saved .btn{align-self:flex-start}
+
+/* نشان «منتظر بازنگری» در فهرست تاریخچه */
+.badge-reflect{background:var(--accent-soft);color:var(--accent);border-color:transparent}

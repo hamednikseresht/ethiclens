@@ -13,11 +13,11 @@ const SHOW = process.argv.includes('--show');
 const MODEL = process.argv.slice(2).find(a => !a.startsWith('--')) || null;
 
 const REQUIRED = [
-  'reframe', 'stakeholders', 'options',
-  'school:virtue', 'school:deontology', 'school:utilitarianism', 'school:contractualism',
-  'school:care', 'school:existentialism', 'school:nietzsche',
+  'issue', 'reframe', 'facts', 'stakeholders', 'options', 'matrix',
+  'school:virtue', 'school:deontology', 'school:utilitarianism', 'school:commongood',
+  'school:contractualism', 'school:care', 'school:existentialism', 'school:nietzsche',
   'gate:dignity', 'gate:justice', 'gate:utility', 'gate:carevirtue', 'gate:authenticity',
-  'tensions', 'recommendation', 'questions', 'blindspots'
+  'tensions', 'recommendation', 'test', 'implementation', 'questions', 'blindspots', 'revisit'
 ];
 
 const jar = new Map();
@@ -140,6 +140,27 @@ const fa = (acc.match(/[؀-ۿ]/g) || []).length;
 const la = (acc.match(/[A-Za-z]/g) || []).length;
 console.log(`  نسبت فارسی    : ${((fa / (fa + la || 1)) * 100).toFixed(1)}٪`);
 
+/* ---- بررسی ماتریس مقایسه ---- */
+const FA_D = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
+const mLines = String(sections.matrix || '').split('\n').map(l => l.trim()).filter(l => l.startsWith('|'));
+const mRows = [];
+for (const line of mLines) {
+  const cells = line.split('|').slice(1, -1).map(c => c.trim());
+  if (cells.length < 2) continue;
+  if (/^[-:\s]+$/.test(cells.join(''))) continue;
+  const scores = cells.slice(1).map(c => {
+    const n = c.replace(/[۰-۹]/g, d => FA_D[d]).replace(/[−–—]/g, '-').match(/-?\d+/);
+    return n ? parseInt(n[0], 10) : null;
+  });
+  if (scores.every(s => s === null)) continue;
+  mRows.push({ option: cells[0], scores });
+}
+const okScores = mRows.every(r => r.scores.length === 7 && r.scores.every(s => s !== null && s >= -2 && s <= 2));
+console.log(`  ماتریس        : ${mRows.length} گزینه × ${mRows[0]?.scores.length ?? 0} معیار${okScores ? ' ✓' : ' ⚠ ناقص'}`);
+for (const r of mRows) {
+  console.log(`      ${r.option.padEnd(28)} ${r.scores.map(s => String(s ?? '?').padStart(3)).join('')}  = ${r.scores.reduce((a, b) => a + (b ?? 0), 0)}`);
+}
+
 /* ---- نمونه خروجی ---- */
 console.log('\n── نمونه: بازخوانی مسئله ──');
 console.log((sections.reframe || '(خالی)').slice(0, 500));
@@ -153,6 +174,11 @@ if (SHOW) {
   console.log(acc);
 }
 
-const ok = missing.length === 0 && sv === schools.length && gv === gates.length;
+console.log('\n── نمونه: آزمون تصمیم ──');
+console.log((sections.test || '(خالی)').slice(0, 600));
+console.log('\n── نمونه: بازنگری ──');
+console.log((sections.revisit || '(خالی)').slice(0, 400));
+
+const ok = missing.length === 0 && sv === schools.length && gv === gates.length && mRows.length >= 2 && okScores;
 console.log(`\n${ok ? '✓ مدل قالب را کامل رعایت کرد.' : '⚠ قالب ناقص رعایت شد — دستور تحلیل نیاز به تنظیم دارد.'}\n`);
 process.exit(ok ? 0 : 2);

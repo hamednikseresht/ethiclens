@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/motion.css">
 <style>
   .hero-card{
     background:linear-gradient(135deg,var(--primary) 0%,#0d9488 100%);
@@ -60,6 +61,7 @@
 
 <script type="module">
 import { $, api, boot, state, esc, faNum, relTime, duration } from '/js/core.js';
+import { initMotion, countUpAll, animateBars, revealOnScroll } from '/js/motion.js';
 
 if (!await boot()) throw new Error('unauthenticated');
 
@@ -75,22 +77,24 @@ const avgSec = stats.avgMs ? (stats.avgMs / 1000).toFixed(1) : 0;
 $('#stats').innerHTML = `
   <div class="stat">
     <div class="stat-label">🗂️ کل تحلیل‌ها</div>
-    <div class="stat-value">${faNum(stats.total || 0)}</div>
+    <div class="stat-value" data-count="${stats.total || 0}">${faNum(stats.total || 0)}</div>
     <div class="stat-sub">${faNum(stats.done || 0)} مورد کامل</div>
   </div>
   <div class="stat">
     <div class="stat-label">📅 امروز</div>
-    <div class="stat-value">${faNum(stats.today || 0)}</div>
+    <div class="stat-value" data-count="${stats.today || 0}">${faNum(stats.today || 0)}</div>
     <div class="stat-sub">از سهمیه ${faNum(stats.quota)} تایی</div>
   </div>
   <div class="stat">
-    <div class="stat-label">⭐ نشان‌شده</div>
-    <div class="stat-value">${faNum(stats.favorites || 0)}</div>
-    <div class="stat-sub">تحلیل‌های مهم شما</div>
+    <div class="stat-label">📔 بازنگری‌شده</div>
+    <div class="stat-value" data-count="${stats.reflected || 0}">${faNum(stats.reflected || 0)}</div>
+    <div class="stat-sub">${stats.awaiting
+      ? `<a href="/history" style="color:var(--accent);font-weight:700">${faNum(stats.awaiting)} مورد منتظر بازنگری</a>`
+      : 'همه بازنگری شده‌اند'}</div>
   </div>
   <div class="stat">
     <div class="stat-label">⏱️ میانگین زمان</div>
-    <div class="stat-value">${faNum(avgSec)}<span style="font-size:.9rem;font-weight:700"> ث</span></div>
+    <div class="stat-value"><span data-count="${avgSec}" data-decimals="1">${faNum(avgSec)}</span><span style="font-size:.9rem;font-weight:700"> ث</span></div>
     <div class="stat-sub">برای هر تحلیل</div>
   </div>`;
 
@@ -136,6 +140,14 @@ if (!recent.items.length) {
       </div>
     </a>`).join('');
 }
+
+/* ---------- حرکت ---------- */
+$('#stats').classList.add('stagger');
+$('#recentHost').classList.add('stagger');
+countUpAll();
+animateBars($('#activityBars'));
+revealOnScroll('.stat, .rec');
+initMotion({ reveal: null });
 </script>
 </body>
 </html>

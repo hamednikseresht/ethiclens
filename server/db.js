@@ -42,6 +42,9 @@ CREATE TABLE IF NOT EXISTS analyses (
   status       TEXT    NOT NULL DEFAULT 'pending',     -- pending | done | error
   error        TEXT,
   is_favorite  INTEGER NOT NULL DEFAULT 0,
+  decision     TEXT,                                   -- گزینه‌ای که کاربر واقعاً انتخاب کرد
+  reflection   TEXT,                                   -- بعداً چه شد و چه آموخت
+  reflected_at TEXT,
   tokens_in    INTEGER DEFAULT 0,
   tokens_out   INTEGER DEFAULT 0,
   duration_ms  INTEGER DEFAULT 0,
@@ -169,6 +172,31 @@ function purgeLegacySettings() {
   console.log(`[migrate] ${found.length} تنظیم منسوخ حذف شد: ${found.map(f => f.key).join('، ')}`);
 }
 purgeLegacySettings();
+
+/**
+ * ستون‌هایی که بعد از انتشار اولیه اضافه شده‌اند.
+ * CREATE TABLE فقط پایگاه داده تازه را می‌سازد، پس ستون‌های جدید باید
+ * روی پایگاه‌های موجود با ALTER اضافه شوند.
+ */
+function addMissingColumns() {
+  const WANTED = {
+    analyses: {
+      decision:     'TEXT',   // گزینه‌ای که کاربر واقعاً انتخاب کرد
+      reflection:   'TEXT',   // بعداً چه شد و چه آموخت
+      reflected_at: 'TEXT'
+    }
+  };
+
+  for (const [table, cols] of Object.entries(WANTED)) {
+    const have = new Set(db.prepare(`PRAGMA table_info(${table})`).all().map(c => c.name));
+    for (const [col, type] of Object.entries(cols)) {
+      if (have.has(col)) continue;
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
+      console.log(`[migrate] ستون ${table}.${col} اضافه شد.`);
+    }
+  }
+}
+addMissingColumns();
 
 export function audit(userId, action, detail, ip) {
   try {

@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/motion.css">
 <style>
   .hero{
     padding:3.5rem 1rem 3rem;text-align:center;
@@ -67,7 +68,7 @@
 </section>
 
 <main class="wrap">
-  <div class="lens-strip">
+  <div class="lens-strip stagger">
     <div class="lens" style="--lc:#7c3aed"><span class="ic">🏛️</span><div class="nm">فضیلت‌گرایی</div><div class="th">ارسطو</div></div>
     <div class="lens" style="--lc:#2563eb"><span class="ic">⚖️</span><div class="nm">وظیفه‌گرایی</div><div class="th">کانت</div></div>
     <div class="lens" style="--lc:#0d9488"><span class="ic">📊</span><div class="nm">فایده‌گرایی</div><div class="th">میل و بنتام</div></div>
@@ -117,6 +118,7 @@
 
 <script type="module">
 import { $, boot, state } from '/js/core.js';
+import { initMotion, revealOnScroll } from '/js/motion.js';
 
 await boot({ auth: false });
 
@@ -125,6 +127,9 @@ $('#heroCta').innerHTML = state.user
      <a class="btn btn-lg" href="/dashboard">داشبورد من</a>`
   : `<a class="btn btn-primary btn-lg" href="/login?mode=register">شروع رایگان</a>
      <a class="btn btn-lg" href="/guide">📚 دانشنامه اخلاق</a>`;
+
+revealOnScroll('.lens, .step, .cta-band, .sec-title, .sec-lead');
+initMotion({ reveal: null });
 
 if (state.user) $('#ctaBtn').outerHTML = '<a class="btn btn-lg" href="/app">شروع تحلیل</a>';
 </script>

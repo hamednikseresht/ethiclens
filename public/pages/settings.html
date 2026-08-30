@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/motion.css">
 </head>
 <body>
 <header class="topbar" id="topbar"></header>
@@ -80,6 +81,7 @@
 
 <script type="module">
 import { $, api, boot, state, toast, faDate, faNum, toggleTheme } from '/js/core.js';
+import { initMotion, countUpAll, animateBars } from '/js/motion.js';
 
 if (!await boot()) throw new Error('unauthenticated');
 
@@ -118,6 +120,8 @@ $('#passForm').onsubmit = async e => {
     e.target.reset();
   } catch (err) { toast(err.message, 'err'); }
 };
+
+initMotion();
 </script>
 </body>
 </html>

@@ -15,11 +15,14 @@ router.get('/', (req, res) => {
   const params = [req.user.id];
   if (q) { where.push('(title LIKE ? OR dilemma LIKE ?)'); params.push(`%${q}%`, `%${q}%`); }
   if (fav) where.push('is_favorite = 1');
+  if (req.query.reflected === '1') where.push('reflected_at IS NOT NULL');
+  if (req.query.reflected === '0') where.push("reflected_at IS NULL AND status = 'done'");
   const clause = where.join(' AND ');
 
   const total = db.prepare(`SELECT COUNT(*) c FROM analyses WHERE ${clause}`).get(...params).c;
   const items = db.prepare(
     `SELECT id, title, model, status, is_favorite, duration_ms, created_at,
+            decision, reflected_at,
             substr(dilemma, 1, 220) AS excerpt
      FROM analyses WHERE ${clause}
      ORDER BY created_at DESC LIMIT ? OFFSET ?`
@@ -34,6 +37,8 @@ router.get('/stats', (req, res) => {
     `SELECT COUNT(*) total,
             SUM(status = 'done') done,
             SUM(is_favorite = 1) favorites,
+            SUM(reflected_at IS NOT NULL) reflected,
+            SUM(reflected_at IS NULL AND status = 'done') awaiting,
             COALESCE(AVG(NULLIF(duration_ms,0)), 0) avgMs
      FROM analyses WHERE user_id = ?`).get(uid);
 
@@ -69,6 +74,32 @@ router.post('/:id/favorite', (req, res) => {
   res.json({ ok: true, isFavorite: !!next });
 });
 
+/**
+ * فاز پنجم چارچوب: «اجرا و بازنگری».
+ * کاربر ثبت می‌کند چه تصمیمی گرفت و بعداً چه شد — چیزی که هیچ مدلی
+ * نمی‌تواند جایش را پر کند و تنها بخشِ واقعاً یادگیرنده فرایند است.
+ */
+router.post('/:id/reflection', (req, res) => {
+  const own = db.prepare('SELECT id FROM analyses WHERE id = ? AND user_id = ?')
+                .get(req.params.id, req.user.id);
+  if (!own) return res.status(404).json({ error: 'تحلیل یافت نشد.' });
+
+  const decision = String(req.body?.decision || '').trim().slice(0, 300);
+  const reflection = String(req.body?.reflection || '').trim().slice(0, 4000);
+
+  if (!decision && !reflection) {
+    db.prepare('UPDATE analyses SET decision = NULL, reflection = NULL, reflected_at = NULL WHERE id = ?')
+      .run(own.id);
+    return res.json({ ok: true, cleared: true });
+  }
+
+  db.prepare(`UPDATE analyses SET decision = ?, reflection = ?, reflected_at = datetime('now')
+              WHERE id = ?`).run(decision || null, reflection || null, own.id);
+
+  const row = db.prepare('SELECT decision, reflection, reflected_at FROM analyses WHERE id = ?').get(own.id);
+  res.json({ ok: true, ...row });
+});
+
 router.post('/:id/title', (req, res) => {
   const title = String(req.body?.title || '').trim().slice(0, 120);
   if (!title) return res.status(400).json({ error: 'عنوان نمی‌تواند خالی باشد.' });
@@ -89,7 +120,18 @@ router.get('/:id/export', (req, res) => {
   if (!row) return res.status(404).json({ error: 'تحلیل یافت نشد.' });
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="analysis-${row.id}.md"`);
-  res.send(`# ${row.title}\n\n**تاریخ:** ${row.created_at}\n**مدل:** ${row.model}\n\n## شرح دوراهی\n\n${row.dilemma}\n\n---\n\n${row.raw_output || ''}\n`);
+
+  const reflection = row.reflected_at
+    ? `\n\n---\n\n## بازنگری — ثبت‌شده در ${row.reflected_at}\n\n` +
+      `**تصمیمی که گرفتم:** ${row.decision || '—'}\n\n${row.reflection || ''}\n`
+    : '';
+
+  res.send(
+    `# ${row.title}\n\n` +
+    `**تاریخ:** ${row.created_at}\n**مدل:** ${row.model}\n\n` +
+    `## شرح دوراهی\n\n${row.dilemma}\n\n---\n\n` +
+    `${row.raw_output || ''}${reflection}\n`
+  );
 });
 
 function safeJson(s, fallback) {

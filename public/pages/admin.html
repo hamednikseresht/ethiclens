@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/motion.css">
 <style>
   .admin-layout{display:grid;grid-template-columns:1fr;gap:1.25rem;align-items:start}
   @media (min-width:960px){
@@ -104,7 +105,8 @@
 </main>
 
 <script type="module">
-import { $, $$, api, boot, esc, faNum, faDate, relTime, duration, toast, confirmDialog, modal } from '/js/core.js';
+import { $, $, api, boot, esc, faNum, faDate, relTime, duration, toast, confirmDialog, modal } from '/js/core.js';
+import { initMotion, countUpAll, animateBars, revealOnScroll } from '/js/motion.js';
 
 if (!await boot({ admin: true })) throw new Error('forbidden');
 
@@ -157,13 +159,13 @@ loaders.overview = async () => {
 
     <div class="stat-grid" style="margin-bottom:1.25rem">
       <div class="stat"><div class="stat-label">👥 کاربران</div>
-        <div class="stat-value">${faNum(d.users.total)}</div>
+        <div class="stat-value" data-count="${d.users.total}">${faNum(d.users.total)}</div>
         <div class="stat-sub">${faNum(d.users.newWeek || 0)} کاربر تازه این هفته</div></div>
       <div class="stat"><div class="stat-label">🗂️ کل تحلیل‌ها</div>
-        <div class="stat-value">${faNum(d.analyses.total)}</div>
+        <div class="stat-value" data-count="${d.analyses.total}">${faNum(d.analyses.total)}</div>
         <div class="stat-sub">${faNum(d.analyses.today || 0)} مورد امروز</div></div>
       <div class="stat"><div class="stat-label">⚠️ ناموفق</div>
-        <div class="stat-value">${faNum(d.analyses.failed || 0)}</div>
+        <div class="stat-value" data-count="${d.analyses.failed || 0}">${faNum(d.analyses.failed || 0)}</div>
         <div class="stat-sub">از ${faNum(d.analyses.total)} درخواست</div></div>
       <div class="stat"><div class="stat-label">🔢 توکن مصرفی</div>
         <div class="stat-value" style="font-size:1.3rem">${faNum(((d.analyses.tokensIn + d.analyses.tokensOut) / 1000).toFixed(1))}K</div>
@@ -202,6 +204,11 @@ loaders.overview = async () => {
         </div>
       </div>
     </div>`;
+
+  countUpAll(host);
+  animateBars(host.querySelector('.bars'));
+  host.querySelector('.stat-grid')?.classList.add('stagger');
+  revealOnScroll('.stat', host);
 };
 
 /* ---------------- مدل و کلید ---------------- */
@@ -923,6 +930,8 @@ async function refreshHealth() {
 refreshHealth();
 
 show(location.hash.slice(1) || 'overview');
+
+initMotion();
 </script>
 </body>
 </html>

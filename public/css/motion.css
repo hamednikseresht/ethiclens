@@ -1,0 +1,309 @@
+/* ==========================================================================
+   اتیکا — لایه حرکت و بصری‌سازی
+   همه انیمیشن‌ها با prefers-reduced-motion خاموش می‌شوند.
+   ========================================================================== */
+
+:root{
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --ease-in-out:cubic-bezier(.65,0,.35,1);
+  --dur-fast:.18s;
+  --dur:.32s;
+  --dur-slow:.6s;
+}
+
+/* ==========================================================================
+   ۱. ورود عناصر
+   ========================================================================== */
+@keyframes riseIn{
+  from{opacity:0;transform:translateY(14px)}
+  to{opacity:1;transform:none}
+}
+@keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+@keyframes scaleIn{
+  from{opacity:0;transform:scale(.96)}
+  to{opacity:1;transform:none}
+}
+@keyframes slideStart{
+  from{opacity:0;transform:translateX(18px)}
+  to{opacity:1;transform:none}
+}
+
+/* عناصری که با اسکرول وارد دید می‌شوند (کلاس‌ها را js می‌گذارد).
+   عمداً transition است نه animation: حالت پایانی یک سبکِ اعلام‌شده است،
+   پس اگر انتقال هرگز اجرا نشود (تب پنهان، موتور قدیمی) محتوا باز هم
+   دیده می‌شود. با animation و fill-mode:both محتوا در فریم صفر گیر می‌کرد. */
+.reveal{
+  opacity:0;transform:translateY(14px);
+  transition:opacity .55s var(--ease-out), transform .55s var(--ease-out);
+}
+.reveal.in{opacity:1;transform:none}
+
+/* تأخیر پلکانی برای اعضای یک گروه */
+.stagger > .reveal:nth-child(1){transition-delay:.03s}
+.stagger > .reveal:nth-child(2){transition-delay:.08s}
+.stagger > .reveal:nth-child(3){transition-delay:.13s}
+.stagger > .reveal:nth-child(4){transition-delay:.18s}
+.stagger > .reveal:nth-child(5){transition-delay:.23s}
+.stagger > .reveal:nth-child(6){transition-delay:.28s}
+.stagger > .reveal:nth-child(7){transition-delay:.33s}
+.stagger > .reveal:nth-child(8){transition-delay:.38s}
+
+/* ==========================================================================
+   ۲. تعامل — دکمه، کارت، ورودی
+   ========================================================================== */
+.btn{position:relative;overflow:hidden;transition:
+  background-color var(--dur-fast) var(--ease-out),
+  border-color var(--dur-fast) var(--ease-out),
+  color var(--dur-fast) var(--ease-out),
+  box-shadow var(--dur-fast) var(--ease-out),
+  transform var(--dur-fast) var(--ease-out)}
+.btn:hover:not(:disabled){transform:translateY(-1px)}
+.btn:active:not(:disabled){transform:translateY(0) scale(.985)}
+.btn-primary:hover:not(:disabled){box-shadow:0 4px 14px -3px var(--primary-ring)}
+
+/* موج لمس روی دکمه */
+.btn::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(circle at var(--rx,50%) var(--ry,50%),
+             rgba(255,255,255,.45) 0%, transparent 55%);
+  opacity:0;pointer-events:none;
+}
+.btn:active:not(:disabled)::after{opacity:1;transition:none}
+.btn::after{transition:opacity .45s var(--ease-out)}
+
+.card,.stat,.rec,.item,.res-block,.stage-main{
+  transition:transform var(--dur) var(--ease-out),
+             box-shadow var(--dur) var(--ease-out),
+             border-color var(--dur) var(--ease-out);
+}
+.stat{will-change:transform}
+.stat:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+
+.input,.textarea,.select{
+  transition:border-color var(--dur-fast) var(--ease-out),
+             box-shadow var(--dur-fast) var(--ease-out),
+             background-color var(--dur-fast) var(--ease-out);
+}
+
+/* پیوندهای ناوبری با زیرخط کشویی */
+.nav-links a{position:relative;transition:color var(--dur-fast) var(--ease-out),background-color var(--dur-fast) var(--ease-out)}
+.nav-links a::after{
+  content:"";position:absolute;bottom:.25rem;inset-inline:.8rem;height:2px;
+  background:var(--primary);border-radius:2px;
+  transform:scaleX(0);transform-origin:100% 50%;
+  transition:transform var(--dur) var(--ease-out);
+}
+.nav-links a:hover::after{transform:scaleX(1)}
+.nav-links a.active::after{transform:scaleX(1)}
+
+/* ==========================================================================
+   ۳. صفحه — ورود اولیه
+   ========================================================================== */
+.page-enter{animation:riseIn .5s var(--ease-out) both}
+.topbar{animation:fadeIn .4s var(--ease-out) both}
+
+/* ==========================================================================
+   ۴. مراحل فلوچارت — پر شدن پیش‌رونده
+   ========================================================================== */
+.stage-num{
+  transition:background-color var(--dur) var(--ease-out),
+             color var(--dur) var(--ease-out),
+             border-color var(--dur) var(--ease-out),
+             transform var(--dur) var(--ease-spring);
+}
+/* لحظه‌ای که مرحله نتیجه می‌گیرد */
+@keyframes stagePop{
+  0%{transform:scale(1)}
+  45%{transform:scale(1.18)}
+  100%{transform:scale(1)}
+}
+.stage[data-state]:not([data-state=""]) .stage-num{animation:stagePop .5s var(--ease-spring)}
+
+/* هاله نبض برای مرحله‌ای که در حال پر شدن است */
+@keyframes gatePulse{
+  0%,100%{box-shadow:0 0 0 0 var(--primary-ring)}
+  50%{box-shadow:0 0 0 7px transparent}
+}
+.stage[data-state=""] .stage-num{animation:gatePulse 2s var(--ease-in-out) infinite}
+
+/* خط اتصال مراحل که پر می‌شود */
+.stage-link{position:relative;overflow:hidden}
+.stage-link::after{
+  content:"";position:absolute;inset:0;background:var(--primary);
+  transform:scaleY(0);transform-origin:50% 0;
+  transition:transform var(--dur-slow) var(--ease-out);
+}
+.stage-link.filled::after{transform:scaleY(1)}
+
+/* رنگ‌گرفتن حاشیه کارت مرحله */
+.stage-main{transition:border-inline-start-color var(--dur-slow) var(--ease-out),box-shadow var(--dur) var(--ease-out)}
+.stage[data-state="no"] .stage-main{animation:shakeGate .45s var(--ease-out)}
+@keyframes shakeGate{
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(5px)}
+  75%{transform:translateX(-5px)}
+}
+
+/* ==========================================================================
+   ۵. کارت مکاتب — چرخش نرم هنگام پر شدن
+   ========================================================================== */
+.school{transition:opacity var(--dur) var(--ease-out),box-shadow var(--dur) var(--ease-out),transform var(--dur) var(--ease-out)}
+.school.filled{animation:schoolIn .45s var(--ease-out) both}
+@keyframes schoolIn{
+  from{opacity:.4;transform:translateY(8px)}
+  to{opacity:1;transform:none}
+}
+.school.filled:hover{transform:translateY(-2px)}
+
+.school-verdict{transition:background-color var(--dur) var(--ease-out),color var(--dur) var(--ease-out)}
+.school-verdict.v-yes,.school-verdict.v-no,.school-verdict.v-maybe,.school-verdict.v-neutral{
+  animation:verdictIn .4s var(--ease-spring) both;
+}
+@keyframes verdictIn{
+  from{opacity:0;transform:scale(.8)}
+  to{opacity:1;transform:none}
+}
+
+/* ==========================================================================
+   ۶. ماتریس — خانه‌ها به ترتیب ظاهر می‌شوند
+   ========================================================================== */
+.mx-cell,.mx-total{transition:transform var(--dur-fast) var(--ease-out),filter var(--dur-fast) var(--ease-out)}
+.mx tbody tr{animation:riseIn .4s var(--ease-out) both}
+.mx tbody tr:nth-child(1){animation-delay:.04s}
+.mx tbody tr:nth-child(2){animation-delay:.10s}
+.mx tbody tr:nth-child(3){animation-delay:.16s}
+.mx tbody tr:nth-child(4){animation-delay:.22s}
+.mx tbody tr:nth-child(5){animation-delay:.28s}
+.mx tbody tr:hover .mx-cell{filter:brightness(1.06)}
+.mx-cell:hover{transform:scale(1.12);z-index:2;position:relative}
+
+@keyframes bestGlow{
+  0%,100%{box-shadow:inset 0 0 0 1.5px var(--primary)}
+  50%{box-shadow:inset 0 0 0 1.5px var(--primary),0 0 12px -2px var(--primary-ring)}
+}
+.mx-best .mx-opt{animation:bestGlow 2.6s var(--ease-in-out) infinite}
+
+/* ==========================================================================
+   ۷. نوار پیشرفت استریم
+   ========================================================================== */
+.progress{position:relative;overflow:hidden}
+.progress-fill{
+  position:relative;
+  transition:width .45s var(--ease-out);
+  background-size:200% 100%;
+  animation:flowGradient 2.4s linear infinite;
+}
+@keyframes flowGradient{ to{background-position:-200% 0} }
+
+/* درخشش متحرک روی نوار */
+.progress::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);
+  transform:translateX(-100%);
+  animation:progressSheen 1.8s var(--ease-in-out) infinite;
+}
+@keyframes progressSheen{ to{transform:translateX(100%)} }
+
+.streambar{animation:scaleIn var(--dur) var(--ease-out) both}
+
+/* نقطه‌های «در حال نوشتن» */
+.typing-dots{display:inline-flex;gap:3px;align-items:center}
+.typing-dots i{
+  width:4px;height:4px;border-radius:50%;background:currentColor;
+  animation:typingBounce 1.2s var(--ease-in-out) infinite;
+}
+.typing-dots i:nth-child(2){animation-delay:.15s}
+.typing-dots i:nth-child(3){animation-delay:.3s}
+@keyframes typingBounce{
+  0%,60%,100%{opacity:.3;transform:translateY(0)}
+  30%{opacity:1;transform:translateY(-3px)}
+}
+
+/* ==========================================================================
+   ۸. نمودار میله‌ای داشبورد
+   ========================================================================== */
+/* حالت پایه هیچ انیمیشنی ندارد: میله همیشه در ارتفاع واقعی خودش است.
+   رشد فقط وقتی اضافه می‌شود که js کلاس animate را بگذارد — یعنی
+   صفحه واقعاً دیده می‌شود. اینطور نمودار هیچ‌وقت خالی نمی‌ماند. */
+.bars .bar{
+  transform-origin:50% 100%;
+  transition:opacity var(--dur-fast),filter var(--dur-fast);
+}
+.bars.animate .bar{animation:barGrow .55s var(--ease-out) both}
+@keyframes barGrow{ from{transform:scaleY(0)} to{transform:scaleY(1)} }
+.bars .bar:hover{filter:brightness(1.25)}
+
+/* ==========================================================================
+   ۹. توست و مودال
+   ========================================================================== */
+.toast{animation:toastIn .35s var(--ease-spring) both}
+.modal-backdrop{animation:fadeIn .2s var(--ease-out) both}
+.modal{animation:modalIn .3s var(--ease-spring) both}
+@keyframes modalIn{
+  from{opacity:0;transform:translateY(16px) scale(.97)}
+  to{opacity:1;transform:none}
+}
+.usermenu-pop,.export-pop{animation:popIn .2s var(--ease-out) both;transform-origin:100% 0}
+@keyframes popIn{
+  from{opacity:0;transform:scale(.94) translateY(-6px)}
+  to{opacity:1;transform:none}
+}
+
+/* ==========================================================================
+   ۱۰. عدد شمارنده و نشان‌ها
+   ========================================================================== */
+.stat-value{font-variant-numeric:tabular-nums}
+.badge{transition:transform var(--dur-fast) var(--ease-out),background-color var(--dur-fast)}
+.star{transition:transform var(--dur-fast) var(--ease-spring),filter var(--dur-fast),opacity var(--dur-fast)}
+.star:hover{transform:scale(1.25)}
+.star.on{animation:starPop .4s var(--ease-spring)}
+@keyframes starPop{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.4) rotate(12deg)}
+  100%{transform:scale(1)}
+}
+
+/* دکمه شناور */
+.fab{transition:transform var(--dur) var(--ease-spring),opacity var(--dur) var(--ease-out)}
+.fab.show{animation:scaleIn var(--dur) var(--ease-spring) both}
+.fab:hover{transform:translateY(-3px) scale(1.06)}
+.fab:active{transform:scale(.94)}
+
+/* ==========================================================================
+   ۱۱. اسکلت بارگذاری
+   ========================================================================== */
+.skeleton,.res-block[data-empty="1"] .res-body::after,.stage-gate-note:empty::after{
+  animation:shimmer 1.5s var(--ease-in-out) infinite;
+}
+
+/* ==========================================================================
+   ۱۲. احترام به تنظیم کاربر
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+  .reveal{opacity:1;transform:none}
+  .stage-link::after{transform:scaleY(1)}
+}
+
+/* ==========================================================================
+   ۱۳. نشانگر مراحل زیر نوار پیشرفت استریم
+   ========================================================================== */
+.stream-steps{display:flex;align-items:center;gap:.35rem;margin-top:.6rem}
+.stream-step{
+  flex:1;height:22px;border-radius:6px;display:grid;place-items:center;
+  background:var(--bg-inset);color:var(--text-faint);
+  font-size:.7rem;font-weight:800;
+  transition:background-color var(--dur) var(--ease-out),
+             color var(--dur) var(--ease-out),
+             transform var(--dur) var(--ease-spring);
+}
+.stream-step[data-state="yes"]{background:var(--success);color:#fff;transform:scale(1.04)}
+.stream-step[data-state="maybe"]{background:var(--warn);color:#fff;transform:scale(1.04)}
+.stream-step[data-state="no"]{background:var(--danger);color:#fff;transform:scale(1.04)}
+.stream-step[data-state="neutral"]{background:var(--primary);color:#fff;transform:scale(1.04)}

@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import { db } from './db.js';
 import { DEFAULT_PROMPT, DEFAULT_PROMPT_KEY } from './services/default-prompt.js';
 import { setSetting, getSetting } from './services/settings.js';
@@ -32,6 +33,8 @@ const CATALOG = {
     ['o3',              'o3',              'استدلال عمیق — پرهزینه', 0, 80]
   ]
 };
+
+const sha = t => crypto.createHash('sha256').update(String(t), 'utf8').digest('hex');
 
 const PROVIDER_SEED = [
   { key: 'nvidia', label: 'NVIDIA NIM', base_url: 'https://integrate.api.nvidia.com/v1',
@@ -74,10 +77,31 @@ export function seed() {
     }
   }
 
-  /* ---- پرامپت پیش‌فرض ---- */
-  if (!db.prepare('SELECT id FROM prompts WHERE key = ?').get(DEFAULT_PROMPT_KEY)) {
+  /* ---- دستور پیش‌فرض ----
+     اگر مدیر متن را دست نزده باشد، با نسخه تازه کارخانه به‌روزرسانی می‌شود.
+     اگر ویرایشش کرده باشد، دست نمی‌خورد و فقط هشدار داده می‌شود — تا
+     ارتقای نسخه، کار سفارشی‌شده کسی را از بین نبرد. */
+  const factoryHash = sha(DEFAULT_PROMPT);
+  const existing = db.prepare('SELECT * FROM prompts WHERE key = ?').get(DEFAULT_PROMPT_KEY);
+
+  if (!existing) {
     db.prepare('INSERT INTO prompts (key, label, content, is_active) VALUES (?,?,?,1)')
       .run(DEFAULT_PROMPT_KEY, 'دستور پیش‌فرض فارسی', DEFAULT_PROMPT);
+    setSetting('factory_prompt_hash', factoryHash);
+  } else if (sha(existing.content) !== factoryHash) {
+    const seededHash = getSetting('factory_prompt_hash');
+    const untouched = seededHash && sha(existing.content) === seededHash;
+    if (untouched) {
+      db.prepare(`UPDATE prompts SET content = ?, updated_at = datetime('now') WHERE id = ?`)
+        .run(DEFAULT_PROMPT, existing.id);
+      setSetting('factory_prompt_hash', factoryHash);
+      console.log('[seed] دستور پیش‌فرض به نسخه تازه به‌روزرسانی شد.');
+    } else {
+      console.log('[seed] ⚠️  دستور تحلیل توسط مدیر ویرایش شده — نسخه تازه کارخانه اعمال نشد.');
+      console.log('[seed]    برای دیدن نسخه تازه: پنل مدیریت ← دستور تحلیل ← بازگرداندن متن کارخانه.');
+    }
+  } else {
+    setSetting('factory_prompt_hash', factoryHash);
   }
   if (!db.prepare('SELECT 1 FROM settings WHERE key = ?').get('active_prompt_key')) {
     setSetting('active_prompt_key', DEFAULT_PROMPT_KEY);
