@@ -196,7 +196,7 @@ router.put('/tiers/:id', (req, res) => {
  * (مثلاً کلید API نسخه‌های قدیمی) در جدول settings مانده باشد، نشت نکند.
  */
 const PUBLIC_SETTINGS = [
-  'site_title', 'site_tagline', 'default_model',
+  'site_title', 'site_tagline', 'site_url', 'default_model',
   'temperature', 'top_p', 'max_tokens', 'active_prompt_key',
   'allow_registration', 'default_daily_quota'
 ];
@@ -215,7 +215,7 @@ router.get('/settings', (req, res) => {
 });
 
 const ALLOWED_SETTINGS = new Set([
-  'site_title', 'site_tagline', 'default_model',
+  'site_title', 'site_tagline', 'site_url', 'default_model',
   'temperature', 'top_p', 'max_tokens', 'active_prompt_key',
   'allow_registration', 'default_daily_quota'
 ]);

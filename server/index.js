@@ -13,6 +13,7 @@ import { router as authRouter } from './routes/auth.js';
 import { router as analyzeRouter } from './routes/analyze.js';
 import { router as historyRouter } from './routes/history.js';
 import { router as adminRouter } from './routes/admin.js';
+import { router as publicRouter } from './routes/public.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -70,6 +71,9 @@ app.use('/api/history', historyRouter);
 app.use('/api/admin', adminRouter);
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'مسیر API یافت نشد.' }));
+
+// ---- صفحه‌های عمومی و قابل ایندکس (رندر سمت سرور) ----
+app.use('/', publicRouter);
 
 // ---- فایل‌های ایستا و مسیرهای صفحه ----
 app.use(express.static(PUBLIC, { extensions: ['html'], maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0 }));

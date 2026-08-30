@@ -4,6 +4,7 @@ import { DEFAULT_PROMPT, DEFAULT_PROMPT_KEY } from './default-prompt.js';
 const DEFAULTS = {
   site_title: 'اتیکا — دستیار تصمیم‌گیری اخلاقی',
   site_tagline: 'دوراهی‌ات را از هشت منظر فلسفه اخلاق ببین',
+  site_url: '',                      // برای canonical و نقشه سایت — مثلاً https://ethica.ir
   default_model: '',                 // به شکل "providerKey:modelId"
   temperature: '0.6',
   top_p: '0.95',

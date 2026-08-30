@@ -331,6 +331,84 @@ console.log('\n── دسترسی مدل بر اساس گروه ──');
 }
 
 
+/* ---------------- انتشار عمومی و SEO ---------------- */
+console.log('\n── انتشار عمومی و SEO ──');
+{
+  await req('/api/admin/settings', { method: 'POST', csrf, body: { site_url: 'https://smoke.test' } });
+
+  const mine = await req('/api/history?perPage=10');
+  const target = mine.data.items?.find(i => i.status === 'done');
+
+  if (!target) {
+    console.log('  (تحلیل کاملی برای آزمون انتشار نبود — رد شد)');
+  } else {
+    const wasPublic = !!target.is_public;
+
+    const pub = await req(`/api/history/${target.id}/publish`, {
+      method: 'POST', csrf,
+      body: { publish: true, public_title: 'عنوان آزمایشی انتشار', public_summary: 'خلاصه آزمایشی برای موتور جست‌وجو.' }
+    });
+    check('انتشار تحلیل', pub.status === 200 && !!pub.data.slug, JSON.stringify(pub.data).slice(0, 100));
+
+    const page = await req(pub.data.url);
+    const html = String(page.data || '');
+    check('صفحه عمومی بدون ورود در دسترس است', page.status === 200);
+    check('عنوان صفحه از عنوان عمومی می‌آید', /<title>عنوان آزمایشی انتشار/.test(html));
+    check('توضیح متا درج شده', /<meta name="description" content="خلاصه آزمایشی/.test(html));
+    check('نشانی canonical مطلق است', /<link rel="canonical" href="https:\/\/smoke\.test\/a\//.test(html));
+    check('صفحه ایندکس‌شونده است', /content="index, follow/.test(html));
+    check('OpenGraph از نوع article', /property="og:type" content="article"/.test(html));
+    check('داده ساختاریافته Article', /"@type":"Article"/.test(html));
+    check('داده ساختاریافته Breadcrumb', /"@type":"BreadcrumbList"/.test(html));
+    check('محتوای تحلیل در HTML اولیه است', /class="stage-title"/.test(html));
+    check('دقیقاً یک h1 دارد', (html.match(/<h1[ >]/g) || []).length === 1);
+
+    const explore = await req('/explore');
+    check('/explore کار می‌کند', explore.status === 200 && /pub-card-title/.test(String(explore.data)));
+    check('/explore داده ItemList دارد', /"@type":"ItemList"/.test(String(explore.data)));
+
+    const sm = await req('/sitemap.xml');
+    check('نقشه سایت ساخته می‌شود', sm.status === 200 && /sitemaps\.org\/schemas\/sitemap/.test(String(sm.data)));
+    check('تحلیل منتشرشده در نقشه سایت هست',
+      String(sm.data).includes(encodeURIComponent(pub.data.slug)));
+
+    const slug = pub.data.slug;
+    const off = await req(`/api/history/${target.id}/publish`, { method: 'POST', csrf, body: { publish: false } });
+    check('لغو انتشار', off.status === 200 && off.data.isPublic === false);
+
+    const gone = await req(`/a/${encodeURIComponent(slug)}`);
+    check('پس از لغو انتشار صفحه ۴۰۴ می‌شود', gone.status === 404, `status=${gone.status}`);
+
+    const again = await req(`/api/history/${target.id}/publish`, { method: 'POST', csrf, body: { publish: true } });
+    check('انتشار مجدد نشانی را عوض نمی‌کند', again.data.slug === slug);
+    check('انتشار مجدد عنوان عمومی را پاک نمی‌کند',
+      again.data.public_title === 'عنوان آزمایشی انتشار', String(again.data.public_title));
+    check('انتشار مجدد خلاصه عمومی را پاک نمی‌کند',
+      String(again.data.public_summary).startsWith('خلاصه آزمایشی'), String(again.data.public_summary).slice(0, 40));
+
+    if (!wasPublic) {
+      await req(`/api/history/${target.id}/publish`, { method: 'POST', csrf, body: { publish: false } });
+    }
+  }
+
+  const rb = await req('/robots.txt');
+  check('robots.txt سرو می‌شود', rb.status === 200 && /User-agent/.test(String(rb.data)));
+  check('robots صفحه‌های خصوصی را می‌بندد',
+    /Disallow: \/admin/.test(String(rb.data)) && /Disallow: \/api\//.test(String(rb.data)));
+  check('robots نقشه سایت را معرفی می‌کند', /Sitemap: https:\/\/smoke\.test/.test(String(rb.data)));
+
+  const missing = await req('/a/این-نشانی-وجود-ندارد');
+  check('نشانی ناموجود ۴۰۴ می‌دهد', missing.status === 404, `status=${missing.status}`);
+}
+
+/* ---------------- noindex روی صفحه‌های خصوصی ---------------- */
+console.log('\n── noindex صفحه‌های درون‌برنامه‌ای ──');
+for (const p of ['/app', '/dashboard', '/history', '/admin', '/login', '/settings']) {
+  const r = await req(p);
+  check(`${p} با noindex علامت خورده`, /noindex/.test(String(r.data)), `status=${r.status}`);
+}
+
+
 console.log(`\n${'═'.repeat(46)}`);
 console.log(`  موفق: ${pass}   ناموفق: ${fail}`);
 console.log(`${'═'.repeat(46)}\n`);

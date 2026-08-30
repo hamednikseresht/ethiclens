@@ -57,6 +57,14 @@ CREATE TABLE IF NOT EXISTS analyses (
   decision     TEXT,                                   -- گزینه‌ای که کاربر واقعاً انتخاب کرد
   reflection   TEXT,                                   -- بعداً چه شد و چه آموخت
   reflected_at TEXT,
+  -- انتشار عمومی: فقط با انتخاب صریح صاحب تحلیل
+  is_public      INTEGER NOT NULL DEFAULT 0,
+  slug           TEXT UNIQUE,
+  published_at   TEXT,
+  public_title   TEXT,                                 -- عنوان جایگزین برای نمایش عمومی
+  public_summary TEXT,                                 -- توضیح متا برای موتور جست‌وجو
+  public_author  TEXT,                                 -- نام نویسنده؛ خالی = ناشناس
+  views          INTEGER NOT NULL DEFAULT 0,
   tokens_in    INTEGER DEFAULT 0,
   tokens_out   INTEGER DEFAULT 0,
   duration_ms  INTEGER DEFAULT 0,
@@ -196,7 +204,14 @@ function addMissingColumns() {
     analyses: {
       decision:     'TEXT',   // گزینه‌ای که کاربر واقعاً انتخاب کرد
       reflection:   'TEXT',   // بعداً چه شد و چه آموخت
-      reflected_at: 'TEXT'
+      reflected_at: 'TEXT',
+      is_public:      'INTEGER NOT NULL DEFAULT 0',
+      slug:           'TEXT',            // یکتایی با ایندکس جدا اعمال می‌شود
+      published_at:   'TEXT',
+      public_title:   'TEXT',
+      public_summary: 'TEXT',
+      public_author:  'TEXT',
+      views:          'INTEGER NOT NULL DEFAULT 0'
     },
     users: {
       tier:           "TEXT NOT NULL DEFAULT 'basic'",
@@ -218,6 +233,18 @@ function addMissingColumns() {
   }
 }
 addMissingColumns();
+
+/**
+ * ایندکس‌هایی که به ستون‌های افزوده‌شده وابسته‌اند.
+ * باید بعد از addMissingColumns ساخته شوند، وگرنه روی پایگاه داده‌ای که
+ * هنوز ستون را ندارد با «no such column» شکست می‌خورند.
+ */
+db.exec(`
+CREATE UNIQUE INDEX IF NOT EXISTS idx_analyses_slug
+  ON analyses(slug) WHERE slug IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_analyses_public
+  ON analyses(is_public, published_at DESC) WHERE is_public = 1;
+`);
 
 /**
  * سهمیه‌ای که پیش از مفهوم «گروه» مستقیم روی کاربر بود، به استثنای فردی

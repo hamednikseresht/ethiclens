@@ -246,8 +246,20 @@ const NAV = [
   { href: '/app',       label: 'تحلیل تازه' },
   { href: '/dashboard', label: 'داشبورد' },
   { href: '/history',   label: 'تاریخچه' },
+  { href: '/explore',   label: 'تحلیل‌های عمومی' },
   { href: '/guide',     label: 'دانشنامه' },
   { href: '/about',     label: 'درباره ما' }
+];
+
+/**
+ * ناوبری بازدیدکننده مهمان.
+ * صفحه‌های عمومی باید برای خزنده موتور جست‌وجو پیوند داخلی داشته باشند،
+ * پس حتی وقتی کسی وارد نشده هم مسیرهای عمومی نمایش داده می‌شوند.
+ */
+const PUBLIC_NAV = [
+  { href: '/explore', label: 'تحلیل‌های عمومی' },
+  { href: '/guide',   label: 'دانشنامه' },
+  { href: '/about',   label: 'درباره ما' }
 ];
 
 export function renderTopbar(activePath) {
@@ -256,7 +268,7 @@ export function renderTopbar(activePath) {
   const path = activePath || location.pathname;
   const u = state.user;
 
-  const links = NAV.map(n =>
+  const links = (u ? NAV : PUBLIC_NAV).map(n =>
     `<a href="${n.href}" class="${path === n.href ? 'active' : ''}">${n.label}</a>`
   ).join('');
 
@@ -277,7 +289,7 @@ export function renderTopbar(activePath) {
       <a class="brand" href="${u ? '/app' : '/'}">
         <span class="brand-mark">ا</span><span class="brand-text">اتیکا</span>
       </a>
-      <nav class="nav-links">${u ? links + adminLink : ''}</nav>
+      <nav class="nav-links">${links}${adminLink}</nav>
       <div class="grow"></div>
       <button class="btn btn-icon btn-ghost" id="themeBtn" title="حالت شب / روز" aria-label="تغییر تم">◐</button>
       ${right}

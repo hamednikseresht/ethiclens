@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
 <title>تحلیل — اتیکا</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,6 +11,7 @@
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/result.css">
 <link rel="stylesheet" href="/css/motion.css">
+<link rel="stylesheet" href="/css/public.css">
 </head>
 <body>
 <header class="topbar" id="topbar"></header>
@@ -20,7 +22,7 @@
 </main>
 
 <script type="module">
-import { $, api, boot, esc, faNum, faDate, duration, toast, confirmDialog } from '/js/core.js';
+import { $, api, boot, esc, faNum, faDate, duration, toast, confirmDialog, modal } from '/js/core.js';
 import { buildSkeleton, applySections, verdictChips, gateSummary } from '/js/result.js';
 import { exportBar, wireExport } from '/js/export.js';
 import { initMotion, revealOnScroll } from '/js/motion.js';
@@ -55,7 +57,8 @@ $('#headHost').innerHTML = `
       <div id="actionBar">
         ${exportBar({
           analysisId: a.id,
-          extra: `<button class="btn btn-sm" id="favBtn">${a.is_favorite ? '⭐ نشان‌شده' : '☆ نشان کردن'}</button>`
+          extra: `<button class="btn btn-sm" id="favBtn">${a.is_favorite ? '⭐ نشان‌شده' : '☆ نشان کردن'}</button>
+                   <button class="btn btn-sm" id="pubBtn">${a.is_public ? '🌐 منتشرشده' : '🌐 انتشار عمومی'}</button>`
         })}
       </div>
     </div>
@@ -68,6 +71,7 @@ $('#headHost').innerHTML = `
       ${a.status === 'done' ? verdictChips(sections) : ''}
     </div>
     ${gateStrip}
+    <div id="pubState"></div>
     <div class="result-dilemma">${esc(a.dilemma)}</div>
     <div class="row no-print" style="margin-top:.8rem;justify-content:flex-start">
       <button class="btn btn-sm btn-ghost" id="delBtn" style="color:var(--danger)">حذف این تحلیل</button>
@@ -117,6 +121,95 @@ $('#favBtn')?.addEventListener('click', async e => {
     const r = await api.post(`/api/history/${a.id}/favorite`);
     e.currentTarget.textContent = r.isFavorite ? '⭐ نشان‌شده' : '☆ نشان کردن';
   } catch (err) { toast(err.message, 'err'); }
+});
+
+/* ---------------- انتشار عمومی ---------------- */
+function renderPubState() {
+  const host = $('#pubState');
+  if (!host) return;
+  if (!a.is_public || !a.slug) { host.innerHTML = ''; return; }
+  const url = location.origin + '/a/' + encodeURIComponent(a.slug);
+  host.innerHTML = `
+    <div class="pub-state no-print">
+      <span>🌐</span>
+      <span class="grow">این تحلیل عمومی است: <code>${esc(url)}</code></span>
+      <button class="btn btn-sm" id="copyPub">کپی نشانی</button>
+      <a class="btn btn-sm" href="/a/${encodeURIComponent(a.slug)}" target="_blank" rel="noopener">دیدن صفحه</a>
+    </div>`;
+  $('#copyPub').onclick = async () => {
+    try { await navigator.clipboard.writeText(url); toast('نشانی کپی شد.', 'ok'); }
+    catch { toast('کپی ممکن نشد.', 'err'); }
+  };
+}
+renderPubState();
+
+$('#pubBtn')?.addEventListener('click', () => {
+  if (a.is_public) {
+    modal({
+      title: 'این تحلیل عمومی است',
+      body: `<p style="font-size:.9rem;line-height:1.9">
+               نشانی عمومی: <code style="direction:ltr;display:inline-block">/a/${esc(a.slug)}</code><br><br>
+               اگر آن را از حالت عمومی خارج کنید، صفحه دیگر در دسترس نخواهد بود؛ ولی نشانی محفوظ می‌ماند
+               تا اگر بعداً دوباره منتشرش کردید همان لینک کار کند.
+             </p>`,
+      actions: [
+        { label: 'خارج‌کردن از حالت عمومی', className: 'btn-danger', onClick: async () => {
+            try {
+              await api.post(`/api/history/${a.id}/publish`, { publish: false });
+              a.is_public = 0;
+              $('#pubBtn').textContent = '🌐 انتشار عمومی';
+              renderPubState();
+              toast('از حالت عمومی خارج شد.', 'ok');
+            } catch (e) { toast(e.message, 'err'); return 'keep'; }
+          } },
+        { label: 'بستن' }
+      ]
+    });
+    return;
+  }
+
+  modal({
+    title: 'انتشار عمومی این تحلیل',
+    body: `
+      <div class="alert alert-warn" style="font-size:.86rem">
+        <strong>پیش از انتشار بخوانید:</strong> متن دوراهی همان‌طور که نوشته‌اید در صفحه عمومی
+        دیده می‌شود و موتورهای جست‌وجو آن را ایندکس می‌کنند. اگر نام افراد، نام شرکت یا
+        جزئیات قابل‌شناسایی در متن هست، پیش از انتشار عنوان و خلاصه عمومی را طوری بنویسید
+        که کسی شناسایی نشود — یا اصلاً منتشرش نکنید.
+      </div>
+      <div class="field"><label for="pt">عنوان عمومی</label>
+        <input class="input" id="pt" maxlength="120" value="${esc(a.public_title || a.title)}">
+        <span class="hint">همین عنوان در نتایج گوگل نمایش داده می‌شود.</span></div>
+      <div class="field"><label for="ps">خلاصه عمومی</label>
+        <textarea class="textarea" id="ps" rows="3" maxlength="300"
+          placeholder="اگر خالی بگذارید، از بازخوانی مسئله ساخته می‌شود.">${esc(a.public_summary || '')}</textarea>
+        <span class="hint">توضیح زیر عنوان در نتایج جست‌وجو — حدود ۱۵۰ نویسه بهترین است.</span></div>
+      <div class="field"><label for="pa">نام نویسنده (اختیاری)</label>
+        <input class="input" id="pa" maxlength="60" placeholder="خالی بگذارید تا ناشناس منتشر شود"
+               value="${esc(a.public_author || '')}">
+        <span class="hint">ایمیل و حساب کاربری شما هرگز نمایش داده نمی‌شود.</span></div>`,
+    actions: [
+      { label: 'انتشار عمومی', className: 'btn-primary', onClick: async root => {
+          try {
+            const r = await api.post(`/api/history/${a.id}/publish`, {
+              publish: true,
+              public_title: root.querySelector('#pt').value,
+              public_summary: root.querySelector('#ps').value,
+              public_author: root.querySelector('#pa').value
+            });
+            Object.assign(a, {
+              is_public: 1, slug: r.slug,
+              public_title: r.public_title, public_summary: r.public_summary,
+              public_author: r.public_author
+            });
+            $('#pubBtn').textContent = '🌐 منتشرشده';
+            renderPubState();
+            toast('منتشر شد.', 'ok');
+          } catch (e) { toast(e.message, 'err'); return 'keep'; }
+        } },
+      { label: 'انصراف' }
+    ]
+  });
 });
 
 /* ---------------- دفترچه بازنگری ---------------- */

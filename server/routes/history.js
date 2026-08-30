@@ -1,6 +1,8 @@
 import express from 'express';
 import { db } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { uniqueSlug, metaDescription } from '../services/seo.js';
+import { audit } from '../db.js';
 
 export const router = express.Router();
 router.use(requireAuth);
@@ -22,7 +24,7 @@ router.get('/', (req, res) => {
   const total = db.prepare(`SELECT COUNT(*) c FROM analyses WHERE ${clause}`).get(...params).c;
   const items = db.prepare(
     `SELECT id, title, model, status, is_favorite, duration_ms, created_at,
-            decision, reflected_at,
+            decision, reflected_at, is_public, slug, views,
             substr(dilemma, 1, 220) AS excerpt
      FROM analyses WHERE ${clause}
      ORDER BY created_at DESC LIMIT ? OFFSET ?`
@@ -98,6 +100,61 @@ router.post('/:id/reflection', (req, res) => {
 
   const row = db.prepare('SELECT decision, reflection, reflected_at FROM analyses WHERE id = ?').get(own.id);
   res.json({ ok: true, ...row });
+});
+
+/**
+ * انتشار عمومی یک تحلیل.
+ *
+ * انتشار همیشه انتخاب صریح صاحب تحلیل است و هرگز خودکار نیست:
+ * متن دوراهی‌ها شخصی است و ممکن است اطلاعات قابل‌شناسایی داشته باشد.
+ * کاربر می‌تواند عنوان و خلاصه عمومی جداگانه بگذارد و نامش را پنهان کند.
+ */
+router.post('/:id/publish', (req, res) => {
+  const row = db.prepare('SELECT * FROM analyses WHERE id = ? AND user_id = ?')
+                .get(req.params.id, req.user.id);
+  if (!row) return res.status(404).json({ error: 'تحلیل یافت نشد.' });
+  if (row.status !== 'done') {
+    return res.status(400).json({ error: 'فقط تحلیل کامل‌شده را می‌توان منتشر کرد.' });
+  }
+
+  const makePublic = req.body?.publish !== false;
+
+  if (!makePublic) {
+    db.prepare('UPDATE analyses SET is_public = 0 WHERE id = ?').run(row.id);
+    audit(req.user.id, 'analysis_unpublish', { id: row.id, slug: row.slug }, req.ip);
+    return res.json({ ok: true, isPublic: false, slug: row.slug });
+  }
+
+  // اگر فیلدی فرستاده نشده، مقدار قبلی حفظ می‌شود — انتشار دوباره نباید
+  // عنوان و خلاصه‌ای را که کاربر قبلاً نوشته پاک کند.
+  const pick = (sent, previous, fallback = '') => {
+    const v = String(sent ?? '').trim();
+    if (v) return v;
+    return (previous || '').trim() || fallback;
+  };
+
+  const publicTitle   = pick(req.body?.public_title, row.public_title, row.title).slice(0, 120);
+  const publicSummary = pick(req.body?.public_summary, row.public_summary).slice(0, 300);
+  const publicAuthor  = pick(req.body?.public_author, row.public_author).slice(0, 60);
+
+  // slug فقط بار اول ساخته می‌شود تا نشانی منتشرشده نشکند
+  const slug = row.slug || uniqueSlug(publicTitle, row.id);
+
+  let sections = {};
+  try { sections = JSON.parse(row.sections) || {}; } catch {}
+  const summary = publicSummary || metaDescription(sections.reframe || row.dilemma);
+
+  db.prepare(`UPDATE analyses SET is_public = 1, slug = ?,
+              published_at = COALESCE(published_at, datetime('now')),
+              public_title = ?, public_summary = ?, public_author = ?
+              WHERE id = ?`)
+    .run(slug, publicTitle, summary, publicAuthor || null, row.id);
+
+  audit(req.user.id, 'analysis_publish', { id: row.id, slug }, req.ip);
+  const out = db.prepare(
+    'SELECT is_public, slug, published_at, public_title, public_summary, public_author, views FROM analyses WHERE id = ?'
+  ).get(row.id);
+  res.json({ ok: true, isPublic: true, url: `/a/${encodeURIComponent(slug)}`, ...out });
 });
 
 router.post('/:id/title', (req, res) => {

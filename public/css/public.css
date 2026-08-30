@@ -1,0 +1,93 @@
+/* ==========================================================================
+   صفحه‌های عمومی — تحلیل منتشرشده و فهرست آن‌ها
+   ========================================================================== */
+
+/* ---------- مسیر راهنما ---------- */
+.pub-crumbs{
+  font-size:.78rem;color:var(--text-muted);margin-bottom:.7rem;
+  display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;
+}
+.pub-crumbs a{color:var(--text-muted)}
+.pub-crumbs a:hover{color:var(--primary)}
+.pub-crumbs span{color:var(--text);font-weight:600;
+  max-width:28ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- خلاصه پیشنهاد در بالای صفحه ---------- */
+.pub-lead{
+  background:var(--primary-soft);border-inline-start:4px solid var(--primary);
+  border-radius:0 var(--r-sm) var(--r-sm) 0;padding:.9rem 1.1rem;margin-top:.9rem;
+  font-size:.92rem;line-height:1.95;
+}
+.pub-lead strong{color:var(--primary);font-weight:800}
+
+/* ---------- متن دوراهی، جمع‌شونده ---------- */
+.pub-dilemma{margin-top:.9rem}
+.pub-dilemma summary{
+  cursor:pointer;font-size:.85rem;font-weight:700;color:var(--text-muted);
+  list-style:none;display:flex;align-items:center;gap:.4rem;padding:.5rem 0;
+}
+.pub-dilemma summary::-webkit-details-marker{display:none}
+.pub-dilemma summary::before{content:"▸";transition:transform .2s;display:inline-block}
+.pub-dilemma[open] summary::before{transform:rotate(-90deg)}
+.pub-dilemma summary:hover{color:var(--primary)}
+
+/* ---------- فراخوان پایان صفحه ---------- */
+.pub-cta{
+  background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;
+  border-radius:var(--r);padding:2.2rem 1.6rem;text-align:center;margin:2.5rem 0 1.5rem;
+}
+.pub-cta h2{font-size:1.2rem;font-weight:900;margin-bottom:.5rem}
+.pub-cta p{font-size:.92rem;opacity:.94;line-height:1.9;max-width:54ch;margin:0 auto 1.3rem}
+.pub-cta .btn{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.35);color:#fff}
+.pub-cta .btn:hover{background:rgba(255,255,255,.26);border-color:rgba(255,255,255,.5);color:#fff}
+.pub-cta .btn-primary{background:#fff;border-color:#fff;color:var(--primary)}
+.pub-cta .btn-primary:hover{background:#fff;color:var(--primary);filter:brightness(.96)}
+
+/* ---------- فهرست تحلیل‌های عمومی ---------- */
+.pub-head{margin-bottom:1.6rem}
+.pub-head h1{font-size:clamp(1.4rem,4vw,1.9rem);font-weight:900;margin-bottom:.6rem;line-height:1.5}
+.pub-head p{font-size:.93rem;color:var(--text-muted);line-height:2;max-width:66ch}
+
+.pub-grid{display:grid;grid-template-columns:1fr;gap:.9rem}
+@media (min-width:760px){.pub-grid{grid-template-columns:1fr 1fr}}
+@media (min-width:1100px){.pub-grid{grid-template-columns:repeat(3,1fr)}}
+
+.pub-card{
+  background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:1.25rem;display:flex;flex-direction:column;gap:.6rem;
+  transition:border-color .2s,box-shadow .2s,transform .2s;
+}
+.pub-card:hover{border-color:var(--primary);box-shadow:var(--shadow-md);transform:translateY(-3px)}
+.pub-card-title{
+  font-size:1rem;font-weight:800;line-height:1.65;color:var(--text);text-decoration:none;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+}
+.pub-card-title:hover{color:var(--primary);text-decoration:none}
+.pub-card-sum{
+  font-size:.85rem;line-height:1.9;color:var(--text-muted);margin:0;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+}
+.pub-card-foot{
+  display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;
+  font-size:.75rem;color:var(--text-faint);
+  border-top:1px solid var(--border);padding-top:.65rem;margin-top:auto;
+}
+
+.pager{display:flex;justify-content:center;align-items:center;gap:.7rem;margin-top:1.8rem;flex-wrap:wrap}
+
+.pub-footer{border-top:1px solid var(--border);padding:2.2rem 1rem;text-align:center;
+            font-size:.83rem;color:var(--text-muted);line-height:1.95;margin-top:2rem}
+.pub-footer a{color:var(--text-muted)}
+.pub-footer a:hover{color:var(--primary)}
+
+/* ---------- وضعیت انتشار در صفحه خصوصی تحلیل ---------- */
+.pub-state{
+  display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;
+  background:var(--success-soft);border:1px solid var(--success);
+  border-radius:var(--r-sm);padding:.7rem .9rem;margin-top:.8rem;font-size:.85rem;
+}
+.pub-state code{
+  background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;
+  padding:.15rem .45rem;font-size:.8rem;direction:ltr;display:inline-block;
+}
+.pub-state .grow{min-width:0;overflow:hidden;text-overflow:ellipsis}
