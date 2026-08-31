@@ -1,5 +1,5 @@
 /* ==========================================================================
-   EthicLens — هسته مشترک کلاینت: تم، API، توست، مودال، مارک‌داون، پوسته صفحه
+   Ethic Lens — هسته مشترک کلاینت: تم، API، توست، مودال، مارک‌داون، پوسته صفحه
    ========================================================================== */
 
 /* ---------------- تم ---------------- */
@@ -300,7 +300,7 @@ export function renderTopbar(activePath) {
   host.innerHTML = `
     <div class="topbar-inner">
       <a class="brand" href="${approved ? '/app' : '/'}">
-        <span class="brand-mark">EL</span><span class="brand-text">EthicLens</span>
+        <span class="brand-mark">EL</span><span class="brand-text">دیدگاه اخلاق</span>
       </a>
       <nav class="nav-links">${links}${adminLink}</nav>
       <div class="grow"></div>

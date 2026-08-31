@@ -93,7 +93,7 @@ export function metaTags({
   publishedAt, modifiedAt, noindex = false, author
 }) {
   const url = absoluteUrl(req, path);
-  const siteName = getSetting('site_title') || 'EthicLens';
+  const siteName = getSetting('site_title') || 'Ethic Lens';
   const t = escapeHtml(title);
   const d = escapeHtml(description || '');
 

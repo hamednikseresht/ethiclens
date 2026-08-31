@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { db } from './db.js';
 import { DEFAULT_PROMPT, DEFAULT_PROMPT_KEY } from './services/default-prompt.js';
 import { setSetting, getSetting } from './services/settings.js';
+import { seedGuide } from './services/guide.js';
 
 /**
  * مدل‌های پیش‌فرض هر ارائه‌دهنده.
@@ -49,6 +50,9 @@ const TIER_SEED = [
 ];
 
 export function seed() {
+  /* ---- محتوای دانشنامه ---- */
+  seedGuide();
+
   /* ---- گروه‌های کاربری ---- */
   const insTier = db.prepare(
     `INSERT INTO tiers (key, label, daily_quota, monthly_tokens, sort_order)

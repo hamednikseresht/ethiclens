@@ -129,6 +129,22 @@ CREATE TABLE IF NOT EXISTS models (
   UNIQUE(provider_id, model_id)
 );
 
+CREATE TABLE IF NOT EXISTS guide_sections (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  key        TEXT    NOT NULL UNIQUE,      -- lens:virtue | phase:1 | gate:dignity | exp:gyges | intro:hero
+  kind       TEXT    NOT NULL,             -- lens | phase | gate | experiment | prose
+  title      TEXT    NOT NULL,
+  subtitle   TEXT,                         -- اصطلاح لاتین یا نام متفکر
+  lead       TEXT,                         -- پرسش بنیادین یا توضیح کوتاه
+  body       TEXT,                         -- متن اصلی (مارک‌داون سبک)
+  extra      TEXT,                         -- JSON: مفاهیم، نقد، منابع، رنگ، آیکون
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  enabled    INTEGER NOT NULL DEFAULT 1,
+  updated_at TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_guide_kind ON guide_sections(kind, sort_order);
+
 CREATE TABLE IF NOT EXISTS prompts (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   key        TEXT NOT NULL UNIQUE,

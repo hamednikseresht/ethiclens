@@ -6,8 +6,15 @@ import {
   metaDescription, publishedAnalyses, publishedCount, findBySlug
 } from '../services/seo.js';
 import { renderAnalysis, verdictChips, faNum, splitVerdict } from '../services/render-analysis.js';
+import { guideContent } from '../services/guide.js';
 
 export const router = express.Router();
+
+/** محتوای دانشنامه — عمومی و بدون احراز هویت، تا صفحه راهنما بخواندش */
+router.get('/api/guide', (_req, res) => {
+  res.set('Cache-Control', 'public, max-age=120');
+  res.json(guideContent());
+});
 
 const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,7 +52,7 @@ function publicNav() {
 
 function siteFooter() {
   return `<footer class="site pub-footer">
-    <p><strong>EthicLens</strong> — دستیار تصمیم‌گیری اخلاقی ·
+    <p><strong>Ethic Lens</strong> — دستیار تصمیم‌گیری اخلاقی ·
        <a href="/about">درباره ما</a> · <a href="/guide">دانشنامه</a> · <a href="/explore">تحلیل‌های عمومی</a></p>
     <p>تحلیل‌ها با کمک مدل‌های زبانی تولید می‌شوند و می‌توانند خطا داشته باشند.<br>
        این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</p>
@@ -82,10 +89,10 @@ router.get('/a/:slug', (req, res, next) => {
     inLanguage: 'fa-IR',
     datePublished: isoDate(row.published_at),
     dateModified: isoDate(row.published_at || row.created_at),
-    author: { '@type': author ? 'Person' : 'Organization', name: author || 'EthicLens' },
+    author: { '@type': author ? 'Person' : 'Organization', name: author || 'Ethic Lens' },
     publisher: {
       '@type': 'Organization',
-      name: getSetting('site_title') || 'EthicLens',
+      name: getSetting('site_title') || 'Ethic Lens',
       ...(siteUrl(req) ? { url: siteUrl(req) } : {})
     },
     ...(url ? { mainEntityOfPage: { '@type': 'WebPage', '@id': url } } : {}),
@@ -106,7 +113,7 @@ router.get('/a/:slug', (req, res, next) => {
 
   const head = [
     metaTags({
-      req, title: `${title} — تحلیل اخلاقی | EthicLens`, description, path,
+      req, title: `${title} — تحلیل اخلاقی | Ethic Lens`, description, path,
       type: 'article', publishedAt: row.published_at,
       modifiedAt: row.published_at || row.created_at, author: author || undefined
     }),
@@ -144,13 +151,13 @@ ${publicNav()}
 
     <div class="disclaimer">
       این تحلیل با کمک یک مدل زبانی تولید شده و می‌تواند خطا داشته باشد.
-      EthicLens جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست و مسئولیت تصمیم با خود فرد است.
+      دیدگاه اخلاق جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست و مسئولیت تصمیم با خود فرد است.
     </div>
   </article>
 
   <aside class="pub-cta">
     <h2>دوراهی خودتان را تحلیل کنید</h2>
-    <p>EthicLens موقعیت شما را از هشت منظر فلسفه اخلاق می‌سنجد، تعارض‌ها را نشان می‌دهد و مسیری موجه پیشنهاد می‌کند.</p>
+    <p>Ethic Lens موقعیت شما را از هشت منظر فلسفه اخلاق می‌سنجد، تعارض‌ها را نشان می‌دهد و مسیری موجه پیشنهاد می‌کند.</p>
     <a class="btn btn-primary btn-lg" href="/login?mode=register">شروع رایگان</a>
     <a class="btn btn-lg" href="/explore">تحلیل‌های دیگر</a>
   </aside>
@@ -174,7 +181,7 @@ router.get('/explore', (req, res) => {
   const path = page > 1 ? `/explore?page=${page}` : '/explore';
   const description = total
     ? `${total} تحلیل اخلاقی منتشرشده — دوراهی‌های واقعی بررسی‌شده از منظر هشت مکتب فلسفه اخلاق: فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، خیر مشترک، قراردادگرایی، اخلاق مراقبت و بیشتر.`
-    : 'تحلیل‌های اخلاقی منتشرشده در EthicLens.';
+    : 'تحلیل‌های اخلاقی منتشرشده در دیدگاه اخلاق.';
 
   const listLd = items.length ? {
     '@context': 'https://schema.org',
@@ -189,7 +196,7 @@ router.get('/explore', (req, res) => {
 
   const head = [
     metaTags({
-      req, title: page > 1 ? `تحلیل‌های عمومی — صفحه ${page} | EthicLens` : 'تحلیل‌های اخلاقی عمومی | EthicLens',
+      req, title: page > 1 ? `تحلیل‌های عمومی — صفحه ${page} | Ethic Lens` : 'تحلیل‌های اخلاقی عمومی | Ethic Lens',
       description, path
     }),
     page > 1 ? `<link rel="prev" href="${esc(absoluteUrl(req, page === 2 ? '/explore' : `/explore?page=${page - 1}`))}">` : '',
@@ -231,7 +238,7 @@ ${publicNav()}
   <div class="pub-head">
     <h1>تحلیل‌های اخلاقی عمومی</h1>
     <p>
-      دوراهی‌های واقعی که کاربران EthicLens تحلیل کرده و برای استفاده دیگران منتشر کرده‌اند.
+      دوراهی‌های واقعی که کاربران Ethic Lens تحلیل کرده و برای استفاده دیگران منتشر کرده‌اند.
       هر تحلیل موقعیت را از هشت منظر فلسفه اخلاق می‌سنجد و از پنج دروازه تصمیم می‌گذراند.
     </p>
     ${total ? `<p class="hint">${faNum(total)} تحلیل منتشرشده</p>` : ''}
