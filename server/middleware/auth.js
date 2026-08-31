@@ -1,8 +1,43 @@
 import crypto from 'node:crypto';
 import { db } from '../db.js';
 import { getSetting } from '../services/settings.js';
+import { verifyKey, touchKey } from '../services/apikeys.js';
+
+/**
+ * احراز هویت با کلید API از سربرگ Authorization: Bearer.
+ *
+ * پیش از loadUser اجرا می‌شود. اگر کلید معتبر باشد، req.user را می‌گذارد
+ * و req.apiKey را علامت می‌زند تا CSRF نادیده گرفته شود — درخواستِ بدون
+ * کوکی اصلاً در معرض CSRF نیست.
+ */
+export function apiKeyAuth(req, res, next) {
+  const header = req.get('authorization') || '';
+  const m = header.match(/^Bearer\s+(.+)$/i);
+  if (!m) return next();
+
+  const result = verifyKey(m[1].trim());
+  if (!result.ok) {
+    const messages = {
+      malformed: 'قالب کلید API درست نیست. کلید باید با eth_ شروع شود.',
+      invalid:   'کلید API معتبر نیست.',
+      revoked:   'این کلید API باطل شده است.',
+      expired:   'این کلید API منقضی شده است.',
+      suspended: 'حساب مربوط به این کلید غیرفعال است.'
+    };
+    return res.status(401).json({
+      error: messages[result.reason] || 'کلید API معتبر نیست.',
+      code: `api_key_${result.reason}`
+    });
+  }
+
+  req.user = result.user;
+  req.apiKey = result.keyRow;
+  touchKey(result.keyRow.id, req.ip);
+  next();
+}
 
 export function loadUser(req, _res, next) {
+  if (req.apiKey) return next();          // از قبل با کلید API احراز شده
   req.user = null;
   if (req.session?.userId) {
     const u = db.prepare(`SELECT id, email, name, role, tier, status,
@@ -66,6 +101,7 @@ export function csrfToken(req) {
 }
 
 export function requireCsrf(req, res, next) {
+  if (req.apiKey) return next();          // بدون کوکی، پس بدون خطر CSRF
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
   const sent = req.get('x-csrf-token');
   if (!sent || !req.session?.csrf || sent !== req.session.csrf) {

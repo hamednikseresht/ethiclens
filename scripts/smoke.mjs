@@ -332,9 +332,17 @@ console.log('\n── دسترسی مدل بر اساس گروه ──');
 
 
 /* ---------------- انتشار عمومی و SEO ---------------- */
+// مقدار واقعی را نگه می‌داریم؛ site_url در پیوند ایمیل‌های تأیید استفاده می‌شود
+// و جا ماندنِ مقدار آزمایشی، آن پیوندها را خراب می‌کند.
+const SENTINEL_URL = 'https://smoke.test';
+let realSiteUrl = '';
 console.log('\n── انتشار عمومی و SEO ──');
 {
-  await req('/api/admin/settings', { method: 'POST', csrf, body: { site_url: 'https://smoke.test' } });
+  const captured = (await req('/api/admin/settings')).data.site_url || '';
+  // اگر اجرای قبلی مقدار آزمایشی را جا گذاشته باشد، آن را برنمی‌گردانیم —
+  // وگرنه آلودگی برای همیشه می‌ماند و پیوند ایمیل‌های تأیید خراب می‌شود.
+  realSiteUrl = captured === SENTINEL_URL ? '' : captured;
+  await req('/api/admin/settings', { method: 'POST', csrf, body: { site_url: SENTINEL_URL } });
 
   const mine = await req('/api/history?perPage=10');
   const target = mine.data.items?.find(i => i.status === 'done');
@@ -408,6 +416,14 @@ for (const p of ['/app', '/dashboard', '/history', '/admin', '/login', '/setting
   check(`${p} با noindex علامت خورده`, /noindex/.test(String(r.data)), `status=${r.status}`);
 }
 
+
+/* ---------------- بازگردانی تنظیمات آزمون ---------------- */
+{
+  await req('/api/admin/settings', { method: 'POST', csrf, body: { site_url: realSiteUrl } });
+  const back = await req('/api/admin/settings');
+  check('site_url پس از آزمون بازگردانده شد',
+    (back.data.site_url || '') === realSiteUrl, `مانده: ${back.data.site_url}`);
+}
 
 /* ---------------- تأیید ایمیل ---------------- */
 console.log('\n── تأیید ایمیل ──');

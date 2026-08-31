@@ -5,6 +5,7 @@ import { db, audit } from '../db.js';
 import { getSetting } from '../services/settings.js';
 import { allowanceSummary } from '../services/tiers.js';
 import { absoluteUrl } from '../services/seo.js';
+import { createKey, listKeys, revokeKey } from '../services/apikeys.js';
 import {
   mailConfigured, createToken, consumeToken, sendVerification, secondsSinceLastToken
 } from '../services/mail.js';
@@ -210,4 +211,44 @@ router.post('/verify', (req, res) => {
     req.session.userId = u.id;
     res.json({ ok: true, signedIn: true, user: publicUser({ ...u, email_verified: 1 }) });
   });
+});
+
+/* ==========================================================================
+   کلیدهای API — مدیریت توسط خود کاربر
+   ========================================================================== */
+router.get('/api-keys', requireAuth, (req, res) => {
+  res.json({ items: listKeys(req.user.id) });
+});
+
+router.post('/api-keys', requireAuth, (req, res) => {
+  const active = listKeys(req.user.id).filter(k => !k.revoked_at).length;
+  if (active >= 10) {
+    return res.status(400).json({ error: 'حداکثر ۱۰ کلید فعال می‌توانید داشته باشید. یکی را باطل کنید.' });
+  }
+
+  const name = String(req.body?.name || '').trim() || 'کلید بدون نام';
+  const days = req.body?.expiresInDays ? Number(req.body.expiresInDays) : null;
+
+  const created = createKey(req.user.id, name, {
+    expiresInDays: Number.isFinite(days) && days > 0 ? Math.min(days, 3650) : null
+  });
+
+  audit(req.user.id, 'api_key_create', { id: created.id, name }, req.ip);
+
+  // کلید کامل فقط همین یک بار برمی‌گردد
+  res.json({
+    ok: true,
+    id: created.id,
+    name,
+    key: created.key,
+    warning: 'این کلید دوباره نشان داده نمی‌شود. همین حالا در جای امنی ذخیره‌اش کنید.'
+  });
+});
+
+router.delete('/api-keys/:id', requireAuth, (req, res) => {
+  if (!revokeKey(req.user.id, req.params.id)) {
+    return res.status(404).json({ error: 'کلید یافت نشد یا از قبل باطل شده است.' });
+  }
+  audit(req.user.id, 'api_key_revoke', { id: Number(req.params.id) }, req.ip);
+  res.json({ ok: true });
 });
