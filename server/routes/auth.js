@@ -35,10 +35,16 @@ const loginLimiter = rateLimit({
  * محدودیت ثبت‌نام — جدا از ورود و سخت‌گیرانه‌تر.
  * اینجا برعکس: هر ثبت‌نام موفق هم شمرده می‌شود، چون دقیقاً همان چیزی
  * است که می‌خواهیم محدودش کنیم (ساخت انبوه حساب).
+ *
+ * سقف در تولید تنگ است ولی در توسعه گشاد، وگرنه آزمودن دستی جریان
+ * ثبت‌نام پس از چند بار غیرممکن می‌شود. با REGISTER_LIMIT قابل تنظیم است.
  */
+const REGISTER_LIMIT = Number(process.env.REGISTER_LIMIT)
+  || (process.env.NODE_ENV === 'production' ? 10 : 200);
+
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  limit: 10,
+  limit: REGISTER_LIMIT,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'تعداد ثبت‌نام از این نشانی بیش از حد بود. یک ساعت دیگر تلاش کنید.' }

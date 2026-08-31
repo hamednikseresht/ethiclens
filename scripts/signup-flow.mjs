@@ -48,7 +48,7 @@ ok('پاسخ اشتباه کپچا رد می‌شود', wrongCap.s === 400, JSON
 /* ================= ثبت‌نام ================= */
 console.log('\n── ثبت‌نام ──');
 // پاسخ درست را از سمت سرور می‌گیریم (در آزمون واقعی کاربر تصویر را می‌خواند)
-const { db } = await import('./server/db.js');
+const { db } = await import('../server/db.js');
 
 async function registerWith(body) {
   await U('/api/auth/captcha');                       // چالش تازه در نشست
@@ -70,6 +70,14 @@ async function registerWith(body) {
 const email = `flow${Date.now()}@gmail.com`;
 const reg = await registerWith({ email, password: 'Test12345!' });
 ok('ثبت‌نام بدون نام کار می‌کند', reg.s === 200, JSON.stringify(reg.d).slice(0, 160));
+
+if (reg.s !== 200) {
+  console.error('\n  ثبت‌نام ناموفق بود، پس بقیه آزمون‌ها بی‌معنا می‌شوند.');
+  console.error('  اگر خطا درباره محدودیت نرخ است، سرور را ری‌استارت کنید' +
+                ' یا REGISTER_LIMIT را بالاتر بگذارید.\n');
+  process.exit(1);
+}
+csrf = reg.d.csrf || csrf;
 ok('پیام انتظار تأیید برمی‌گردد', reg.d.pendingApproval === true && !!reg.d.message);
 ok('وضعیت کاربر pending است', reg.d.user?.status === 'pending', reg.d.user?.status);
 ok('نام نمایشی از ایمیل ساخته شد', reg.d.user?.name === email.split('@')[0], reg.d.user?.name);
@@ -97,7 +105,7 @@ ok('پرچم اعتبار ثبت شد', row.email_valid !== undefined,
    `valid=${row.email_valid} note=${row.email_check_note}`);
 console.log(`     → gmail.com: valid=${row.email_valid} — ${row.email_check_note}`);
 
-const { checkEmail } = await import('./server/services/email-check.js');
+const { checkEmail } = await import('../server/services/email-check.js');
 const bad1 = await checkEmail('someone@mailinator.com');
 ok('دامنه یک‌بارمصرف مشکوک علامت می‌خورد', bad1.valid === 0, bad1.note);
 const bad2 = await checkEmail('someone@gmial.com');
