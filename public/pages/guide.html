@@ -2,1318 +2,1126 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>دانشنامه کاربردی فلسفه اخلاق: راهنمای تصمیم‌گیری در دنیای معاصر</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>دانشنامه لنزهای اخلاقی — EthicLens</title>
+<meta name="description" content="راهنمای دانشگاهی هشت لنز فلسفه اخلاق و فرایند پنج‌فازی تصمیم‌گیری: فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، خیر مشترک، قراردادگرایی، اخلاق مراقبت، اگزیستانسیالیسم و تبارشناسی — با ارجاع به منابع اصلی.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg-body: #f8fafc;
-    --bg-surface: #ffffff;
-    --bg-subtle: #f1f5f9;
-    --border-color: #e2e8f0;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
-    --primary: #2563eb;
-    --primary-light: #eff6ff;
-    --accent: #0d9488;
-    --accent-light: #f0fdfa;
-    --warning-bg: #fffbeb;
-    --warning-border: #f59e0b;
-    --danger-bg: #fef2f2;
-    --danger-border: #ef4444;
-    --quote-border: #3b82f6;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
-    --radius: 16px;
-    --radius-sm: 10px;
-  }
-
-  [data-theme="dark"] {
-    --bg-body: #090d16;
-    --bg-surface: #111827;
-    --bg-subtle: #1f2937;
-    --border-color: #374151;
-    --text-main: #f3f4f6;
-    --text-muted: #9ca3af;
-    --primary: #60a5fa;
-    --primary-light: #1e293b;
-    --accent: #2dd4bf;
-    --accent-light: #134e4a;
-    --warning-bg: #451a03;
-    --warning-border: #d97706;
-    --danger-bg: #450a0a;
-    --danger-border: #dc2626;
-    --quote-border: #60a5fa;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
-    --shadow-md: 0 4px 8px rgba(0,0,0,0.5);
-    --shadow-lg: 0 10px 20px rgba(0,0,0,0.6);
-  }
-
-  * { 
-    box-sizing: border-box; 
-    margin: 0; 
-    padding: 0; 
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  html {
-    scroll-behavior: smooth;
-    scroll-padding-top: 5rem;
-  }
-
-  body {
-    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, Tahoma, sans-serif;
-    background-color: var(--bg-body);
-    color: var(--text-main);
-    line-height: 1.85;
-    transition: background-color 0.3s ease, color 0.3s ease;
-    overflow-x: hidden;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .container {
-    max-width: 1060px;
-    margin: 0 auto;
-    padding: 1.5rem 1rem;
-    padding-top: max(1.5rem, env(safe-area-inset-top));
-  }
-
-  /* هدر ارگونومیک موبایل */
-  header.hero {
-    background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-subtle) 100%);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 1.75rem 1.25rem;
-    margin-bottom: 1.5rem;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .top-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
-  }
-
-  .theme-toggle {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
-    padding: 0.5rem 0.9rem;
-    border-radius: 30px;
-    font-family: inherit;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    min-height: 44px;
-    box-shadow: var(--shadow-sm);
-  }
-
-  h1 {
-    font-size: clamp(1.45rem, 4vw + 0.5rem, 2.25rem);
-    font-weight: 900;
-    line-height: 1.35;
-    margin-bottom: 0.75rem;
-    letter-spacing: -0.02em;
-    color: var(--text-main);
-  }
-
-  .subtitle {
-    font-size: clamp(0.95rem, 2vw + 0.5rem, 1.1rem);
-    color: var(--text-muted);
-    font-weight: 400;
-    margin-bottom: 1.25rem;
-  }
-
-  .executive-summary {
-    background-color: var(--primary-light);
-    border-right: 4px solid var(--primary);
-    padding: 1.1rem 1.2rem;
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    font-size: 0.92rem;
-    line-height: 1.8;
-  }
-  .executive-summary strong { color: var(--primary); font-weight: 700; }
-
-  /* فهرست اسکرول افقی روی موبایل (Scrollable Chips) */
-  nav.toc {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 1.1rem;
-    margin-bottom: 2rem;
-    box-shadow: var(--shadow-sm);
-  }
-  nav.toc h4 {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    margin-bottom: 0.75rem;
-    font-weight: 700;
-  }
-  nav.toc .toc-list {
-    display: flex;
-    gap: 0.5rem;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-  }
-  nav.toc .toc-list::-webkit-scrollbar { height: 4px; }
-  nav.toc .toc-list::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
-
-  nav.toc a {
-    color: var(--text-main);
-    background: var(--bg-subtle);
-    border: 1px solid var(--border-color);
-    text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: 600;
-    padding: 0.5rem 0.85rem;
-    border-radius: 20px;
-    white-space: nowrap;
-    scroll-snap-align: start;
-    display: inline-flex;
-    align-items: center;
-    min-height: 38px;
-  }
-  nav.toc a:active, nav.toc a:hover {
-    background: var(--primary);
-    color: #ffffff;
-    border-color: var(--primary);
-  }
-
-  /* بخش‌های مکاتب */
-  section.school-card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 1.5rem 1.2rem;
-    margin-bottom: 1.75rem;
-    box-shadow: var(--shadow-sm);
-  }
-
-  h2 {
-    font-size: clamp(1.25rem, 3vw + 0.4rem, 1.6rem);
-    font-weight: 800;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.4rem;
-    color: var(--text-main);
-  }
-  h2 .badge {
-    font-size: 0.78rem;
-    background: var(--bg-subtle);
-    color: var(--primary);
-    border: 1px solid var(--border-color);
-    padding: 0.2rem 0.6rem;
-    border-radius: 20px;
-    font-weight: 600;
-    display: inline-block;
-  }
-
-  h3.sub-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    margin: 1.25rem 0 0.6rem;
-    color: var(--text-main);
-  }
-
-  p {
-    margin-bottom: 1rem;
-    text-align: justify;
-    font-size: 0.95rem;
-    color: var(--text-main);
-  }
-
-  blockquote {
-    background: var(--bg-subtle);
-    border-right: 4px solid var(--quote-border);
-    margin: 1rem 0;
-    padding: 0.9rem 1.1rem;
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    font-size: 0.92rem;
-    color: var(--text-main);
-  }
-
-  .thought-experiment {
-    background-color: var(--accent-light);
-    border: 1px dashed var(--accent);
-    border-radius: var(--radius-sm);
-    padding: 1rem 1.1rem;
-    margin: 1.2rem 0;
-  }
-  .thought-experiment h4 {
-    color: var(--accent);
-    margin-bottom: 0.4rem;
-    font-size: 0.98rem;
-    font-weight: 800;
-  }
-
-  .critique-box {
-    background-color: var(--danger-bg);
-    border-right: 4px solid var(--danger-border);
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    padding: 1rem 1.1rem;
-    margin: 1.2rem 0;
-    font-size: 0.9rem;
-  }
-  .critique-box h4 {
-    color: var(--danger-border);
-    margin-bottom: 0.3rem;
-    font-size: 0.95rem;
-    font-weight: 800;
-  }
-
-  .one-liner {
-    display: block;
-    background: var(--bg-subtle);
-    color: var(--primary);
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-sm);
-    font-weight: 700;
-    font-size: 0.88rem;
-    margin-top: 1rem;
-    border: 1px solid var(--border-color);
-    line-height: 1.6;
-  }
-
-  ul.detail-list {
-    margin: 0.8rem 0 1.2rem;
-    padding-right: 1.25rem;
-    font-size: 0.92rem;
-  }
-  ul.detail-list li { margin-bottom: 0.5rem; }
-
-  /* جدول سازگار با موبایل با اسکرول نرم */
-  .table-container {
-    overflow-x: auto;
-    margin: 1.5rem 0;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-sm);
-    -webkit-overflow-scrolling: touch;
-    position: relative;
-  }
-  .table-container::after {
-    content: "◀ برای مشاهده بقیه ستون‌ها به چپ بکشید";
-    display: block;
-    padding: 0.4rem 0.8rem;
-    background: var(--bg-subtle);
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-align: center;
-    border-top: 1px solid var(--border-color);
-  }
-  table {
-    width: 100%;
-    min-width: 650px;
-    border-collapse: collapse;
-    font-size: 0.88rem;
-    text-align: right;
-  }
-  th {
-    background-color: var(--bg-subtle);
-    color: var(--text-main);
-    font-weight: 700;
-    padding: 0.85rem 1rem;
-    border-bottom: 2px solid var(--border-color);
-    white-space: nowrap;
-  }
-  td {
-    padding: 0.85rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    vertical-align: top;
-    line-height: 1.6;
-  }
-
-  .tag {
-    display: inline-block;
-    padding: 0.2rem 0.6rem;
-    border-radius: 6px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    background: var(--primary-light);
-    color: var(--primary);
-  }
-
-  /* کنترلرهای سناریوها */
-  .scenarios-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.8rem;
-    margin-bottom: 1rem;
-  }
-  .btn-action {
-    background: var(--bg-subtle);
-    border: 1px solid var(--border-color);
-    color: var(--primary);
-    padding: 0.45rem 0.85rem;
-    border-radius: 20px;
-    font-size: 0.82rem;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-    min-height: 38px;
-  }
-
-  /* سناریوهای آکاردئونی تعاملی برای موبایل */
-  .scenarios-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-  }
-  details.scenario-card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 0;
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
-    transition: all 0.2s ease;
-  }
-  details.scenario-card[open] {
-    border-color: var(--primary);
-  }
-  details.scenario-card summary {
-    padding: 1.1rem 1.2rem;
-    font-size: 0.98rem;
-    font-weight: 800;
-    color: var(--text-main);
-    cursor: pointer;
-    list-style: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    user-select: none;
-    gap: 0.5rem;
-  }
-  details.scenario-card summary::-webkit-details-marker { display: none; }
-  details.scenario-card summary::after {
-    content: "＋";
-    font-size: 1.2rem;
-    color: var(--primary);
-    font-weight: bold;
-    flex-shrink: 0;
-    transition: transform 0.2s;
-  }
-  details.scenario-card[open] summary::after {
-    content: "－";
-  }
-  details.scenario-card .scenario-content {
-    padding: 0 1.2rem 1.2rem;
-    border-top: 1px solid var(--border-color);
-    padding-top: 1rem;
-  }
-  details.scenario-card ul { list-style: none; padding: 0; }
-  details.scenario-card li {
-    position: relative;
-    padding-right: 1.4rem;
-    margin-bottom: 0.75rem;
-    font-size: 0.9rem;
-    line-height: 1.7;
-  }
-  details.scenario-card li::before {
-    content: "◀";
-    position: absolute;
-    right: 0;
-    color: var(--accent);
-    font-size: 0.65rem;
-    top: 0.35rem;
-  }
-  details.scenario-card li strong { color: var(--primary); font-weight: 700; }
-
-  /* چک‌لیست لمسی */
-  .checklist-box {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 1.25rem 1rem;
-    margin: 1.5rem 0;
-  }
-  .checklist-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.85rem;
-    padding: 0.9rem 0;
-    border-bottom: 1px dashed var(--border-color);
-    cursor: pointer;
-  }
-  .checklist-item:last-child { border-bottom: none; }
-  .checklist-item input[type="checkbox"] {
-    width: 1.35rem;
-    height: 1.35rem;
-    margin-top: 0.2rem;
-    flex-shrink: 0;
-    cursor: pointer;
-    accent-color: var(--primary);
-  }
-  .checklist-text strong {
-    color: var(--text-main);
-    display: block;
-    font-size: 0.95rem;
-    margin-bottom: 0.2rem;
-  }
-  .checklist-text span {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    line-height: 1.5;
-    display: block;
-  }
-
-  /* دیاگرام و فلوچارت موبایل */
-  .diagram-wrapper {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 1.5rem 0.8rem;
-    margin: 1.75rem 0;
-    box-shadow: var(--shadow-sm);
-  }
-  .diagram-header { text-align: center; margin-bottom: 1.2rem; }
-  .diagram-legend {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0.6rem 1rem;
-    margin-bottom: 1.5rem;
-    padding: 0.6rem 0.8rem;
-    background: var(--bg-subtle);
-    border-radius: 20px;
-    border: 1px solid var(--border-color);
-    font-size: 0.78rem;
-  }
-  .legend-item { display: flex; align-items: center; gap: 0.35rem; }
-  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-  .legend-dot.start { background-color: #1d4ed8; }
-  .legend-dot.check { background-color: #2563eb; }
-  .legend-dot.filter { background-color: #3b82f6; }
-  .legend-dot.reject { background-color: #ef4444; }
-
-  .mermaid-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 0.5rem 0;
-    display: flex;
-    justify-content: center;
-  }
-  .mermaid {
-    direction: ltr !important;
-    min-width: 320px;
-    max-width: 100%;
-  }
-
-  .note-box {
-    background: var(--bg-subtle);
-    border-right: 4px solid var(--accent);
-    padding: 1rem 1.1rem;
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    font-size: 0.88rem;
-    line-height: 1.75;
-    margin-top: 1.2rem;
-  }
-  .note-box ol { padding-right: 1.1rem; margin-top: 0.4rem; }
-  .note-box li { margin-bottom: 0.35rem; }
-
-  /* منابع */
-  .reading-list {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 1.5rem 1.2rem;
-  }
-  .reading-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.9rem;
-    margin-top: 1rem;
-  }
-  .reading-item {
-    background: var(--bg-subtle);
-    padding: 1rem;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-color);
-    font-size: 0.88rem;
-  }
-  .reading-item strong {
-    color: var(--primary);
-    display: block;
-    margin-bottom: 0.2rem;
-    font-size: 0.95rem;
-  }
-
-  /* دکمه شناور برگشت به بالا */
-  .fab-top {
-    position: fixed;
-    bottom: max(1.25rem, env(safe-area-inset-bottom));
-    left: 1.25rem;
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    background: var(--primary);
-    color: #ffffff;
-    border: none;
-    box-shadow: var(--shadow-lg);
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    z-index: 999;
-    transition: transform 0.2s;
-  }
-  .fab-top:active { transform: scale(0.92); }
-
-  footer {
-    text-align: center;
-    padding: 3rem 1rem 2rem;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    border-top: 1px solid var(--border-color);
-    margin-top: 3rem;
-  }
-
-  @media (min-width: 768px) {
-    .container { padding: 3rem 1.5rem; }
-    header.hero { padding: 3rem 2.5rem; }
-    section.school-card { padding: 2.5rem; }
-    h2 { flex-direction: row; align-items: center; }
-    .reading-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-    nav.toc .toc-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); overflow: visible; }
-    nav.toc a { white-space: normal; }
-  }
-
-  /* --- فلوچارت بومی (جایگزین مرمید) --- */
-  .mermaid-scroll{display:block;overflow:visible}
-  .flow-native{display:flex;flex-direction:column;align-items:stretch;gap:.35rem;max-width:640px;margin:0 auto}
-  .flow-node{
-    border-radius:12px;padding:.85rem 1rem;font-size:.88rem;font-weight:700;line-height:1.7;
-    text-align:center;border:2px solid var(--border-color);background:var(--bg-subtle);color:var(--text-main);
-  }
-  .flow-start,.flow-final{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:800}
-  .flow-final{background:var(--accent);border-color:var(--accent)}
-  .flow-gate{background:var(--bg-surface);border-color:var(--primary)}
-  .flow-calc{background:var(--primary-light);border-color:var(--primary);color:var(--primary)}
-  .flow-action{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
-  .flow-link{text-align:center;color:var(--text-muted);font-size:1.1rem;line-height:1}
-  .flow-step{display:flex;flex-direction:column;gap:.35rem}
-  .flow-branches{display:grid;grid-template-columns:1fr;gap:.35rem;padding-inline-start:1rem;
-                 border-inline-start:2px dashed var(--border-color);margin-inline-start:1rem}
-  @media (min-width:620px){.flow-branches{grid-template-columns:1fr 1fr;border:none;padding:0;margin:0}}
-  .flow-branch{
-    border-radius:10px;padding:.7rem .85rem;font-size:.82rem;line-height:1.65;
-    border:1px solid var(--border-color);background:var(--bg-subtle);
-  }
-  .flow-label{display:block;font-size:.72rem;font-weight:800;margin-bottom:.2rem;opacity:.85}
-  .flow-good{background:var(--accent-light);border-color:var(--accent);color:var(--text-main)}
-  .flow-good .flow-label{color:var(--accent)}
-  .flow-warn{background:var(--warning-bg);border-color:var(--warning-border)}
-  .flow-warn .flow-label{color:var(--warning-border)}
-  .flow-bad{background:var(--danger-bg);border-color:var(--danger-border)}
-  .flow-bad .flow-label{color:var(--danger-border)}
-
-
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/motion.css">
+<style>
+  .g-hero{padding:2.5rem 0 1.5rem}
+  .g-hero h1{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:900;line-height:1.5;margin-bottom:.7rem}
+  .g-hero .lead{font-size:1rem;color:var(--text-muted);line-height:2;max-width:70ch}
+
+  /* فهرست */
+  .toc{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);
+       padding:1.1rem 1.3rem;margin-bottom:2rem}
+  .toc h2{font-size:.85rem;color:var(--text-muted);font-weight:700;margin-bottom:.7rem}
+  .toc-list{display:grid;grid-template-columns:1fr;gap:.35rem}
+  @media (min-width:700px){.toc-list{grid-template-columns:1fr 1fr}}
+  .toc a{font-size:.88rem;font-weight:600;padding:.35rem .5rem;border-radius:7px;
+         display:flex;align-items:center;gap:.5rem}
+  .toc a:hover{background:var(--bg-subtle);text-decoration:none}
+  .toc a i{font-style:normal;color:var(--text-faint);font-size:.78rem;min-width:1.4rem}
+
+  /* بخش */
+  .sec{margin:2.5rem 0}
+  .sec-title{font-size:1.35rem;font-weight:900;margin-bottom:.4rem;
+             display:flex;align-items:center;gap:.6rem;scroll-margin-top:5rem}
+  .sec-lead{font-size:.92rem;color:var(--text-muted);line-height:2;margin-bottom:1.4rem;max-width:72ch}
+
+  /* فاز */
+  .phases{display:grid;grid-template-columns:1fr;gap:.85rem;counter-reset:ph}
+  @media (min-width:900px){.phases{grid-template-columns:1fr 1fr}}
+  .phase-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-sm);
+              padding:1.1rem 1.2rem;border-top:3px solid var(--primary)}
+  .phase-card h3{font-size:1rem;font-weight:800;margin-bottom:.35rem;display:flex;gap:.5rem;align-items:baseline}
+  .phase-card h3 b{color:var(--primary);font-size:.8rem}
+  .phase-card p{font-size:.87rem;color:var(--text-muted);line-height:1.95;margin-bottom:.6rem}
+  .phase-card ul{list-style:none;font-size:.85rem;line-height:1.9}
+  .phase-card li{position:relative;padding-inline-start:1rem;margin-bottom:.3rem}
+  .phase-card li::before{content:"";position:absolute;inset-inline-start:.2rem;top:.72em;
+                         width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+  /* لنز */
+  .lens{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);
+        margin-bottom:1.1rem;overflow:hidden;border-top:3px solid var(--lc)}
+  .lens-head{padding:1.2rem 1.4rem .9rem;display:flex;gap:.9rem;align-items:flex-start;flex-wrap:wrap}
+  .lens-ic{font-size:1.7rem;line-height:1.2}
+  .lens-name{font-size:1.15rem;font-weight:900;line-height:1.4}
+  .lens-orig{font-size:.78rem;color:var(--text-faint);direction:ltr;display:block;margin-top:.1rem}
+  .lens-q{background:var(--bg-subtle);border-inline-start:3px solid var(--lc);
+          border-radius:0 var(--r-xs) var(--r-xs) 0;padding:.6rem .9rem;margin:0 1.4rem .9rem;
+          font-size:.92rem;font-weight:700;line-height:1.8}
+  .lens-body{padding:0 1.4rem 1.2rem}
+  .lens-body p{font-size:.9rem;line-height:2;margin-bottom:.9rem}
+  .lens-body h4{font-size:.86rem;font-weight:800;margin:1.1rem 0 .5rem;color:var(--text)}
+
+  .concepts{display:grid;grid-template-columns:1fr;gap:.6rem}
+  @media (min-width:700px){.concepts{grid-template-columns:1fr 1fr}}
+  .concept{background:var(--bg-subtle);border-radius:var(--r-xs);padding:.7rem .85rem}
+  .concept b{display:block;font-size:.87rem;font-weight:800;margin-bottom:.15rem}
+  .concept .term{font-size:.72rem;color:var(--text-faint);direction:ltr;display:block;margin-bottom:.3rem}
+  .concept span{font-size:.83rem;color:var(--text-muted);line-height:1.85}
+
+  .critique{background:var(--danger-soft);border-inline-start:3px solid var(--danger);
+            border-radius:0 var(--r-xs) var(--r-xs) 0;padding:.75rem .95rem;margin-top:1rem;font-size:.86rem;line-height:1.9}
+  .critique b{color:var(--danger)}
+
+  .srcs{margin-top:1rem;padding-top:.85rem;border-top:1px solid var(--border);
+        font-size:.8rem;color:var(--text-muted);line-height:1.95}
+  .srcs b{color:var(--text);font-size:.78rem;display:block;margin-bottom:.3rem}
+  .srcs cite{font-style:italic}
+
+  /* دروازه */
+  .gates{display:flex;flex-direction:column;gap:.5rem}
+  .gate{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-sm);
+        padding:1rem 1.15rem;display:grid;grid-template-columns:auto 1fr;gap:.9rem;align-items:start;
+        border-inline-start:3px solid var(--gc)}
+  .gate-n{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+          background:var(--bg-subtle);color:var(--gc);font-weight:900;font-size:.95rem;border:2px solid var(--gc)}
+  .gate h3{font-size:1rem;font-weight:800;margin-bottom:.1rem}
+  .gate .kind{font-size:.7rem;font-weight:800;padding:.1rem .45rem;border-radius:999px;
+              background:var(--bg-subtle);color:var(--gc);margin-inline-start:.4rem;vertical-align:middle}
+  .gate .who{font-size:.76rem;color:var(--text-muted);margin-bottom:.4rem}
+  .gate p{font-size:.87rem;line-height:1.95;color:var(--text-muted)}
+  .gate-link{height:16px;width:2px;background:var(--border-strong);margin-inline-start:calc(1.15rem + 16px)}
+
+  /* جدول تطبیقی */
+  .cmp{font-size:.83rem}
+  .cmp th{font-size:.76rem}
+  .cmp td:first-child{font-weight:800;white-space:nowrap}
+
+  /* آزمایش فکری */
+  .exp{background:var(--accent-soft);border:1px dashed var(--accent);border-radius:var(--r-sm);
+       padding:1rem 1.15rem;margin-bottom:.85rem}
+  .exp h3{font-size:.95rem;font-weight:800;margin-bottom:.4rem;color:var(--text)}
+  .exp p{font-size:.87rem;line-height:1.95;margin-bottom:.5rem}
+  .exp .ref{font-size:.76rem;color:var(--text-muted);direction:ltr;text-align:right}
+
+  /* کتاب‌شناسی */
+  .bib{font-size:.86rem;line-height:2.1}
+  .bib h3{font-size:.95rem;font-weight:800;margin:1.3rem 0 .5rem}
+  .bib ol{list-style:none;counter-reset:b}
+  .bib li{counter-increment:b;position:relative;padding-inline-start:2rem;margin-bottom:.55rem;
+          color:var(--text-muted)}
+  .bib li::before{content:counter(b) ".";position:absolute;inset-inline-start:0;
+                  color:var(--text-faint);font-variant-numeric:tabular-nums}
+  .bib cite{font-style:italic;color:var(--text)}
+  .bib .fa-tr{display:block;font-size:.8rem;color:var(--text-faint)}
+
+  .note{background:var(--primary-soft);border-inline-start:4px solid var(--primary);
+        border-radius:0 var(--r-sm) var(--r-sm) 0;padding:.95rem 1.15rem;font-size:.88rem;
+        line-height:2;margin:1.2rem 0}
+
+  .cta-guide{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;
+             border-radius:var(--r);padding:1.8rem 1.5rem;text-align:center;margin:2.5rem 0 1rem}
+  .cta-guide h2{font-size:1.15rem;font-weight:900;margin-bottom:.5rem}
+  .cta-guide p{opacity:.93;font-size:.9rem;margin-bottom:1.1rem;max-width:52ch;margin-inline:auto;line-height:1.9}
+  .cta-guide .btn{background:#fff;border-color:#fff;color:var(--primary)}
+  .cta-guide .btn:hover{background:#fff;color:var(--primary);filter:brightness(.96)}
+</style>
 </head>
 <body>
 <header class="topbar" id="topbar"></header>
 
-<div class="container">
+<main class="wrap">
 
-  <!-- Header -->
-  <header class="hero">
-    <div class="top-bar">
-      <span class="tag">فلسفه اخلاق کاربردی</span>
-      
-    </div>
-    <h1>دانشنامه کاربردی فلسفه اخلاق</h1>
-    <p class="subtitle">راهنمای عملی تصمیم‌گیری‌های پیچیده در عصر هوش مصنوعی، بحران‌های زیستی و اقتصاد شبکه‌ای</p>
-    
-    <div class="executive-summary">
-      <strong>خلاصه اجرایی و نقشه راه:</strong> فلسفه اخلاق چارچوبی روش‌مند برای حل منازعات بشر است و به ۳ شاخه اصلی تقسیم می‌شود: <em>فضیلت‌محور (Aretaic)</em> با تمرکز بر «عامل و منش»؛ <em>وظیفه‌محور (Deontic)</em> با تمرکز بر «نیت و قانون»؛ و <em>پیامدگرایانه (Teleological)</em> با تمرکز بر «بیشترین فایده جمعی». در این راهنما، ۷ مکتب بزرگ فکری، ۱۵ سناریوی واقعی دنیای مدرن و فلوچارت چندمرحله‌ای تصمیم‌گیری آورده شده است.
-    </div>
-  </header>
+  <div class="g-hero">
+    <span class="badge badge-primary">مرجع نظری EthicLens</span>
+    <h1>دانشنامه لنزهای اخلاقی</h1>
+    <p class="lead">
+      هر لنز، یک سنت فلسفی است که پرسش متفاوتی از موقعیت می‌پرسد و بخشی از آن را
+      روشن می‌کند که لنزهای دیگر نمی‌بینند. این صفحه، مبنای نظری تحلیل‌هایی است که
+      EthicLens تولید می‌کند: هشت لنز، پنج دروازه پالایش، و فرایند پنج‌فازی تصمیم‌گیری —
+      همراه با ارجاع به منابع اصلی هر مفهوم.
+    </p>
+  </div>
 
-  <!-- Quick Horizontal Scrollable TOC on Mobile -->
   <nav class="toc">
-    <h4>دسته‌بندی‌ها و دسترسی سریع (افقی بکشید):</h4>
+    <h2>فهرست</h2>
     <div class="toc-list">
-      <a href="#virtue">۱. فضیلت‌گرایی</a>
-      <a href="#deontology">۲. وظیفه‌گرایی</a>
-      <a href="#utilitarianism">۳. فایده‌گرایی</a>
-      <a href="#contractualism">۴. قراردادگرایی</a>
-      <a href="#care">۵. اخلاق مراقبت</a>
-      <a href="#existentialism">۶. اگزیستانسیالیسم</a>
-      <a href="#nietzsche">۷. تبارشناسی نیچه</a>
-      <a href="#comparison">📊 جدول مقایسه</a>
-      <a href="#scenarios">⚡ ۱۵ دوراهی واقعی</a>
-      <a href="#decision-tool">🧭 الگوریتم تصمیم</a>
-      <a href="#readings">📚 کتاب‌شناسی</a>
+      <a href="#framework"><i>۱</i> فرایند پنج‌فازی تصمیم‌گیری</a>
+      <a href="#lenses"><i>۲</i> هشت لنز اخلاقی</a>
+      <a href="#gates"><i>۳</i> پنج دروازه پالایش</a>
+      <a href="#compare"><i>۴</i> جدول تطبیقی</a>
+      <a href="#experiments"><i>۵</i> آزمایش‌های فکری کلاسیک</a>
+      <a href="#bibliography"><i>۶</i> کتاب‌شناسی</a>
     </div>
   </nav>
 
-  <main>
-    <!-- 1. Virtue Ethics -->
-    <section class="school-card" id="virtue">
-      <h2>۱. فضیلت‌گرایی (Virtue Ethics) <span class="badge">«چه نوع انسانی باید باشم؟»</span></h2>
-      <p>در سنت فضیلت‌گرایی (سقراط، ارسطو و مک‌اینتایر)، اخلاق از پاسخ به پرسش «کار درست چیست؟» آغاز نمی‌شود، بلکه می‌پرسد: <strong>«انسان خوب کیست و چه شخصیتی شکوفایی (Eudaimonia) می‌آفریند؟»</strong>. غایت انسان، زیستن بر اساس عقل و پرورش ملکات اخلاقی است.</p>
-      
-      <h3 class="sub-title">مفاهیم کلیدی:</h3>
-      <ul class="detail-list">
-        <li><strong>حکمت عملی (Phronesis):</strong> توانایی تشخیص موقعیتیِ حد وسط؛ اخلاق شهود و تجربه عملی است نه فرمول خشک ریاضی.</li>
-        <li><strong>قاعده زرین حد وسط:</strong> فضیلت تعادل میان دو رذیلتِ «افراط» و «تفریط» است (مثلاً شجاعت میان ترسویی و بی‌کله‌گی).</li>
-      </ul>
+  <!-- ═══════════ فاز ═══════════ -->
+  <section class="sec">
+    <h2 class="sec-title" id="framework">🧭 فرایند پنج‌فازی تصمیم‌گیری</h2>
+    <p class="sec-lead">
+      لنزها به‌تنهایی تصمیم نمی‌سازند؛ باید در ترتیبی به کار روند. ساختار زیر برگرفته از
+      چارچوب مرکز اخلاق کاربردی مارکولا در دانشگاه سانتا کلارا است، که از دهه ۱۹۸۰ تدوین
+      و بارها بازنگری شده و امروز یکی از پرکاربردترین چارچوب‌های آموزشی اخلاق کاربردی است.
+      EthicLens خروجی خود را دقیقاً بر همین پنج فاز می‌چیند.
+    </p>
 
-      <div class="thought-experiment">
-        <h4>🧪 آزمایش فکری: انگشتر گیگز (Ring of Gyges)</h4>
-        <p>اگر با داشتن انگشتری نامرئی شوید و هیچ‌کس شما را نبیند، آیا عادل می‌مانید؟ فضیلت‌گرا می‌گوید: بلی، چون ظلم روح خود فرد را تخریب می‌کند.</p>
+    <div class="phases">
+      <div class="phase-card">
+        <h3><b>فاز ۱</b> تشخیص مسئله اخلاقی</h3>
+        <p>
+          پیش از تحلیل باید پرسید آیا اصلاً با مسئله‌ای اخلاقی روبه‌روییم. بسیاری از
+          دشواری‌ها فنی، حقوقی یا مدیریتی‌اند و اخلاق چیزی به آن‌ها اضافه نمی‌کند.
+        </p>
+        <ul>
+          <li>آیا این تصمیم می‌تواند به کسی آسیب بزند یا نفع را نابرابر توزیع کند؟</li>
+          <li>آیا مسئله فراتر از «قانونی بودن» و «کارآمد بودن» است؟</li>
+          <li>تعارض میان خیر و شر است، یا میان دو خیر، یا میان دو شر؟</li>
+        </ul>
       </div>
 
-      <div class="critique-box">
-        <h4>⚠️ نقد و نقطه کور:</h4>
-        فقدان راهنمای عملی سریع و گام‌به‌گام در بحران‌ها و دوراهی‌های حاد غیرمنتظره.
+      <div class="phase-card">
+        <h3><b>فاز ۲</b> گردآوری واقعیت‌ها</h3>
+        <p>
+          بیشتر اختلاف‌های به‌ظاهر اخلاقی، در واقع اختلاف بر سر واقعیت‌اند. تفکیک
+          آنچه می‌دانیم از آنچه فرض کرده‌ایم، نیمی از کار است.
+        </p>
+        <ul>
+          <li>چه می‌دانیم و چه نمی‌دانیم؟ آیا برای تصمیم کافی است؟</li>
+          <li>چه کسانی ذی‌نفع‌اند و کدام‌شان صدایی در این تصمیم ندارند؟</li>
+          <li>گزینه‌ها کدام‌اند — از جمله گزینه‌هایی که هنوز طرح نشده‌اند؟</li>
+        </ul>
       </div>
 
-      <div class="one-liner">💡 ارسطو: «تعالی اخلاقی یک عمل مقطعی نیست، بلکه یک عادت درونی است.»</div>
-    </section>
-
-    <!-- 2. Deontology -->
-    <section class="school-card" id="deontology">
-      <h2>۲. وظیفه‌گرایی و کانت (Deontology) <span class="badge">«تکلیف قطعی عقلانی من چیست؟»</span></h2>
-      <p><strong>ایمانوئل کانت</strong> ارزش عمل را صرفاً در <strong>«نیت پاک»</strong> و انجام کار به انگیزه <strong>«احترام به قانون اخلاقی عقل»</strong> می‌داند؛ بدون توجه به نتایج و پیامدها.</p>
-
-      <h3 class="sub-title">اصول امر مطلق (Categorical Imperative):</h3>
-      <ul class="detail-list">
-        <li><strong>قانون عام:</strong> «چنان عمل کن که بتوانی بخواهی قاعده رفتارت قانونی جهانی برای همه انسان‌ها شود.»</li>
-        <li><strong>کرامت انسان:</strong> «هرگز به انسانیت به عنوان صرفاً یک ابزار نگاه نکن، بلکه همواره غایت فی‌نفسه بنگر.»</li>
-      </ul>
-
-      <div class="thought-experiment">
-        <h4>🧪 آزمایش فکری: قاتل پشت در (The Inquiring Murderer)</h4>
-        <p>دوست شما پنهان شده و قاتل در می‌زند و جایش را می‌پرسد. کانت می‌گوید دروغ‌گفتن مجاز نیست؛ چرا که دروغ‌گویی اعتبار گفتار بشری را نابود می‌کند.</p>
+      <div class="phase-card">
+        <h3><b>فاز ۳</b> ارزیابی گزینه‌ها</h3>
+        <p>
+          هر گزینه از منظر همه لنزها سنجیده می‌شود. ارزش این فاز در توافق لنزها نیست،
+          در آشکارشدن تعارضشان است: جایی که دو لنز به دو نتیجه متضاد می‌رسند، دقیقاً
+          همان‌جاست که تصمیم واقعاً اخلاقی است.
+        </p>
+        <ul>
+          <li>هر گزینه از هر لنز چه نمره‌ای می‌گیرد؟</li>
+          <li>کدام تعارض‌ها بنیادی‌اند و کدام با بازطراحی گزینه حل می‌شوند؟</li>
+        </ul>
       </div>
 
-      <div class="critique-box">
-        <h4>⚠️ نقد و نقطه کور:</h4>
-        انعطاف‌ناپذیری شدید و ناتوانی در حل تعارض میان دو وظیفه (مثل تعارض راست‌گویی با نجات جان دوست).
+      <div class="phase-card">
+        <h3><b>فاز ۴</b> تصمیم و آزمون آن</h3>
+        <p>
+          تصمیم پیش از اجرا باید در برابر نگاه بیرونی محک بخورد. سه آزمون کلاسیک،
+          خودفریبی را زودتر از استدلال آشکار می‌کنند.
+        </p>
+        <ul>
+          <li><b>آزمون علنی‌بودن:</b> اگر فردا منتشر شود، می‌توانید از آن دفاع کنید؟</li>
+          <li><b>آزمون فرد مورد احترام:</b> کسی که قضاوتش را می‌ستایید چه می‌گوید؟</li>
+          <li><b>آزمون معکوس:</b> اگر جای طرف مقابل بودید، منصفانه‌اش می‌دانستید؟</li>
+        </ul>
       </div>
 
-      <div class="one-liner">💡 کانت: «تنها در درون انسان است که قانون اخلاقی مستقل از سودجویی می‌درخشد.»</div>
-    </section>
-
-    <!-- 3. Utilitarianism -->
-    <section class="school-card" id="utilitarianism">
-      <h2>۳. فایده‌گرایی (Utilitarianism) <span class="badge">«کدام انتخاب بیشترین خیر جمعی را دارد؟»</span></h2>
-      <p>بر اساس آرای <strong>بنتام</strong>، <strong>میل</strong> و <strong>سینگر</strong>، عملی درست است که <strong>«بیشترین میزان رفاه و لذت و کمترین میزان درد و رنج را برای بیشترین شمار افراد»</strong> پدید آورد.</p>
-
-      <h3 class="sub-title">انواع فایده‌گرایی:</h3>
-      <ul class="detail-list">
-        <li><strong>فایده‌گرایی کیفی (میل):</strong> لذت‌های فکری، هنری و اخلاقی برتر از لذت‌های جسمانی‌اند.</li>
-        <li><strong>فایده‌گرایی عمل‌نگر در برابر قاعده‌نگر:</strong> پیروی از قواعدی که رعایت همگانی آنها در درازمدت سودمندترین نتیجه را دارد.</li>
-      </ul>
-
-      <div class="thought-experiment">
-        <h4>🧪 آزمایش فکری: ماشین تجربه نوزیک</h4>
-        <p>اگر ماشینی لذت مطلق خیالی شبیه‌سازی کند، آیا وصل می‌شوید؟ بیشتر مردم رد می‌کنند؛ چون خواهان اصالت و واقعیت‌اند.</p>
+      <div class="phase-card" style="border-top-color:var(--accent)">
+        <h3><b>فاز ۵</b> اجرا و بازنگری</h3>
+        <p>
+          فازی که بیشترین کم‌توجهی را می‌بیند. تصمیم درست، بد اجرا شود آسیب می‌زند؛
+          و بدون بازگشت و ارزیابی نتیجه، هیچ یادگیری‌ای رخ نمی‌دهد.
+        </p>
+        <ul>
+          <li>چطور با کمترین آسیب اجرا شود؟ ترتیب گفت‌وگوها چیست؟</li>
+          <li>بعداً چه شد؟ چه چیزی غافلگیرمان کرد؟</li>
+        </ul>
       </div>
+    </div>
 
-      <div class="critique-box">
-        <h4>⚠️ نقد و نقطه کور:</h4>
-        خطر قربانی‌شدن حقوق اساسی اقلیت‌ها به بهانه خوشبختی و منفعت اکثریت.
-      </div>
+    <div class="note">
+      <strong>چرا این فاز پنجم مهم است؟</strong>
+      در EthicLens برای همین «دفترچه بازنگری» وجود دارد: پس از هر تحلیل می‌توانید ثبت کنید
+      واقعاً چه تصمیمی گرفتید و بعداً چه شد. این تنها بخشی از فرایند است که هیچ مدل زبانی
+      نمی‌تواند جای شما انجام دهد — و همان چیزی است که دفعه بعد قضاوتتان را بهتر می‌کند.
+    </div>
+  </section>
 
-      <div class="one-liner">💡 بنتام: «معیار درستی و نادرستی، ایجاد بیشترین خوشبختی برای بیشترین افراد است.»</div>
-    </section>
+  <!-- ═══════════ لنزها ═══════════ -->
+  <section class="sec">
+    <h2 class="sec-title" id="lenses">🔍 هشت لنز اخلاقی</h2>
+    <p class="sec-lead">
+      این هشت لنز نماینده سه خانواده بزرگ فلسفه اخلاق‌اند: <b>فضیلت‌محور</b> (تمرکز بر عاملِ
+      اخلاقی و منش او)، <b>وظیفه‌محور</b> (تمرکز بر خودِ عمل و قاعده آن)، و <b>پیامدگرا</b>
+      (تمرکز بر نتایج) — به‌علاوه دو منظر انتقادی که خودِ ارزش‌ها را زیر سؤال می‌برند.
+    </p>
 
-    <!-- 4. Contractualism -->
-    <section class="school-card" id="contractualism">
-      <h2>۴. قراردادگرایی و عدالت رالزی <span class="badge">«بر چه قواعدی توافق داریم؟»</span></h2>
-      <p>اخلاق ناشی از توافق منصفانه میان عاملان عاقل است. <strong>جان رالز</strong> مفهوم درخشان <em>«پرده جهل»</em> را برای طراحی جامعه عادلانه پیشنهاد داد.</p>
-
-      <h3 class="sub-title">ارکان عدالت رالز:</h3>
-      <ul class="detail-list">
-        <li><strong>پرده جهل (Veil of Ignorance):</strong> تدوین قوانین بدون اطلاع از اینکه فقیر خواهیم بود یا غنی، زن یا مرد، بیمار یا سالم.</li>
-        <li><strong>اصل تفاوت:</strong> نابرابری‌ها تنها در صورتی مجازند که بیشترین نفع را به محروم‌ترین قشر جامعه برسانند.</li>
-      </ul>
-
-      <div class="critique-box">
-        <h4>⚠️ نقد و نقطه کور:</h4>
-        نادیده‌گرفتن موجوداتی که توانایی چانه‌زنی در قرارداد را ندارند (حیوانات و نسل‌های آینده).
-      </div>
-
-      <div class="one-liner">💡 رالز: «عدالت نخستین فضیلت نهادهای اجتماعی است.»</div>
-    </section>
-
-    <!-- 5. Ethics of Care -->
-    <section class="school-card" id="care">
-      <h2>۵. اخلاق مراقبت (Ethics of Care) <span class="badge">«مسئولیت من در برابر افراد وابسته چیست؟»</span></h2>
-      <p>پیشگامانی چون <strong>کارول گیلیگان</strong> و <strong>نل نادینگز</strong> نشان دادند اخلاق واقعی در <strong>پاسخگویی به نیازهای انضمامی، همدلی و مراقبت از پیوندها</strong> شکل می‌گیرد نه در قوانین انتزاعی خشک.</p>
-
-      <div class="thought-experiment">
-        <h4>🧪 دوراهی هاینز (Heinz Dilemma)</h4>
-        <p>هاینز پولی برای خرید داروی همسر در حال مرگش ندارد؛ اخلاق مراقبت به‌جای بحث نظری حق مالکیت، بر حفظ رابطه و نجات بیمار از طریق گفتگو تأکید می‌کند.</p>
-      </div>
-
-      <div class="critique-box">
-        <h4>⚠️ نقد و نقطه کور:</h4>
-        خطر پارتی‌بازی و ترجیح دادن نزدیکان و عزیزان بر افراد غریبه در توزیع منابع.
-      </div>
-
-      <div class="one-liner">💡 نادینگز: «اخلاق با درک نیاز انسان آسیب‌پذیر و لمس دلسوزانه رنج او آغاز می‌شود.»</div>
-    </section>
-
-    <!-- 6. Existentialism (Rewritten with Kierkegaard & Camus) -->
-    <section class="school-card" id="existentialism">
-      <h2>۶. اگزیستانسیالیسم و اخلاق اصالت <span class="badge">«با مسئولیت فردی و معنای زیسته چه می‌کنم؟»</span></h2>
-      <p>در اندیشه پیشگامان اگزیستانسیالیسم مانند <strong>سورن کی‌یرکگور</strong> و <strong>آلبر کامو</strong>، اخلاق مجموعه‌ای از هنجارهای کلیشه‌ای جامعه نیست؛ بلکه در گرو <strong>«اصالت فردی، تعهد درونی و شجاعت رویارویی با حقیقت هستی»</strong> است.</p>
-
-      <h3 class="sub-title">مفاهیم کلیدی:</h3>
-      <ul class="detail-list">
-        <li><strong>مواجهه فردی با حقیقت (کی‌یرکگور):</strong> حقیقت اخلاقی فرمولی کلی نیست، بلکه در ربط و پیوند عمیقِ زیسته با وجدان فرد معنا می‌یابد.</li>
-        <li><strong>عصیان اصیل در برابر پوچی (کامو):</strong> ایستادگی در برابر بی‌معنایی جهان از طریق شرافت، همبستگی انسانی و نپذیرفتن ستم.</li>
-      </ul>
-
-      <div class="thought-experiment">
-        <h4>🧪 آزمایش فکری: تعلیق غایت‌شناختی اخلاق (ترس و لرز کی‌یرکگور)</h4>
-        <p>کی‌یرکگور آزمون قربانی‌کردن اسحاق توسط ابراهیم را مطرح می‌کند: لحظاتی در زندگی هست که انسان با تصمیمی خطیر و فراتر از قضاوت‌های معمول عرفی روبرو می‌شود؛ جایی که فرد باید بار تنهایی انتخابش را بی‌هیچ تکیه‌گاه بیرونی بر دوش کشد.</p>
-      </div>
-
-      <div class="critique-box">
-        <h4>⚠️ نقد و نقطه کور:</h4>
-        دشواری در استخراج معیارهای عینی حقوقی و خطر نسبی‌گرایی در داوری‌های اجتماعی کلان.
-      </div>
-
-      <div class="one-liner">💡 کی‌یرکگور: «مهم‌ترین وظیفه، یافتن حقیقتی است که برای من حقیقت باشد؛ ایده‌ای که به خاطرش بتوانم زندگی کنم یا بمیرم.»</div>
-    </section>
-
-    <!-- 7. Nietzsche -->
-    <section class="school-card" id="nietzsche">
-      <h2>۷. تبارشناسی ارزش‌ها (نیچه) <span class="badge">«ریشه و انگیزه این ارزش‌ها چیست؟»</span></h2>
-      <p><strong>فریدریش نیچه</strong> نشان داد بسیاری از ارزش‌های سنتی برآمده از «کین‌توزی و ناتوانی» است و انسان باید با شجاعت ارزش‌های حیات‌بخش و آفریننده خود را از نو بسازد.</p>
-
-      <ul class="detail-list">
-        <li><strong>اخلاق سروران در برابر بردگان:</strong> اخلاق سروران بر شجاعت و سرشاری استوار است؛ اخلاق بردگان بر فروتنی ناشی از ضعف.</li>
-        <li><strong>اراده معطوف به قدرت:</strong> انگیزه غلبه بر کاستی‌های خویش و آفرینش هنر و عظمت.</li>
-      </ul>
-
-      <div class="critique-box">
-        <h4>⚠️ نقد و نقطه کور:</h4>
-        امکان سوءاستفاده‌های ضدانسانی و تضعیف نهادهای حمایت از ناتوانان.
-      </div>
-
-      <div class="one-liner">💡 نیچه: «آیا ارزش‌های تو از سر بزرگی و شجاعت‌اند یا از سر ترس از قضاوت دیگران؟»</div>
-    </section>
-
-    <!-- Comparison Table -->
-    <section id="comparison">
-      <h2>ماتریس تطبیقی مکاتب اخلاقی</h2>
-      <p>جدول مقایسه سریع شاخص‌ها و تفاوت‌های بنیادین:</p>
-      
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>مکتب</th>
-              <th>کانون اصلی</th>
-              <th>پرسش بنیادین</th>
-              <th>فیلسوفان شاخص</th>
-              <th>بزرگ‌ترین نقد</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>فضیلت‌گرایی</strong></td>
-              <td>منش و روان عامل</td>
-              <td>انسان بافضیلت چه می‌کرد؟</td>
-              <td>ارسطو، مک‌اینتایر</td>
-              <td>فقدان فرمول صریح در بحران</td>
-            </tr>
-            <tr>
-              <td><strong>وظیفه‌گرایی</strong></td>
-              <td>قانون عقل و نیت</td>
-              <td>آیا می‌توان آن را قانون عام کرد؟</td>
-              <td>کانت، راس</td>
-              <td>انعطاف‌ناپذیری شدید</td>
-            </tr>
-            <tr>
-              <td><strong>فایده‌گرایی</strong></td>
-              <td>پیامدها و بهزیستی</td>
-              <td>کدام گزینه بیشترین خیر را دارد؟</td>
-              <td>بنتام، میل، سینگر</td>
-              <td>تضییع حقوق اقلیت</td>
-            </tr>
-            <tr>
-              <td><strong>قراردادگرایی</strong></td>
-              <td>عدالت و انصاف</td>
-              <td>پشت پرده جهل چه تصویب می‌شد؟</td>
-              <td>رالز، اسکنلون</td>
-              <td>نادیده‌گرفتن ناتوانان</td>
-            </tr>
-            <tr>
-              <td><strong>اخلاق مراقبت</strong></td>
-              <td>روابط و نیاز عینی</td>
-              <td>چگونه از فرد وابسته مراقبت کنم؟</td>
-              <td>گیلیگان، نادینگز</td>
-              <td>سوگیری به نفع نزدیکان</td>
-            </tr>
-            <tr>
-              <td><strong>اگزیستانسیالیسم</strong></td>
-              <td>تعهد فردی و اصالت</td>
-              <td>آیا مسئولیت انتخابت را می‌پذیری؟</td>
-              <td>کی‌یرکگور، کامو</td>
-              <td>سوبژکتیویسم افراطی</td>
-            </tr>
-            <tr>
-              <td><strong>تبارشناسی نیچه</strong></td>
-              <td>حیات‌بخشی و قدرت</td>
-              <td>آیا این ارزش مایه شکوفایی است؟</td>
-              <td>نیچه</td>
-              <td>کم‌ارزش شمردن شفقت</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- 15 Cases Section (Collapsible Accordion for Mobile) -->
-    <section id="scenarios">
-      <div class="scenarios-header">
-        <h2>۱۵ دوراهی اخلاقی دنیای مدرن</h2>
-        <button class="btn-action" onclick="toggleAllScenarios()">باز کردن / بستن همه</button>
-      </div>
-      <p style="margin-bottom: 1.2rem;">برای مطالعه تحلیل هر موقعیت، روی عنوان آن ضربه بزنید:</p>
-
-      <div class="scenarios-grid">
-        
-        <!-- Case 1 -->
-        <details class="scenario-card" open>
-          <summary>۱. گفتن حقیقت تلخ یا دروغ مصلحت‌آمیز (بیماری کشنده)</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>فضیلت‌گرایی:</strong> بیان حقیقت با حکمت، درایت و کمال مهربانی بدون ناامید کردن بیهوده بیمار.</li>
-              <li><strong>وظیفه‌گرایی (کانت):</strong> بیمار حق عقلانی دارد واقعیت سرنوشت خویش را بداند؛ فریب او توهین به کرامت اوست.</li>
-              <li><strong>فایده‌گرایی:</strong> اگر پنهان‌کردن موقت حقیقت رنج را بکاهد و عمر باکیفیت به بار آورد، مجاز است.</li>
-              <li><strong>اخلاق مراقبت:</strong> تمرکز بر نیاز روانی بیمار و محافظت از امنیت عاطفی او در کنار خانواده.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 2 -->
-        <details class="scenario-card">
-          <summary>۲. برنامه‌نویسی خودروهای خودران در تصادف مرگبار</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>وظیفه‌گرایی:</strong> ممنوعیت قربانی‌کردن عمدی یک عابر پیاده برای نجات سرنشینان (عدم ابزارانگاری انسان).</li>
-              <li><strong>فایده‌گرایی:</strong> انتخاب گزینه‌ای که تلفات کلی جانی را به حداقل ممکن برساند.</li>
-              <li><strong>قراردادگرایی:</strong> تصویب پروتکل‌ها پشت پرده جهل تا هیچ قشری مورد تبعیض ماشینی واقع نشود.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 3 -->
-        <details class="scenario-card">
-          <summary>۳. افشاگری علیه فساد سازمانی (Whistleblowing)</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>فضیلت‌گرایی:</strong> تجلی شجاعت اخلاقی و ترجیح منفعت عمومی بر امنیت و رفاه شخصی.</li>
-              <li><strong>وظیفه‌گرایی:</strong> سکوت در برابر غارت و فساد، هم‌دستی در تباهی و نقض وظیفه شهروندی است.</li>
-              <li><strong>اگزیستانسیالیسم:</strong> ایستادن پای حقیقت به قیمت تنهایی و پذیرش اصیل عواقب تصمیم.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 4 -->
-        <details class="scenario-card">
-          <summary>۴. ویرایش ژنتیکی انسان و نوزادان سفارشی (CRISPR)</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>فضیلت‌گرایی:</strong> درمان بیماری‌ها فضیلت است؛ اما سفارشی‌سازی زیبایی و هوش، تکبر و فقدان اعتدال است.</li>
-              <li><strong>قراردادگرایی:</strong> اگر فقط اغنیا توان ویرایش ژن داشته باشند، شکاف طبقاتی ژنتیکی پدید می‌آید.</li>
-              <li><strong>اخلاق مراقبت:</strong> پذیرش فرزند با عشق بی‌قید و شرط، نه به عنوان کالایی دست‌کاری‌شده.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 5 -->
-        <details class="scenario-card">
-          <summary>۵. اتانازی و مرگ خودخواسته در بیماران لاعلاج</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>فایده‌گرایی:</strong> وقتی زندگی جز رنج غیرقابل‌تسکین نیست، پایان دادن به درد بالاترین خیر است.</li>
-              <li><strong>وظیفه‌گرایی:</strong> انسان حق سلب حیات از خود را ندارد؛ زندگی وظیفه‌ای مطلق است.</li>
-              <li><strong>اگزیستانسیالیسم:</strong> مرگ به مثابه واپسین انتخاب آزادانه و باوقار انسان بر سرنوشت خویش.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 6 -->
-        <details class="scenario-card">
-          <summary>۶. نظارت مخفیانه بر کارمندان در دورکاری</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>فضیلت‌گرایی:</strong> کارفرما باید بذر اعتماد و کرامت بکارد؛ تجسس نشانه رذیلت بدگمانی است.</li>
-              <li><strong>وظیفه‌گرایی:</strong> نقض حریم خصوصی درون خانه بدون رضایت، نقض صریح کرامت انسانی است.</li>
-              <li><strong>قراردادگرایی:</strong> قرارداد کاری خرید تخصص و خروجی است نه فروش کل آزادی‌های فردی در منزل.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 7 -->
-        <details class="scenario-card">
-          <summary>۷. تسلیحات کاملاً خودکار و پهپادهای جنگی هوش مصنوعی</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>وظیفه‌گرایی:</strong> واگذاری تصمیم قتل یک انسان به الگوریتم، خوارترین شکل تحقیر شأن بشری است.</li>
-              <li><strong>فضیلت‌گرایی:</strong> الگوریتم فاقد ترحم، شرف و جوانمردی در میدان نبرد است و به ماشین کشتار بدل می‌شود.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 8 -->
-        <details class="scenario-card">
-          <summary>۸. انحصار حق اختراع واکسن‌ها در دوران پاندمی</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>وظیفه‌گرایی:</strong> حق حیات انسان‌ها بر سود تجاری و مالکیت سهامداران مقدم است.</li>
-              <li><strong>فایده‌گرایی:</strong> آزادسازی فرمول واکسن مانع جهش ویروس در جهان شده و میلیاردها نفر را نجات می‌دهد.</li>
-              <li><strong>قراردادگرایی:</strong> سلامت یک حق بنیادین است و نباید مشروط به ثروت کشورها باشد.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 9 -->
-        <details class="scenario-card">
-          <summary>۹. تغییرات اقلیمی و تعهد به نسل‌های آینده</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>قراردادگرایی:</strong> چون پشت پرده جهل نمی‌دانیم به کدام نسل تعلق داریم، پایداری زمین تنها توافق عادلانه است.</li>
-              <li><strong>فضیلت‌گرایی:</strong> مهار مصرف‌گرایی و نهادینه‌سازی فضیلت امانت‌داری برای آیندگان.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 10 -->
-        <details class="scenario-card">
-          <summary>۱۰. معامله حریم خصوصی در شبکه‌های اجتماعی</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>وظیفه‌گرایی:</strong> انسان کالا نیست و نباید داده‌های روانی او ابزار مهندسی افکار شود.</li>
-              <li><strong>تبارشناسی نیچه:</strong> نقد روانشناسی گله‌وار آنلاین و عطش حقیرانه برای دریافت لایک و تأیید.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 11 -->
-        <details class="scenario-card">
-          <summary>۱۱. بحران پناهجویان در مرزهای کشورهای مرفه</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>فضیلت‌گرایی:</strong> فضیلت نوع‌دوستی و مهمان‌نوازی در برابر انسانی که از جنگ گریخته است.</li>
-              <li><strong>اخلاق مراقبت:</strong> امدادرسانی فوری به کودکان و زنان بی‌پناه بدون درگیرشدن در بروکراسی سرد.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 12 -->
-        <details class="scenario-card">
-          <summary>۱۲. عدم پرداخت بدهی به دلیل ورشکستگی حاد</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>اخلاق مراقبت:</strong> معیشت حیاتی و نان شب فرزندان بدهکار نباید قربانی وصول طلب شود.</li>
-              <li><strong>وظیفه‌گرایی:</strong> نقض عمدی پیمان اعتماد را می‌کشد، اما طلبکار نیز حق نابودی حیات انسان را ندارد.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 13 -->
-        <details class="scenario-card">
-          <summary>۱۳. مراقبت از والدین سالمند در برابر مهاجرت شغلی</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>اخلاق مراقبت:</strong> مظهر ناب عشق و وفاداری عاطفی؛ مراقبت باید از سر مهر باشد نه عذاب‌وجدان.</li>
-              <li><strong>اگزیستانسیالیسم:</strong> انتخابی دشوار میان دو مسیر اصیل و پذیرش شجاعانه بار مسئولیت تصمیم.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 14 -->
-        <details class="scenario-card">
-          <summary>۱۴. جاه‌طلبی و رقابت شغلی در محیط کار</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>وظیفه‌گرایی:</strong> همکاران را نردبان پیشرفت نکنید؛ انصاف اصل حاکم بر کار است.</li>
-              <li><strong>تبارشناسی نیچه:</strong> ستایش استعداد و برتری‌جویی اصیل، در تقابل با تخریب موذیانه دیگران.</li>
-            </ul>
-          </div>
-        </details>
-
-        <!-- Case 15 -->
-        <details class="scenario-card">
-          <summary>۱۵. تریاژ در بحران و تخصیص تخت‌های محدود ICU</summary>
-          <div class="scenario-content">
-            <ul>
-              <li><strong>وظیفه‌گرایی:</strong> برابری شأن همه انسان‌ها و ممنوعیت اولویت‌دهی بر اساس ثروت یا نژاد.</li>
-              <li><strong>فایده‌گرایی:</strong> اولویت‌بخشی به بیمارانی با بالاترین شانس بقا برای نجات بیشترین جان‌ها.</li>
-              <li><strong>اخلاق مراقبت:</strong> ارائه مراقبت تسکینی بدون درد به کسانی که اولویت دریافت دستگاه را ندارند.</li>
-            </ul>
-          </div>
-        </details>
-
-      </div>
-    </section>
-
-    <!-- Systematic Decision Framework -->
-    <section id="decision-tool">
-      <h2>چک‌لیست تصمیم‌گیری اخلاقی</h2>
-      <p>در رویارویی با هر دوراهی پیچیده، مراحل زیر را گام‌به‌گام ارزیابی کنید (روی هر گزینه ضربه بزنید):</p>
-
-      <div class="checklist-box">
-        <label class="checklist-item">
-          <input type="checkbox">
-          <span class="checklist-text">
-            <strong>گام ۱: شفاف‌سازی واقعیت و گزینه‌ها</strong>
-            <span>حقایق عینی چیست؟ ذی‌نفعان چه کسانی هستند و چه راه‌حل‌هایی وجود دارد؟</span>
-          </span>
-        </label>
-
-        <label class="checklist-item">
-          <input type="checkbox">
-          <span class="checklist-text">
-            <strong>گام ۲: فیلتر فضیلت (ارسطو)</strong>
-            <span>این تصمیم کدام فضیلت را تقویت می‌کند؟ انسان بافضیلت چه می‌کرد؟</span>
-          </span>
-        </label>
-
-        <label class="checklist-item">
-          <input type="checkbox">
-          <span class="checklist-text">
-            <strong>گام ۳: فیلتر وظیفه و کرامت (کانت)</strong>
-            <span>آیا حاضرید این تصمیم قانون عام شود؟ آیا از کسی ابزاری سوءاستفاده نشده؟</span>
-          </span>
-        </label>
-
-        <label class="checklist-item">
-          <input type="checkbox">
-          <span class="checklist-text">
-            <strong>گام ۴: فیلتر پیامدها (میل)</strong>
-            <span>کدام گزینه بیشترین خیر همگانی و کمترین رنج جمعی را به همراه دارد؟</span>
-          </span>
-        </label>
-
-        <label class="checklist-item">
-          <input type="checkbox">
-          <span class="checklist-text">
-            <strong>گام ۵: فیلتر عدالت و پرده جهل (رالز)</strong>
-            <span>اگر در ضعیف‌ترین موقعیت ماجرا بودید، این تصمیم را عادلانه می‌دانستید؟</span>
-          </span>
-        </label>
-
-        <label class="checklist-item">
-          <input type="checkbox">
-          <span class="checklist-text">
-            <strong>گام ۶: فیلتر مراقبت و روابط (گیلیگان)</strong>
-            <span>این تصمیم چه تأثیری بر افراد آسیب‌پذیر و شبکه پیوندهای انسانی دارد؟</span>
-          </span>
-        </label>
-
-        <label class="checklist-item">
-          <input type="checkbox">
-          <span class="checklist-text">
-            <strong>گام ۷: فیلتر اصالت و شجاعت (کی‌یرکگور و نیچه)</strong>
-            <span>آیا انتخابی شجاعانه و آگاهانه است یا تسلیم در برابر ترس و همرنگی با جماعت؟</span>
-          </span>
-        </label>
-      </div>
-
-      <!-- Flowchart Diagram -->
-      <div class="diagram-wrapper">
-        <div class="diagram-header">
-          <span class="tag">فلوچارت سلسله‌مراتبی</span>
-          <h3 style="margin: 0.6rem 0 0.2rem; color: var(--text-main); font-size: 1.15rem; font-weight: 800;">
-            فرآیند گام‌به‌گام پالایش تصمیم اخلاقی
-          </h3>
-          <p style="color: var(--text-muted); font-size: 0.85rem;">برای بررسی جزئیات، نمودار را به چپ بکشید</p>
+    <!-- ۱ فضیلت‌گرایی -->
+    <article class="lens" style="--lc:#7c3aed">
+      <div class="lens-head">
+        <span class="lens-ic">🏛️</span>
+        <div class="grow">
+          <div class="lens-name">۱. فضیلت‌گرایی
+            <span class="lens-orig">Virtue Ethics · ἀρετή</span></div>
         </div>
+        <span class="badge">ارسطو، مک‌اینتایر</span>
+      </div>
+      <div class="lens-q">انسان بافضیلت در این موقعیت چه می‌کرد؟</div>
+      <div class="lens-body">
+        <p>
+          فضیلت‌گرایی نقطه شروع را از «عمل» به «عامل» منتقل می‌کند. پرسش بنیادی این نیست که
+          «چه کاری درست است؟» بلکه «چه نوع انسانی باید باشم؟». ارسطو غایت زندگی انسان را
+          <b>eudaimonia</b> می‌داند — واژه‌ای که «خوشبختی» ترجمه دقیقی برایش نیست؛ نزدیک‌تر
+          است به «شکوفایی» یا «زیستنِ خوب در تمام عمر». فضیلت، مهارتی است که این شکوفایی را
+          ممکن می‌کند و مانند هر مهارت با تمرین به دست می‌آید، نه با دانستن.
+        </p>
 
-        <div class="diagram-legend">
-          <div class="legend-item"><span class="legend-dot start"></span> شروع/پایان</div>
-          <div class="legend-item"><span class="legend-dot check"></span> پرسش وتوکننده</div>
-          <div class="legend-item"><span class="legend-dot filter"></span> محاسبه فایده</div>
-          <div class="legend-item"><span class="legend-dot reject"></span> اصلاح/توقف</div>
-        </div>
-
-        <div class="mermaid-scroll">
-          <div class="flow-native">
-            <div class="flow-node flow-start">⚡ شروع: مواجهه با دوراهی اخلاقی</div>
-            <div class="flow-link">↓</div>
-
-            <div class="flow-step">
-              <div class="flow-node flow-gate">۱. آزمون کرامت کانت — آیا انسان‌ها ابزار شده‌اند؟</div>
-              <div class="flow-branches">
-                <div class="flow-branch flow-bad"><span class="flow-label">بله، نقض کرامت</span>
-                  ⛔ توقف: گزینه نامشروع است و باید حذف یا بازطراحی شود</div>
-                <div class="flow-branch flow-good"><span class="flow-label">خیر، حفظ شأن</span>
-                  ادامه به دروازه بعدی</div>
-              </div>
-            </div>
-            <div class="flow-link">↓</div>
-
-            <div class="flow-step">
-              <div class="flow-node flow-gate">۲. آزمون عدالت رالز — آیا به محرومان ستم می‌شود؟</div>
-              <div class="flow-branches">
-                <div class="flow-branch flow-warn"><span class="flow-label">بله، نابرابری ظالمانه</span>
-                  ⚠️ تعدیل تصمیم به سود ضعیف‌ترین طرف، سپس ادامه</div>
-                <div class="flow-branch flow-good"><span class="flow-label">خیر، منصفانه</span>
-                  ادامه به محاسبه فایده</div>
-              </div>
-            </div>
-            <div class="flow-link">↓</div>
-
-            <div class="flow-node flow-calc">۳. فایده‌گرایی میل — کدام گزینه کمترین رنج و بیشترین خیر جمعی را دارد؟</div>
-            <div class="flow-link">↓</div>
-
-            <div class="flow-node flow-action">۴. مراقبت و فضیلت ارسطو — پاسخ به نیاز عینی افراد و منشِ شایسته</div>
-            <div class="flow-link">↓</div>
-
-            <div class="flow-step">
-              <div class="flow-node flow-gate">۵. آزمون اصالت و تبارشناسی — انگیزه از سر شجاعت است یا ترس؟</div>
-              <div class="flow-branches">
-                <div class="flow-branch flow-warn"><span class="flow-label">ناشی از ترس و تظاهر</span>
-                  🔄 بازگشت به گام ۴ و بازنگری در انگیزه</div>
-                <div class="flow-branch flow-good"><span class="flow-label">انتخابی اصیل و آگاهانه</span>
-                  ادامه به تصمیم نهایی</div>
-              </div>
-            </div>
-            <div class="flow-link">↓</div>
-
-            <div class="flow-node flow-final">✅ اتخاذ تصمیم نهایی و موجه</div>
+        <h4>مفاهیم کلیدی</h4>
+        <div class="concepts">
+          <div class="concept">
+            <b>حکمت عملی</b>
+            <span class="term">phronesis · φρόνησις</span>
+            <span>توانایی تشخیص اینکه <em>این</em> موقعیت خاص چه می‌طلبد. ارسطو تأکید می‌کند
+            این قابلیت به قاعده تحویل‌پذیر نیست؛ از تجربه و تربیت می‌آید. (اخلاق نیکوماخوس، دفتر ششم)</span>
+          </div>
+          <div class="concept">
+            <b>حد وسط</b>
+            <span class="term">mesotes · μεσότης</span>
+            <span>فضیلت میان افراط و تفریط است — ولی «وسطِ نسبت به ما»، نه میانگین ریاضی.
+            شجاعت میان بی‌باکی و ترسویی است، و جای دقیقش در هر موقعیت فرق می‌کند. (دفتر دوم، ۶)</span>
+          </div>
+          <div class="concept">
+            <b>ملکه</b>
+            <span class="term">hexis · ἕξις</span>
+            <span>فضیلت حالتی پایدار است نه عمل مقطعی. «با انجام کار عادلانه، عادل می‌شویم» —
+            اخلاق پیش از آنکه دانش باشد، عادت است. (دفتر دوم، ۱)</span>
+          </div>
+          <div class="concept">
+            <b>سنت و کارورزی</b>
+            <span class="term">practice · tradition</span>
+            <span>مک‌اینتایر در قرن بیستم استدلال کرد فضیلت‌ها تنها درون یک «کارورزی» و یک
+            سنت تاریخی معنا دارند؛ اخلاق مدرن چون این زمینه را از دست داده، به بن‌بست رسیده است.</span>
           </div>
         </div>
 
-        <div class="note-box">
-          <strong>📌 منطق تصمیم‌گیری:</strong>
-          <ol>
-            <li><strong>گام‌های ۱ و ۲ (وتوکننده):</strong> نقض کرامت یا بی‌عدالتی، گزینه را بلافاصله رد می‌کند.</li>
-            <li><strong>گام‌های ۳ و ۴ (بهینه‌ساز):</strong> بیشترین سود جمعی و مهربانی در اجرا انتخاب می‌شود.</li>
-            <li><strong>گام ۵ (پالایش‌کننده):</strong> تصمیم از ریاکاری و ترس پاکسازی می‌شود.</li>
-          </ol>
+        <div class="critique">
+          <b>نقطه کور:</b> در بحران‌های ناگهانی راهنمای گام‌به‌گام نمی‌دهد. همچنین متهم به
+          دور است: «کار درست آن است که انسان بافضیلت می‌کند» و «انسان بافضیلت کسی است که
+          کار درست می‌کند». پاسخ ارسطویی این است که این دور، معیوب نیست بلکه نشان می‌دهد
+          داوری اخلاقی ذاتاً به تربیت ادراک وابسته است، نه به فرمول.
+        </div>
+
+        <div class="srcs">
+          <b>منابع اصلی</b>
+          ارسطو، <cite>اخلاق نیکوماخوس</cite> (حدود ۳۴۰ پ.م) — به‌ویژه دفترهای اول، دوم و ششم ·
+          G.E.M. Anscombe, <cite>“Modern Moral Philosophy”</cite>, Philosophy 33 (1958) — مقاله‌ای
+          که فضیلت‌گرایی را در فلسفه معاصر احیا کرد ·
+          Alasdair MacIntyre, <cite>After Virtue</cite> (1981)
         </div>
       </div>
-    </section>
+    </article>
 
-    <!-- Reading List (Sartre replaced with Kierkegaard & Camus) -->
-    <section class="reading-list" id="readings">
-      <h2>کتاب‌شناسی پیشنهادی</h2>
-      <p style="font-size: 0.9rem; margin-bottom: 0.75rem;">آثار کلیدی ترجمه‌شده برای تعمیق مطالعات اخلاق:</p>
+    <!-- ۲ وظیفه‌گرایی -->
+    <article class="lens" style="--lc:#2563eb">
+      <div class="lens-head">
+        <span class="lens-ic">⚖️</span>
+        <div class="grow">
+          <div class="lens-name">۲. وظیفه‌گرایی
+            <span class="lens-orig">Deontology · Pflichtethik</span></div>
+        </div>
+        <span class="badge">کانت، راس</span>
+      </div>
+      <div class="lens-q">آیا می‌توان قاعده این کار را قانون عام کرد؟ کرامت کسی نقض می‌شود؟</div>
+      <div class="lens-body">
+        <p>
+          برای کانت، ارزش اخلاقی یک عمل نه در نتیجه‌اش، که در <b>نیتی</b> است که از آن برمی‌خیزد.
+          عملی اخلاقی است که «از سرِ وظیفه» انجام شود، نه صرفاً «مطابق با وظیفه». بازرگانی که
+          از ترس بدنامی صادق است، مطابق وظیفه عمل می‌کند ولی عملش ارزش اخلاقی ندارد. آنچه
+          بی‌قید و شرط خوب است، تنها «اراده نیک» است.
+        </p>
 
-      <div class="reading-grid">
-        <div class="reading-item">
-          <strong>اخلاق نیکوماخوس</strong>
-          <span>ارسطو • ترجمه محمدحسن لطفی • نشر طرح نو</span>
+        <h4>مفاهیم کلیدی</h4>
+        <div class="concepts">
+          <div class="concept">
+            <b>امر مطلق</b>
+            <span class="term">kategorischer Imperativ</span>
+            <span>حکمی که بی‌قیدوشرط است، برخلاف «امر شرطی» که به هدفی وابسته است.
+            «اگر می‌خواهی اعتماد بسازی راست بگو» شرطی است؛ «راست بگو» مطلق.</span>
+          </div>
+          <div class="concept">
+            <b>صورت‌بندی قانون عام</b>
+            <span class="term">Formula of Universal Law</span>
+            <span>«تنها بر پایه قاعده‌ای عمل کن که بتوانی هم‌زمان بخواهی قانونی عام شود.»
+            آزمون این نیست که نتیجه بد می‌شود، بلکه این است که قاعده در عام‌شدن
+            خودش را نقض می‌کند.</span>
+          </div>
+          <div class="concept">
+            <b>صورت‌بندی انسانیت</b>
+            <span class="term">Formula of Humanity</span>
+            <span>«انسانیت را، چه در خود چه در دیگری، همواره غایت بدان و هرگز
+            <em>صرفاً</em> وسیله.» قید «صرفاً» مهم است: استفاده از دیگران در همکاری
+            اشکالی ندارد؛ فروکاستن آن‌ها به ابزار اشکال دارد.</span>
+          </div>
+          <div class="concept">
+            <b>وظایف در نگاه نخست</b>
+            <span class="term">prima facie duties · W.D. Ross</span>
+            <span>راس در برابر تک‌قاعده‌ای بودن کانت، چند وظیفه مستقل نهاد (وفای به عهد،
+            جبران، سپاس، عدالت، احسان، خودبهسازی، آسیب‌نرساندن) که می‌توانند تعارض کنند
+            و هیچ فرمولی تعارضشان را حل نمی‌کند — جز داوری موقعیتی.</span>
+          </div>
         </div>
-        <div class="reading-item">
-          <strong>بنیاد مابعدالطبیعه اخلاق</strong>
-          <span>ایمانوئل کانت • ترجمه منوچهر صانعی • نشر خوارزمی</span>
+
+        <div class="critique">
+          <b>نقطه کور:</b> انعطاف‌ناپذیری. کانت خودش در رساله‌ای در ۱۷۹۷ نوشت حتی برای نجات
+          جان دوست هم نباید به قاتل دروغ گفت — موضعی که بسیاری از کانتی‌های بعدی رهایش کردند.
+          مشکل دوم، تعارض وظایف است: وقتی راست‌گویی با نجات جان در تضاد باشد، خودِ نظام
+          ابزاری برای انتخاب میانشان ندارد.
         </div>
-        <div class="reading-item">
-          <strong>فایده‌گرایی</strong>
-          <span>جان استوارت میل • ترجمه مرتضی مردیها • نشر نی</span>
-        </div>
-        <div class="reading-item">
-          <strong>نظریه‌ای در باب عدالت</strong>
-          <span>جان رالز • ترجمه مرتضی بحرانی • پژوهشکده مطالعات فرهنگی</span>
-        </div>
-        <div class="reading-item">
-          <strong>با صدایی دیگر</strong>
-          <span>کارول گیلیگان • مرجع بنیادین اخلاق مراقبت</span>
-        </div>
-        <div class="reading-item">
-          <strong>ترس و لرز</strong>
-          <span>سورن کی‌یرکگور • ترجمه عبدالکریم رشیدیان • نشر نی</span>
-        </div>
-        <div class="reading-item">
-          <strong>افسانه سیزیف</strong>
-          <span>آلبر کامو • ترجمه محمود سلطانیه • نشر جامی</span>
-        </div>
-        <div class="reading-item">
-          <strong>تبارشناسی اخلاق</strong>
-          <span>فریدریش نیچه • ترجمه داریوش آشوری • نشر آگه</span>
-        </div>
-        <div class="reading-item">
-          <strong>اخلاق عملی</strong>
-          <span>پیتر سینگر • راهنمای کاربردی اخلاق زیستی</span>
+
+        <div class="srcs">
+          <b>منابع اصلی</b>
+          Immanuel Kant, <cite>Grundlegung zur Metaphysik der Sitten</cite> (1785) ·
+          <cite>Kritik der praktischen Vernunft</cite> (1788) ·
+          <cite>“Über ein vermeintes Recht aus Menschenliebe zu lügen”</cite> (1797) — رساله قاتل پشت در ·
+          W.D. Ross, <cite>The Right and the Good</cite> (1930)
         </div>
       </div>
-    </section>
-  </main>
+    </article>
 
-  <!-- Floating Back to Top Button -->
-  <button class="fab-top" id="fabTop" onclick="scrollToTop()" title="بازگشت به بالا" aria-label="بازگشت به بالا">
-    ↑
-  </button>
+    <!-- ۳ فایده‌گرایی -->
+    <article class="lens" style="--lc:#0d9488">
+      <div class="lens-head">
+        <span class="lens-ic">📊</span>
+        <div class="grow">
+          <div class="lens-name">۳. فایده‌گرایی
+            <span class="lens-orig">Utilitarianism</span></div>
+        </div>
+        <span class="badge">بنتام، میل، سینگر</span>
+      </div>
+      <div class="lens-q">کدام گزینه بیشترین خیر و کمترین رنج را برای بیشترین افراد می‌سازد؟</div>
+      <div class="lens-body">
+        <p>
+          فایده‌گرایی از چهار تعهد ساخته شده که هرکدام جداگانه قابل مناقشه‌اند:
+          <b>پیامدگرایی</b> (درستی عمل تنها به نتایجش بستگی دارد)، <b>بهزیستی‌گرایی</b>
+          (تنها چیز فی‌نفسه خوب، بهزیستی است)، <b>جمع‌پذیری</b> (بهزیستی افراد قابل جمع
+          زدن است) و <b>بی‌طرفی</b> (بهزیستی هرکس به یک اندازه می‌ارزد — «هرکس یکی به
+          حساب می‌آید، و هیچ‌کس بیش از یکی»).
+        </p>
 
-  <footer>
-    <p>دانشنامه کاربردی فلسفه اخلاق — بخشی از سامانه EthicLens</p>
-    <p style="margin-top:.4rem"><a href="/about" style="color:var(--primary)">درباره سازندگان</a></p>
-    <p style="margin-top:.5rem"><a href="/app" style="color:var(--primary);font-weight:700">بازگشت به ابزار تحلیل ←</a></p>
-  </footer>
+        <h4>مفاهیم کلیدی</h4>
+        <div class="concepts">
+          <div class="concept">
+            <b>اصل فایده</b>
+            <span class="term">principle of utility · Bentham</span>
+            <span>معیار درستی، افزودن بر خوشبختی کسانی است که منافعشان در میان است.
+            بنتام هفت متغیر برای سنجش لذت برشمرد: شدت، مدت، قطعیت، نزدیکی، باروری،
+            خلوص و دامنه.</span>
+          </div>
+          <div class="concept">
+            <b>کیفیت لذت</b>
+            <span class="term">higher & lower pleasures · Mill</span>
+            <span>میل در برابر بنتام تفاوت کیفی نهاد: لذت‌های فکری و اخلاقی بر لذت‌های
+            جسمانی برتری دارند. «بهتر است سقراطِ ناخرسند باشی تا ابلهِ خرسند.»</span>
+          </div>
+          <div class="concept">
+            <b>عمل‌نگر و قاعده‌نگر</b>
+            <span class="term">act vs rule utilitarianism</span>
+            <span>عمل‌نگر هر عمل را جداگانه می‌سنجد؛ قاعده‌نگر می‌پرسد کدام <em>قاعده</em>
+            اگر همگانی رعایت شود بیشترین فایده را دارد. دومی از بسیاری از نتایج
+            نامطلوب اولی می‌گریزد.</span>
+          </div>
+          <div class="concept">
+            <b>گسترش دایره</b>
+            <span class="term">expanding circle · Singer</span>
+            <span>سینگر بی‌طرفی را تا مرز گونه پیش برد: اگر رنج معیار است، رنجِ هر موجودِ
+            صاحب حس باید به حساب بیاید. همین منطق مبنای استدلال او درباره فقر جهانی و
+            حقوق حیوانات است.</span>
+          </div>
+        </div>
 
-</div>
+        <div class="critique">
+          <b>نقطه کور:</b> جمع‌پذیری می‌تواند قربانی‌کردن اقلیت را توجیه کند — اگر رنج چند نفر
+          خوشبختی بسیاری بسازد، حساب به سود اکثریت درمی‌آید. نقد دوم، سنجش‌ناپذیری است:
+          چگونه رنج را با لذت هم‌مقیاس کنیم؟ نقد سوم از نوزیک: اگر تنها لذت مهم بود،
+          همه به «ماشین تجربه» وصل می‌شدند — و نمی‌شویم.
+        </div>
 
-<script>
-  // تغییر تم تاریک و روشن
-  function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-  }
+        <div class="srcs">
+          <b>منابع اصلی</b>
+          Jeremy Bentham, <cite>An Introduction to the Principles of Morals and Legislation</cite> (1789) ·
+          John Stuart Mill, <cite>Utilitarianism</cite> (1863) ·
+          Peter Singer, <cite>Practical Ethics</cite> (1979) ·
+          Robert Nozick, <cite>Anarchy, State, and Utopia</cite> (1974) — نقد ماشین تجربه
+        </div>
+      </div>
+    </article>
 
-  const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  document.documentElement.setAttribute('data-theme', savedTheme);
+    <!-- ۴ خیر مشترک -->
+    <article class="lens" style="--lc:#0891b2">
+      <div class="lens-head">
+        <span class="lens-ic">🏘️</span>
+        <div class="grow">
+          <div class="lens-name">۴. خیر مشترک
+            <span class="lens-orig">The Common Good · bonum commune</span></div>
+        </div>
+        <span class="badge">سنت ارسطویی-توماسی</span>
+      </div>
+      <div class="lens-q">این تصمیم با شرایط مشترکی که همه به آن وابسته‌اند چه می‌کند؟</div>
+      <div class="lens-body">
+        <p>
+          این لنز اغلب با فایده‌گرایی اشتباه گرفته می‌شود، ولی پرسش متفاوتی دارد. فایده‌گرایی
+          سودِ <em>افراد</em> را جمع می‌زند؛ خیر مشترک از چیزهایی می‌پرسد که <b>تنها به‌صورت
+          مشترک وجود دارند</b> و قابل تقسیم میان افراد نیستند: اعتماد عمومی، هوای پاک،
+          سلامت جمعی، نهادهای کارآمد، حاکمیت قانون، زبان مشترک. کسی نمی‌تواند سهم خود از
+          «اعتماد عمومی» را بردارد و ببرد؛ یا هست یا نیست.
+        </p>
 
-  // کنترل آکاردئون‌ها در موبایل
-  let allOpen = true;
-  function toggleAllScenarios() {
-    const detailsList = document.querySelectorAll('.scenario-card');
-    allOpen = !allOpen;
-    detailsList.forEach(detail => {
-      detail.open = allOpen;
-    });
-  }
+        <p>
+          پیامد عملی‌اش این است که تصمیمی می‌تواند برای همه طرف‌های حاضر سودمند باشد و
+          باز هم خیر مشترک را تضعیف کند. نمونه کلاسیکش «تراژدی منابع مشترک» است: هر
+          دامدار با افزودن یک رأس دام سود می‌برد، ولی جمع این تصمیم‌های عقلانی، مرتع را
+          نابود می‌کند.
+        </p>
 
-  // دکمه بازگشت به بالا
-  const fabTop = document.getElementById('fabTop');
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 400) {
-      fabTop.style.display = 'flex';
-    } else {
-      fabTop.style.display = 'none';
-    }
-  });
+        <h4>مفاهیم کلیدی</h4>
+        <div class="concepts">
+          <div class="concept">
+            <b>غایت اجتماع سیاسی</b>
+            <span class="term">Aristotle, Politics I.2</span>
+            <span>شهر نه برای بقا، که «برای زندگیِ خوب» پدید آمده است. جامعه ابزار
+            افراد نیست؛ بستری است که بدون آن شکوفایی فردی ممکن نیست.</span>
+          </div>
+          <div class="concept">
+            <b>خیر عام</b>
+            <span class="term">bonum commune · Aquinas</span>
+            <span>توماس آکوئینی قانون را «فرمان عقل برای خیر مشترک» تعریف کرد — قانونی
+            که خیر مشترک را نبیند، قانون نیست.</span>
+          </div>
+          <div class="concept">
+            <b>تراژدی منابع مشترک</b>
+            <span class="term">tragedy of the commons · Hardin 1968</span>
+            <span>حالت شکستِ خیر مشترک: وقتی هزینه جمعی است و سود فردی، عقلانیت فردی
+            به فاجعه جمعی می‌رسد. الینور اُستروم بعدها نشان داد جوامع محلی اغلب
+            بدون خصوصی‌سازی یا دولت، این مسئله را حل می‌کنند.</span>
+          </div>
+          <div class="concept">
+            <b>نقد بی‌طرفی لیبرال</b>
+            <span class="term">communitarian critique</span>
+            <span>سندل و تیلور استدلال کردند دولتی که درباره «زندگی خوب» بی‌طرف بماند،
+            نمی‌تواند از خیرهای مشترکی که خودش به آن‌ها وابسته است دفاع کند.</span>
+          </div>
+        </div>
 
-  function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-</script>
+        <div class="critique">
+          <b>نقطه کور:</b> «خیر مشترک» تاریخاً برای سرکوب هم به کار رفته است — هر بار که
+          حقوق اقلیتی به نام مصلحت جمع پایمال شده. پرسش تعیین‌کننده این است: <em>خیرِ
+          کدام جمع، و چه کسی تعریفش می‌کند؟</em> به همین دلیل در EthicLens این لنز
+          هرگز وتوکننده نیست و همیشه پس از دروازه کرامت و عدالت می‌آید.
+        </div>
+
+        <div class="srcs">
+          <b>منابع اصلی</b>
+          ارسطو، <cite>سیاست</cite>، دفتر اول ·
+          Thomas Aquinas, <cite>Summa Theologiae</cite> I-II, q. 90 ·
+          Garrett Hardin, <cite>“The Tragedy of the Commons”</cite>, Science 162 (1968) ·
+          Elinor Ostrom, <cite>Governing the Commons</cite> (1990) ·
+          Michael Sandel, <cite>Justice: What's the Right Thing to Do?</cite> (2009)
+        </div>
+      </div>
+    </article>
+
+    <!-- ۵ قراردادگرایی -->
+    <article class="lens" style="--lc:#ea580c">
+      <div class="lens-head">
+        <span class="lens-ic">🤝</span>
+        <div class="grow">
+          <div class="lens-name">۵. قراردادگرایی و عدالت
+            <span class="lens-orig">Contractualism · Justice as Fairness</span></div>
+        </div>
+        <span class="badge">رالز، اسکنلون</span>
+      </div>
+      <div class="lens-q">پشت پرده جهل، چه قاعده‌ای را تصویب می‌کردید؟</div>
+      <div class="lens-body">
+        <p>
+          قراردادگرایی مشروعیت یک قاعده را در این می‌بیند که آیا افراد آزاد و برابر، در
+          شرایطی منصفانه، آن را می‌پذیرفتند. نوآوری رالز، طراحی همان «شرایط منصفانه» بود:
+          <b>وضع نخستین</b>، موقعیتی فرضی که در آن قانون‌گذاران پشت <b>پرده جهل</b> ایستاده‌اند
+          و نمی‌دانند در جامعه‌ای که می‌سازند چه جایگاهی خواهند داشت — غنی یا فقیر، سالم یا
+          بیمار، اکثریت یا اقلیت.
+        </p>
+
+        <p>
+          این ترفند، بی‌طرفی را از یک آرزوی اخلاقی به یک الزام عقلانی تبدیل می‌کند: وقتی
+          نمی‌دانی کجای ماجرا می‌ایستی، به سود خودت است که قاعده‌ای بسازی که بدترین
+          موقعیتش هم قابل تحمل باشد.
+        </p>
+
+        <h4>مفاهیم کلیدی</h4>
+        <div class="concepts">
+          <div class="concept">
+            <b>پرده جهل</b>
+            <span class="term">veil of ignorance</span>
+            <span>بی‌اطلاعی از جایگاه، استعداد، طبقه، جنسیت، نژاد و حتی تصور خود از
+            «زندگی خوب» — تا انتخاب قواعد آلوده به منفعت شخصی نشود.</span>
+          </div>
+          <div class="concept">
+            <b>اصل نخست: آزادی‌های پایه</b>
+            <span class="term">first principle</span>
+            <span>هرکس حق برابر به گسترده‌ترین نظام آزادی‌های اساسیِ سازگار با آزادی
+            مشابه دیگران دارد. این اصل بر اصل دوم <em>تقدم</em> دارد و با رفاه بیشتر
+            معاوضه نمی‌شود.</span>
+          </div>
+          <div class="concept">
+            <b>اصل تفاوت</b>
+            <span class="term">difference principle</span>
+            <span>نابرابری اقتصادی تنها وقتی مجاز است که به بیشترین نفعِ محروم‌ترین
+            قشر بینجامد — و مناصب زیر شرط برابری منصفانه فرصت‌ها بر همه گشوده باشد.</span>
+          </div>
+          <div class="concept">
+            <b>ردناپذیری معقول</b>
+            <span class="term">reasonable rejectability · Scanlon</span>
+            <span>اسکنلون صورت‌بندی دیگری داد: عملی نادرست است که هر اصلی که آن را
+            مجاز بدارد، کسی بتواند به‌طور معقول ردش کند. معیار، توافق نیست — نبودِ
+            اعتراض موجه است.</span>
+          </div>
+        </div>
+
+        <div class="critique">
+          <b>نقطه کور:</b> کسانی که توان چانه‌زنی ندارند از قرارداد بیرون می‌مانند — حیوانات،
+          نسل‌های آینده، و افراد با ناتوانی شدید. مارتا نوسبام همین را نقطه ضعف بنیادی
+          سنت قراردادی خواند و «رویکرد قابلیت‌ها» را به‌عنوان جایگزین پیش نهاد.
+        </div>
+
+        <div class="srcs">
+          <b>منابع اصلی</b>
+          John Rawls, <cite>A Theory of Justice</cite> (1971؛ ویراست بازنگری‌شده ۱۹۹۹) —
+          به‌ویژه بندهای ۳، ۴، ۱۱، ۲۴ ·
+          T.M. Scanlon, <cite>What We Owe to Each Other</cite> (1998) ·
+          Martha Nussbaum, <cite>Frontiers of Justice</cite> (2006)
+        </div>
+      </div>
+    </article>
+
+    <!-- ۶ اخلاق مراقبت -->
+    <article class="lens" style="--lc:#db2777">
+      <div class="lens-head">
+        <span class="lens-ic">🫂</span>
+        <div class="grow">
+          <div class="lens-name">۶. اخلاق مراقبت
+            <span class="lens-orig">Ethics of Care</span></div>
+        </div>
+        <span class="badge">گیلیگان، نادینگز</span>
+      </div>
+      <div class="lens-q">این تصمیم با رابطه‌ها و با آسیب‌پذیرترین فرد چه می‌کند؟</div>
+      <div class="lens-body">
+        <p>
+          اخلاق مراقبت از یک مشاهده تجربی زاده شد. کارول گیلیگان، همکار لارنس کولبرگ،
+          دید در آزمون‌های رشد اخلاقی او دختران معمولاً نمره پایین‌تری می‌گیرند. نتیجه‌گیری
+          او این نبود که دختران کمتر اخلاقی‌اند، بلکه این بود که آزمون تنها <em>یک</em>
+          زبان اخلاقی را می‌سنجد — زبان عدالت و حقوق انتزاعی — و زبان دیگری را نمی‌بیند:
+          زبان رابطه، مسئولیت و پاسخ به نیاز مشخص.
+        </p>
+
+        <p>
+          در دوراهی مشهور هاینز (مردی که برای نجات همسرش باید دارو بدزدد)، پاسخ‌های
+          «عدالت‌محور» بر تعارض حق مالکیت و حق حیات تمرکز می‌کنند. پاسخ «مراقبت‌محور»
+          می‌پرسد: چرا داروساز و هاینز با هم حرف نمی‌زنند؟ چه رابطه‌ای اینجا شکسته است؟
+        </p>
+
+        <h4>مفاهیم کلیدی</h4>
+        <div class="concepts">
+          <div class="concept">
+            <b>صدایی دیگر</b>
+            <span class="term">a different voice · Gilligan</span>
+            <span>نه صدایی زنانه به‌معنای زیستی، که یک <em>گونه</em> استدلال اخلاقی که
+            سنت غالب نادیده‌اش گرفته بود: تفکر انضمامی، روایی و متنی به‌جای انتزاعی و قاعده‌محور.</span>
+          </div>
+          <div class="concept">
+            <b>رابطه مراقبت</b>
+            <span class="term">caring relation · Noddings</span>
+            <span>نادینگز مراقبت را رابطه‌ای دوسویه دانست میان «مراقبت‌کننده» و
+            «مراقبت‌شونده»، که با درگیرشدن ذهنی و جابه‌جایی انگیزه محقق می‌شود —
+            نه با احساس صرف.</span>
+          </div>
+          <div class="concept">
+            <b>وابستگی به‌عنوان وضع بشری</b>
+            <span class="term">dependency</span>
+            <span>سنت‌های قراردادی، انسان را عاملی مستقل و توانمند فرض می‌کنند.
+            اخلاق مراقبت یادآوری می‌کند همه ما دوره‌هایی از وابستگی کامل داریم —
+            کودکی، بیماری، سالمندی — و اخلاقی که این را نبیند ناقص است.</span>
+          </div>
+          <div class="concept">
+            <b>مراقبت به‌مثابه ارزش سیاسی</b>
+            <span class="term">Held, Tronto</span>
+            <span>نسل بعدی این سنت، مراقبت را از حوزه خصوصی به سیاست‌گذاری آورد:
+            توزیع بار مراقبت در جامعه، خودش مسئله‌ای عدالت‌محور است.</span>
+          </div>
+        </div>
+
+        <div class="critique">
+          <b>نقطه کور:</b> خطر جانب‌داری — اگر مراقبت از نزدیکان معیار باشد، غریبه‌ها
+          سهم کمتری می‌گیرند و این می‌تواند به پارتی‌بازی بینجامد. نقد دوم از درون
+          فمینیسم آمد: تأکید بر مراقبت ممکن است همان نقش سنتی زنان را بازتولید و
+          بار نابرابر مراقبت را طبیعی جلوه دهد.
+        </div>
+
+        <div class="srcs">
+          <b>منابع اصلی</b>
+          Carol Gilligan, <cite>In a Different Voice</cite> (1982) ·
+          Nel Noddings, <cite>Caring: A Feminine Approach to Ethics and Moral Education</cite> (1984) ·
+          Virginia Held, <cite>The Ethics of Care</cite> (2006) ·
+          Lawrence Kohlberg, <cite>Essays on Moral Development</cite> (1981) — نظریه‌ای که گیلیگان به آن پاسخ می‌داد
+        </div>
+      </div>
+    </article>
+
+    <!-- ۷ اگزیستانسیالیسم -->
+    <article class="lens" style="--lc:#65a30d">
+      <div class="lens-head">
+        <span class="lens-ic">🕯️</span>
+        <div class="grow">
+          <div class="lens-name">۷. اگزیستانسیالیسم و اصالت
+            <span class="lens-orig">Existentialism · Authenticity</span></div>
+        </div>
+        <span class="badge">کی‌یرکگور، کامو</span>
+      </div>
+      <div class="lens-q">آیا مسئولیت اصیل این انتخاب را می‌پذیرید، یا پشت انتظار دیگران پنهان می‌شوید؟</div>
+      <div class="lens-body">
+        <p>
+          این لنز به شما نمی‌گوید چه کنید — می‌پرسد چه کسی دارد انتخاب می‌کند. تز مشترک این
+          سنت آن است که هیچ مرجع بیرونی، هیچ قاعده و هیچ نظام اخلاقی نمی‌تواند <b>بار
+          انتخاب</b> را از دوش فرد بردارد. حتی پیروی از قاعده، خودش انتخابی است که
+          مسئولیتش با شماست.
+        </p>
+
+        <p>
+          کی‌یرکگور در <cite>ترس و لرز</cite> داستان ابراهیم را می‌کاود: لحظه‌ای که فرد در برابر
+          تصمیمی می‌ایستد که هیچ زبان عمومی نمی‌تواند توجیهش کند. او این را «تعلیق
+          غایت‌شناختی امر اخلاقی» می‌نامد — نه دعوت به بی‌اخلاقی، که تشخیص اینکه گاهی
+          فرد در تنهایی مطلق تصمیم می‌گیرد و هیچ تکیه‌گاهی ندارد.
+        </p>
+
+        <h4>مفاهیم کلیدی</h4>
+        <div class="concepts">
+          <div class="concept">
+            <b>حقیقتی که برای من حقیقت است</b>
+            <span class="term">Kierkegaard, 1835</span>
+            <span>«مهم یافتن حقیقتی است که برای من حقیقت باشد؛ ایده‌ای که به خاطرش
+            بتوانم زندگی کنم یا بمیرم.» — نه نسبی‌گرایی، بلکه تأکید بر اینکه حقیقت
+            اخلاقی تا زیسته نشود، اثری ندارد.</span>
+          </div>
+          <div class="concept">
+            <b>تعلیق غایت‌شناختی امر اخلاقی</b>
+            <span class="term">teleological suspension of the ethical</span>
+            <span>در <cite>ترس و لرز</cite>: امکان آنکه تعهدی فردی از هنجار عمومی فراتر رود.
+            کی‌یرکگور خود این را هراس‌آور می‌داند، نه رهایی‌بخش.</span>
+          </div>
+          <div class="concept">
+            <b>پوچی و عصیان</b>
+            <span class="term">l'absurde · la révolte · Camus</span>
+            <span>پوچی نه در جهان است نه در انسان، در <em>رویارویی</em> آن دو است:
+            انسانی که معنا می‌طلبد در برابر جهانی که خاموش است. پاسخ کامو نه خودکشی
+            است نه تسلیم، بلکه عصیان — و در <cite>عصیانگر</cite> نشان می‌دهد این عصیان
+            خودش مرزی اخلاقی دارد: کسی که به نام آزادی دیگری را می‌کشد، عصیان را نقض کرده.</span>
+          </div>
+          <div class="concept">
+            <b>بدنیتی</b>
+            <span class="term">mauvaise foi · Sartre</span>
+            <span>فرار از آزادی با وانمودکردن به اینکه انتخابی نداشتیم: «مجبور بودم»،
+            «سیستم این‌طور است». سارتر این را خودفریبی می‌داند، نه واقعیت.</span>
+          </div>
+        </div>
+
+        <div class="critique">
+          <b>نقطه کور:</b> از اصالت نمی‌توان معیار عمومی ساخت. اگر ملاک «انتخاب اصیل خودم»
+          باشد، دو نفر می‌توانند اصیلانه به دو نتیجه متضاد برسند و این لنز ابزاری برای
+          داوری میانشان ندارد. به همین دلیل در EthicLens این لنز هرگز تنها معیار نیست؛
+          در آخرین مرحله و فقط برای <em>پالایش انگیزه</em> به کار می‌رود.
+        </div>
+
+        <div class="srcs">
+          <b>منابع اصلی</b>
+          Søren Kierkegaard, <cite>Frygt og Bæven</cite> (ترس و لرز، 1843) ·
+          Albert Camus, <cite>Le Mythe de Sisyphe</cite> (افسانه سیزیف، 1942) ·
+          <cite>L'Homme révolté</cite> (عصیانگر، 1951) ·
+          Jean-Paul Sartre, <cite>L'existentialisme est un humanisme</cite> (1946)
+        </div>
+      </div>
+    </article>
+
+    <!-- ۸ تبارشناسی -->
+    <article class="lens" style="--lc:#b45309">
+      <div class="lens-head">
+        <span class="lens-ic">⛰️</span>
+        <div class="grow">
+          <div class="lens-name">۸. تبارشناسی ارزش‌ها
+            <span class="lens-orig">Genealogy of Morality</span></div>
+        </div>
+        <span class="badge">نیچه</span>
+      </div>
+      <div class="lens-q">ریشه ارزشی که به آن تکیه کرده‌اید چیست — سرشاری یا ترس؟</div>
+      <div class="lens-body">
+        <p>
+          نیچه پرسش را عوض می‌کند. لنزهای دیگر می‌پرسند «چه چیزی خوب است؟»؛ تبارشناسی
+          می‌پرسد <b>«این ارزش‌ها از کجا آمدند، و چه کسی از آن‌ها سود می‌برد؟»</b> روش او
+          تاریخی-روان‌شناختی است: ردیابی اینکه مفاهیم اخلاقی در چه شرایطی ساخته شدند
+          و امروز بر ما چه می‌کنند.
+        </p>
+
+        <p>
+          ادعای مرکزی <cite>تبارشناسی اخلاق</cite> این است که بخشی از اخلاق رایج، از
+          <b>کین‌توزی</b> زاده شده — از ناتوانیِ کسانی که چون نمی‌توانستند عمل کنند،
+          ناتوانی خود را فضیلت نامیدند و قدرت را رذیلت. «بره‌ها از پرندگان شکاری
+          بدشان می‌آید؛ ولی این دلیل نمی‌شود پرندگان شکاری را سرزنش کنیم.»
+        </p>
+
+        <h4>مفاهیم کلیدی</h4>
+        <div class="concepts">
+          <div class="concept">
+            <b>اخلاق سروران و بردگان</b>
+            <span class="term">Herrenmoral · Sklavenmoral</span>
+            <span>اولی از خودتأییدی می‌آید («من خوبم، پس آنچه غیر من است پست است»)،
+            دومی از نفیِ دیگری آغاز می‌شود («او شرور است، پس من خوبم»). نیچه این را
+            توصیف تاریخی می‌داند، نه تجویز اجتماعی.</span>
+          </div>
+          <div class="concept">
+            <b>کین‌توزی</b>
+            <span class="term">Ressentiment</span>
+            <span>«شورش بردگان در اخلاق آنگاه آغاز می‌شود که کین‌توزی خود آفریننده
+            شود و ارزش بزاید.» — احساسی که چون نمی‌تواند تخلیه شود، به ارزش‌گذاری
+            بدل می‌شود.</span>
+          </div>
+          <div class="concept">
+            <b>اراده معطوف به قدرت</b>
+            <span class="term">Wille zur Macht</span>
+            <span>نه میل به سلطه بر دیگران، که سائق بنیادی به گسترش، غلبه بر خود و
+            آفرینش. سوءتفسیر سیاسی این مفهوم — عمدتاً پس از دست‌کاری آثار نیچه توسط
+            خواهرش — تاریخ تلخی ساخت.</span>
+          </div>
+          <div class="concept">
+            <b>وارونگی ارزش‌ها</b>
+            <span class="term">Umwertung aller Werte</span>
+            <span>نه انهدام اخلاق، بلکه بازارزیابی: پرسیدن اینکه کدام ارزش‌ها زندگی
+            را می‌افزایند و کدام آن را می‌فرسایند.</span>
+          </div>
+        </div>
+
+        <div class="critique">
+          <b>نقطه کور:</b> خطر «مغالطه تکوینی» — اینکه ریشه یک باور را نشان دهیم دلیل
+          نمی‌شود آن باور نادرست باشد. شفقت ممکن است از ضعف زاده شده باشد و باز هم
+          فضیلت باشد. نقد دوم تاریخی است: این اندیشه بیش از هر فلسفه دیگری در قرن
+          بیستم برای توجیه ستم مصادره شد. در EthicLens این لنز تنها برای
+          <em>خودکاوی انگیزه</em> به کار می‌رود، نه برای داوری درباره دیگران.
+        </div>
+
+        <div class="srcs">
+          <b>منابع اصلی</b>
+          Friedrich Nietzsche, <cite>Zur Genealogie der Moral</cite> (تبارشناسی اخلاق، 1887) ·
+          <cite>Jenseits von Gut und Böse</cite> (فراسوی نیک و بد، 1886) ·
+          Brian Leiter, <cite>Nietzsche on Morality</cite> (2002) — خوانش تحلیلی معاصر
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ═══════════ دروازه‌ها ═══════════ -->
+  <section class="sec">
+    <h2 class="sec-title" id="gates">🚦 پنج دروازه پالایش</h2>
+    <p class="sec-lead">
+      هشت لنز هم‌وزن نیستند و همه یک کار نمی‌کنند. EthicLens آن‌ها را در پنج مرحله پیاپی
+      می‌چیند: دو دروازه نخست <b>وتوکننده</b>اند — گزینه‌ای که از آن‌ها رد نشود، اصلاً به
+      محاسبه نمی‌رسد. این ترتیب، پاسخی است به مهم‌ترین نقد وارد بر فایده‌گرایی: اینکه
+      محاسبه سود نباید بتواند نقض کرامت یا بی‌عدالتی را جبران کند.
+    </p>
+
+    <div class="gates">
+      <div class="gate" style="--gc:#2563eb">
+        <div class="gate-n">۱</div>
+        <div>
+          <h3>دروازه کرامت <span class="kind">وتوکننده</span></h3>
+          <div class="who">لنز وظیفه‌گرایی · کانت</div>
+          <p>
+            آیا در این تصمیم، انسانی <em>صرفاً</em> به ابزار تبدیل شده است؟ اگر پاسخ آری
+            باشد، گزینه مردود است — هر اندازه هم که سودمند باشد. این دروازه پیش از هر
+            محاسبه‌ای می‌آید، چون کرامت چیزی نیست که با فایده معاوضه شود.
+          </p>
+        </div>
+      </div>
+      <div class="gate-link"></div>
+
+      <div class="gate" style="--gc:#ea580c">
+        <div class="gate-n">۲</div>
+        <div>
+          <h3>دروازه عدالت <span class="kind">وتوکننده</span></h3>
+          <div class="who">لنز قراردادگرایی · رالز</div>
+          <p>
+            آیا بار این تصمیم به‌طور ناعادلانه بر دوش محروم‌ترین طرف می‌افتد؟ آزمون
+            عملی‌اش پرده جهل است: اگر نمی‌دانستید کدام طرف ماجرا هستید، همین قاعده را
+            می‌پذیرفتید؟ گزینه‌ای که در این دروازه بیفتد باید به سود ضعیف‌ترین طرف
+            <em>تعدیل</em> شود، نه لزوماً حذف.
+          </p>
+        </div>
+      </div>
+      <div class="gate-link"></div>
+
+      <div class="gate" style="--gc:#0d9488">
+        <div class="gate-n">۳</div>
+        <div>
+          <h3>فایده و خیر مشترک <span class="kind">بهینه‌ساز</span></h3>
+          <div class="who">لنزهای فایده‌گرایی و خیر مشترک · میل، سنت ارسطویی</div>
+          <p>
+            میان گزینه‌هایی که از دو دروازه بالا گذشته‌اند، کدام بهترین تراز سود و رنج
+            را دارد؟ و جدا از آن — کدام‌یک شرایط مشترکی را که همه به آن وابسته‌اند
+            تقویت یا تضعیف می‌کند؟ این دو پرسش عمداً کنار هم آمده‌اند، چون پاسخشان
+            اغلب یکی نیست.
+          </p>
+        </div>
+      </div>
+      <div class="gate-link"></div>
+
+      <div class="gate" style="--gc:#db2777">
+        <div class="gate-n">۴</div>
+        <div>
+          <h3>مراقبت و فضیلت <span class="kind">بهینه‌ساز</span></h3>
+          <div class="who">لنزهای اخلاق مراقبت و فضیلت‌گرایی · گیلیگان، ارسطو</div>
+          <p>
+            نیاز عینی آسیب‌پذیرترین فرد چیست، و این تصمیم چه منشی در شما می‌سازد؟ این
+            مرحله معمولاً <em>خودِ</em> گزینه را عوض نمی‌کند، بلکه <em>شیوه اجرای</em> آن را
+            انسانی می‌کند: چه کسی اول باخبر شود، با چه لحنی، و چه چیزی جبران شود.
+          </p>
+        </div>
+      </div>
+      <div class="gate-link"></div>
+
+      <div class="gate" style="--gc:#65a30d">
+        <div class="gate-n">۵</div>
+        <div>
+          <h3>اصالت و انگیزه <span class="kind">پالایش‌کننده</span></h3>
+          <div class="who">لنزهای اگزیستانسیالیسم و تبارشناسی · کی‌یرکگور، نیچه</div>
+          <p>
+            آخرین مرحله به گزینه کار ندارد، به <em>شما</em> کار دارد: انگیزه این انتخاب
+            شجاعت است یا ترس از قضاوت دیگران؟ آیا استدلال اخلاقی را برای توجیه چیزی
+            که از قبل می‌خواستید ساخته‌اید؟ این دروازه تصمیم را رد نمی‌کند، آن را از
+            خودفریبی پاک می‌کند.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>چرا این ترتیب و نه ترتیبی دیگر؟</strong>
+      چون خطاهای اخلاقی متقارن نیستند. نقض کرامت و بی‌عدالتی، خطاهایی‌اند که جبران‌ناپذیرند
+      و نباید با سود قابل معاوضه باشند؛ پس اول می‌آیند و حق وتو دارند. سنجش فایده و مراقبت،
+      بهینه‌سازی‌اند و میان گزینه‌های <em>مجاز</em> انتخاب می‌کنند. و پالایش انگیزه آخر
+      می‌آید، چون تنها وقتی معنا دارد که بدانیم درباره کدام گزینه حرف می‌زنیم.
+    </div>
+  </section>
+
+  <!-- ═══════════ جدول ═══════════ -->
+  <section class="sec">
+    <h2 class="sec-title" id="compare">📊 جدول تطبیقی</h2>
+    <p class="sec-lead">مقایسه سریع هشت لنز در پنج شاخص.</p>
+
+    <div class="table-wrap">
+      <table class="cmp">
+        <thead>
+          <tr>
+            <th>لنز</th><th>کانون</th><th>پرسش بنیادین</th>
+            <th>چهره‌های شاخص</th><th>مهم‌ترین نقد</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>فضیلت‌گرایی</td><td>منش عامل</td><td>چه انسانی باید باشم؟</td>
+              <td>ارسطو، انسکوم، مک‌اینتایر</td><td>فقدان راهنمای عملی در بحران</td></tr>
+          <tr><td>وظیفه‌گرایی</td><td>قاعده و نیت</td><td>می‌توان قانون عام کرد؟</td>
+              <td>کانت، راس</td><td>انعطاف‌ناپذیری و تعارض وظایف</td></tr>
+          <tr><td>فایده‌گرایی</td><td>پیامد و بهزیستی</td><td>بیشترین خیر کدام است؟</td>
+              <td>بنتام، میل، سینگر</td><td>امکان قربانی‌کردن اقلیت</td></tr>
+          <tr><td>خیر مشترک</td><td>شرایط مشترک زیست</td><td>با آنچه مشترک است چه می‌کند؟</td>
+              <td>ارسطو، آکوئینی، سندل</td><td>ابزار سرکوب به نام مصلحت جمع</td></tr>
+          <tr><td>قراردادگرایی</td><td>انصاف قواعد</td><td>پشت پرده جهل چه می‌پذیرفتی؟</td>
+              <td>رالز، اسکنلون</td><td>حذف کسانی که چانه‌زنی نمی‌توانند</td></tr>
+          <tr><td>اخلاق مراقبت</td><td>رابطه و نیاز عینی</td><td>با آسیب‌پذیرترین چه می‌کند؟</td>
+              <td>گیلیگان، نادینگز، هلد</td><td>جانب‌داری به نفع نزدیکان</td></tr>
+          <tr><td>اگزیستانسیالیسم</td><td>مسئولیت و اصالت</td><td>مسئولیتش را می‌پذیری؟</td>
+              <td>کی‌یرکگور، کامو، سارتر</td><td>نبود معیار عمومی</td></tr>
+          <tr><td>تبارشناسی</td><td>خاستگاه ارزش‌ها</td><td>ریشه این ارزش چیست؟</td>
+              <td>نیچه</td><td>مغالطه تکوینی</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════ آزمایش‌ها ═══════════ -->
+  <section class="sec">
+    <h2 class="sec-title" id="experiments">🧪 آزمایش‌های فکری کلاسیک</h2>
+    <p class="sec-lead">
+      این آزمایش‌ها ابزار سنجش شهود اخلاقی‌اند: موقعیت‌هایی ساختگی که یک متغیر را
+      جدا می‌کنند تا ببینیم واکنش ما به آن چیست.
+    </p>
+
+    <div class="exp">
+      <h3>انگشتر گیگس</h3>
+      <p>
+        چوپانی انگشتری می‌یابد که او را نامرئی می‌کند. اگر مطمئن باشید هرگز مچتان را
+        نمی‌گیرند، باز هم عادل می‌مانید؟ گلاوکن می‌گوید نه — و عدالت را صرفاً قراردادی
+        از سر ناچاری می‌داند. پاسخ افلاطون و پس از او فضیلت‌گرایان این است که
+        بی‌عدالتی پیش از هر چیز به خودِ فرد آسیب می‌زند.
+      </p>
+      <p class="ref">Plato, <cite>Republic</cite> II, 359a–360d</p>
+    </div>
+
+    <div class="exp">
+      <h3>قاتل پشت در</h3>
+      <p>
+        دوستتان در خانه شما پنهان شده و قاتلی در می‌زند و نشانی‌اش را می‌پرسد. کانت در
+        رساله‌ای در ۱۷۹۷ استدلال کرد که حتی اینجا هم دروغ مجاز نیست، چون دروغ اعتبار
+        گفتار انسانی را در کل نابود می‌کند. این مثال، سخت‌ترین آزمون وظیفه‌گرایی سخت‌گیرانه
+        است و بسیاری از کانتی‌های بعدی از این موضع فاصله گرفتند.
+      </p>
+      <p class="ref">Kant, <cite>“Über ein vermeintes Recht aus Menschenliebe zu lügen”</cite> (1797)</p>
+    </div>
+
+    <div class="exp">
+      <h3>ماشین تجربه</h3>
+      <p>
+        ماشینی می‌تواند هر تجربه دلخواهی را در ذهن شما شبیه‌سازی کند و شما هرگز نخواهید
+        فهمید که واقعی نیست. وصل می‌شوید؟ بیشتر مردم نه — و همین نشان می‌دهد ما جز لذت،
+        به <em>واقعی بودن</em> زندگی هم اهمیت می‌دهیم. این قوی‌ترین نقد بر فایده‌گرایی
+        لذت‌محور است.
+      </p>
+      <p class="ref">Nozick, <cite>Anarchy, State, and Utopia</cite> (1974), pp. 42–45</p>
+    </div>
+
+    <div class="exp">
+      <h3>دوراهی هاینز</h3>
+      <p>
+        همسر هاینز در حال مرگ است و داروسازی دارویی دارد که ده برابر هزینه‌اش می‌فروشد و
+        هاینز توانش را ندارد. باید بدزدد؟ کولبرگ با این دوراهی مراحل رشد اخلاقی را
+        می‌سنجید؛ گیلیگان نشان داد پاسخ‌هایی که او «نابالغ» می‌شمرد، در واقع زبان
+        اخلاقی دیگری بودند.
+      </p>
+      <p class="ref">Kohlberg, <cite>Essays on Moral Development</cite> (1981) · Gilligan (1982)</p>
+    </div>
+
+    <div class="exp">
+      <h3>تراژدی منابع مشترک</h3>
+      <p>
+        مرتعی مشترک است و هر دامدار با افزودن یک رأس دام سود می‌برد، در حالی که هزینه
+        فرسایش میان همه تقسیم می‌شود. نتیجه جمعِ تصمیم‌های عقلانی فردی، نابودی مرتع
+        است. این ساختار، الگوی بسیاری از مسائل امروز است: تغییر اقلیم، مقاومت
+        آنتی‌بیوتیکی، فرسایش اعتماد عمومی.
+      </p>
+      <p class="ref">Hardin, <cite>“The Tragedy of the Commons”</cite>, Science 162 (1968), 1243–1248</p>
+    </div>
+
+    <div class="exp">
+      <h3>ترالی</h3>
+      <p>
+        واگنی بی‌مهار به سمت پنج نفر می‌رود؛ با تغییر مسیر یک نفر کشته می‌شود. بیشتر
+        مردم تغییر مسیر را مجاز می‌دانند. ولی اگر برای توقف واگن باید مردی را از پل
+        هل داد، همان‌ها مخالفت می‌کنند — با آنکه حساب فایده یکسان است. این شکاف،
+        مرز میان پیامدگرایی و شهود وظیفه‌گرایانه را نشان می‌دهد.
+      </p>
+      <p class="ref">Foot (1967) · Thomson, <cite>“The Trolley Problem”</cite>, Yale Law Journal 94 (1985)</p>
+    </div>
+  </section>
+
+  <!-- ═══════════ CTA ═══════════ -->
+  <div class="cta-guide">
+    <h2>حالا این لنزها را روی موقعیت خودتان بگذارید</h2>
+    <p>
+      EthicLens دوراهی شما را از هر هشت منظر می‌سنجد، از پنج دروازه می‌گذراند و
+      تعارض‌ها را نشان می‌دهد — نه اینکه به‌جای شما تصمیم بگیرد.
+    </p>
+    <a class="btn btn-lg" href="/app">شروع تحلیل</a>
+  </div>
+
+  <!-- ═══════════ کتاب‌شناسی ═══════════ -->
+  <section class="sec">
+    <h2 class="sec-title" id="bibliography">📚 کتاب‌شناسی</h2>
+    <p class="sec-lead">
+      منابع اصلی هر لنز، به ترتیب تاریخی. جایی که ترجمه فارسی شناخته‌شده‌ای موجود است،
+      زیر عنوان اصلی آمده.
+    </p>
+
+    <div class="bib">
+      <h3>متون بنیادین</h3>
+      <ol>
+        <li>Aristotle, <cite>Nicomachean Ethics</cite> (c. 340 BCE)
+          <span class="fa-tr">اخلاق نیکوماخوس — ترجمه محمدحسن لطفی</span></li>
+        <li>Aristotle, <cite>Politics</cite> (c. 335 BCE)
+          <span class="fa-tr">سیاست — ترجمه حمید عنایت</span></li>
+        <li>Plato, <cite>Republic</cite> (c. 375 BCE)
+          <span class="fa-tr">جمهور — ترجمه فؤاد روحانی</span></li>
+        <li>Thomas Aquinas, <cite>Summa Theologiae</cite> I-II (1265–1274)</li>
+        <li>Immanuel Kant, <cite>Grundlegung zur Metaphysik der Sitten</cite> (1785)
+          <span class="fa-tr">بنیاد مابعدالطبیعه اخلاق</span></li>
+        <li>Jeremy Bentham, <cite>An Introduction to the Principles of Morals and Legislation</cite> (1789)</li>
+        <li>Søren Kierkegaard, <cite>Frygt og Bæven</cite> (1843)
+          <span class="fa-tr">ترس و لرز — ترجمه عبدالکریم رشیدیان</span></li>
+        <li>John Stuart Mill, <cite>Utilitarianism</cite> (1863)
+          <span class="fa-tr">فایده‌گرایی — ترجمه مرتضی مردیها</span></li>
+        <li>Friedrich Nietzsche, <cite>Jenseits von Gut und Böse</cite> (1886)
+          <span class="fa-tr">فراسوی نیک و بد — ترجمه داریوش آشوری</span></li>
+        <li>Friedrich Nietzsche, <cite>Zur Genealogie der Moral</cite> (1887)
+          <span class="fa-tr">تبارشناسی اخلاق — ترجمه داریوش آشوری</span></li>
+      </ol>
+
+      <h3>قرن بیستم</h3>
+      <ol start="11">
+        <li>W.D. Ross, <cite>The Right and the Good</cite> (1930)</li>
+        <li>Albert Camus, <cite>Le Mythe de Sisyphe</cite> (1942)
+          <span class="fa-tr">افسانه سیزیف</span></li>
+        <li>Jean-Paul Sartre, <cite>L'existentialisme est un humanisme</cite> (1946)
+          <span class="fa-tr">اگزیستانسیالیسم و اصالت بشر</span></li>
+        <li>Albert Camus, <cite>L'Homme révolté</cite> (1951)
+          <span class="fa-tr">عصیانگر</span></li>
+        <li>G.E.M. Anscombe, <cite>“Modern Moral Philosophy”</cite>, Philosophy 33 (1958)</li>
+        <li>Philippa Foot, <cite>“The Problem of Abortion and the Doctrine of the Double Effect”</cite> (1967)</li>
+        <li>Garrett Hardin, <cite>“The Tragedy of the Commons”</cite>, Science 162 (1968)</li>
+        <li>John Rawls, <cite>A Theory of Justice</cite> (1971; rev. 1999)
+          <span class="fa-tr">نظریه‌ای در باب عدالت — ترجمه مرتضی بحرانی</span></li>
+        <li>Robert Nozick, <cite>Anarchy, State, and Utopia</cite> (1974)</li>
+        <li>Peter Singer, <cite>Practical Ethics</cite> (1979)
+          <span class="fa-tr">اخلاق عملی</span></li>
+        <li>Alasdair MacIntyre, <cite>After Virtue</cite> (1981)
+          <span class="fa-tr">در پی فضیلت</span></li>
+        <li>Lawrence Kohlberg, <cite>Essays on Moral Development</cite> (1981)</li>
+        <li>Carol Gilligan, <cite>In a Different Voice</cite> (1982)
+          <span class="fa-tr">با صدایی متفاوت</span></li>
+        <li>Nel Noddings, <cite>Caring</cite> (1984)</li>
+        <li>Judith Jarvis Thomson, <cite>“The Trolley Problem”</cite>, Yale Law Journal 94 (1985)</li>
+        <li>Elinor Ostrom, <cite>Governing the Commons</cite> (1990)</li>
+        <li>T.M. Scanlon, <cite>What We Owe to Each Other</cite> (1998)</li>
+      </ol>
+
+      <h3>معاصر</h3>
+      <ol start="28">
+        <li>Brian Leiter, <cite>Nietzsche on Morality</cite> (2002)</li>
+        <li>Virginia Held, <cite>The Ethics of Care</cite> (2006)</li>
+        <li>Martha Nussbaum, <cite>Frontiers of Justice</cite> (2006)</li>
+        <li>Michael Sandel, <cite>Justice: What's the Right Thing to Do?</cite> (2009)</li>
+      </ol>
+
+      <h3>چارچوب تصمیم‌گیری</h3>
+      <ol start="32">
+        <li>Markkula Center for Applied Ethics, Santa Clara University,
+          <cite>“A Framework for Ethical Decision Making”</cite> —
+          مبنای فرایند پنج‌فازی و منظر «خیر مشترک» در این محصول.
+          <span class="fa-tr">scu.edu/ethics/ethics-resources/a-framework-for-ethical-decision-making</span></li>
+        <li><cite>Stanford Encyclopedia of Philosophy</cite> — مدخل‌های
+          Virtue Ethics، Kant's Moral Philosophy، Consequentialism،
+          Original Position، Feminist Ethics of Care و Nietzsche's Moral and Political Philosophy.
+          <span class="fa-tr">plato.stanford.edu — مرجع دانشگاهی و داوری‌شده برای هر هشت لنز</span></li>
+      </ol>
+    </div>
+
+    <div class="note" style="margin-top:1.5rem">
+      <strong>یادداشت روش‌شناختی.</strong>
+      این صفحه فشرده‌ای از سنت‌هایی است که هرکدام قرن‌ها بحث پشتشان است، و هر تلخیصی
+      ناگزیر ساده‌سازی می‌کند. جایی که میان مفسران اختلاف جدی هست — مثلاً در تفسیر
+      «اراده معطوف به قدرت» یا در اینکه آیا کانت واقعاً به موضع ۱۷۹۷ متعهد بود —
+      کوشیده‌ایم اختلاف را پنهان نکنیم. برای هر لنز، رجوع به متن اصلی جایگزین ندارد.
+    </div>
+  </section>
+
+</main>
 
 <script type="module">
   import { boot } from '/js/core.js';
+  import { revealOnScroll } from '/js/motion.js';
   await boot({ auth: false });
+  revealOnScroll('.lens, .phase-card, .gate, .exp');
 </script>
 </body>
 </html>

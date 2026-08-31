@@ -3,7 +3,8 @@
 وب‌اپلیکیشنی که دوراهی‌های اخلاقی کاربر را از منظر **هشت مکتب بزرگ فلسفه اخلاق** تحلیل می‌کند و
 از یک **فلوچارت پالایش پنج‌مرحله‌ای** عبور می‌دهد تا به یک پیشنهاد عملی موجه برسد.
 
-ساخته‌شده بر پایه دانشنامه کاربردی فلسفه اخلاق (`ethic_2.html`) که در `/guide` هم قابل مطالعه است.
+مبنای نظری در `/guide` مستند شده است: هشت لنز، پنج دروازه و فرایند پنج‌فازی،
+با ارجاع به منابع اصلی. (`ethic_2.html` سند اولیه پروژه است و دیگر مبنای آن صفحه نیست.)
 
 ---
 
@@ -70,12 +71,6 @@ npm run smoke
 دارد و در نتیجه هیچ دکمه‌ای در آن کار نمی‌کند — حالتی که آزمون دود تشخیصش نمی‌دهد.
 `npm run smoke` مسیرهای API را با سرورِ در حال اجرا می‌آزماید و `npm test` هر دو را اجرا می‌کند.
 
-بازسازی صفحه دانشنامه از فایل اصلی:
-
-```bash
-node scripts/build-guide.mjs
-```
-
 ---
 
 ## متغیرهای محیطی
@@ -121,7 +116,7 @@ public/
   css/ js/              سامانه طراحی و هسته کلاینت
   pages/                login، app، dashboard، history، analysis، settings، admin، guide، 404
 deploy/                 systemd، nginx، راهنمای استقرار
-scripts/                build-guide.mjs، smoke.mjs، sync-models.mjs، probe-models.mjs، try-analysis.mjs
+scripts/                smoke.mjs، sync-models.mjs، probe-models.mjs، try-analysis.mjs
 ```
 
 ---
