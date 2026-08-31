@@ -6,7 +6,8 @@ import { getSettings, setSetting, getSetting } from '../services/settings.js';
 import { listRemoteModels, pingModel } from '../services/llm.js';
 import { PRESETS, listProviders, getProvider, enabledModels, resolveModel, modelRef } from '../services/providers.js';
 import { listTiers, TIER_ORDER, usageByUser, limitsFor, usageFor } from '../services/tiers.js';
-import { mailConfigured, sendMail } from '../services/mail.js';
+import { mailConfigured, sendMail, mailProvider, MAIL_PROVIDERS } from '../services/mail.js';
+import { checkAndStore } from '../services/email-check.js';
 import { DEFAULT_PROMPT } from '../services/default-prompt.js';
 
 export const router = express.Router();
@@ -20,7 +21,9 @@ router.get('/overview', (req, res) => {
       SUM(role = 'admin') admins,
       SUM(status = 'suspended') suspended,
       SUM(created_at >= datetime('now','-7 days')) newWeek,
-      SUM(email_verified = 0) unverified FROM users`).get();
+      SUM(status = 'pending') pending,
+      SUM(status = 'rejected') rejected,
+      SUM(email_valid = 0) suspectEmail FROM users`).get();
 
   const analyses = db.prepare(`SELECT COUNT(*) total,
       SUM(status = 'done') done,
@@ -203,7 +206,7 @@ const PUBLIC_SETTINGS = [
   'temperature', 'top_p', 'max_tokens', 'active_prompt_key',
   'allow_registration', 'default_daily_quota',
   'require_verification', 'verification_gate',
-  'mailgun_domain', 'mailgun_base_url', 'mail_from_name', 'mail_from_email'
+  'mail_provider', 'mailgun_domain', 'mailgun_base_url', 'mail_from_name', 'mail_from_email'
 ];
 
 router.get('/settings', (req, res) => {
@@ -217,7 +220,10 @@ router.get('/settings', (req, res) => {
     modelOptions: models.map(m => ({ ref: modelRef(m), label: `${m.provider_label} — ${m.label}` })),
     defaultModelValid: !!resolveModel(s.default_model),
     mailConfigured: mailConfigured(),
-    mailKeySet: !!getSetting('mailgun_api_key')
+    mailProviders: MAIL_PROVIDERS,
+    mailProvider: mailProvider(),
+    mailKeySet: mailProvider() === 'brevo'
+      ? !!getSetting('brevo_api_key') : !!getSetting('mailgun_api_key')
   });
 });
 
@@ -226,6 +232,7 @@ const ALLOWED_SETTINGS = new Set([
   'temperature', 'top_p', 'max_tokens', 'active_prompt_key',
   'allow_registration', 'default_daily_quota',
   'require_verification', 'verification_gate',
+  'mail_provider', 'brevo_api_key',
   'mailgun_api_key', 'mailgun_domain', 'mailgun_base_url', 'mail_from_name', 'mail_from_email'
 ]);
 
@@ -429,13 +436,20 @@ router.get('/users', (req, res) => {
   const q = String(req.query.q || '').trim();
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const perPage = 20;
-  const where = q ? 'WHERE u.email LIKE ? OR u.name LIKE ?' : '';
-  const params = q ? [`%${q}%`, `%${q}%`] : [];
+  const clauses = [];
+  const params = [];
+  if (q) { clauses.push('(u.email LIKE ? OR u.name LIKE ?)'); params.push(`%${q}%`, `%${q}%`); }
+  const st = String(req.query.status || '').trim();
+  if (['pending', 'active', 'rejected', 'suspended'].includes(st)) {
+    clauses.push('u.status = ?'); params.push(st);
+  }
+  const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
 
   const total = db.prepare(`SELECT COUNT(*) c FROM users u ${where}`).get(...params).c;
   const rows = db.prepare(
-    `SELECT u.id, u.email, u.name, u.role, u.tier, u.status,
-            u.email_verified, u.verified_at,
+    `SELECT u.id, u.email, u.name, u.first_name, u.last_name, u.role, u.tier, u.status,
+            u.email_valid, u.email_checked_at, u.email_check_note,
+            u.approved_at, u.review_note,
             u.quota_override, u.token_override, u.created_at, u.last_login_at
      FROM users u ${where} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`
   ).all(...params, perPage, (page - 1) * perPage);
@@ -460,7 +474,11 @@ router.get('/users', (req, res) => {
     };
   });
 
-  res.json({ items, total, page, pages: Math.ceil(total / perPage) || 1, tiers: listTiers() });
+  const counts = Object.fromEntries(
+    db.prepare('SELECT status, COUNT(*) c FROM users GROUP BY status').all().map(r => [r.status, r.c]));
+
+  res.json({ items, total, page, pages: Math.ceil(total / perPage) || 1,
+             tiers: listTiers(), counts });
 });
 
 router.put('/users/:id', (req, res) => {
@@ -468,7 +486,8 @@ router.put('/users/:id', (req, res) => {
   if (!u) return res.status(404).json({ error: 'کاربر یافت نشد.' });
 
   const role = req.body?.role === 'admin' ? 'admin' : (req.body?.role === 'user' ? 'user' : u.role);
-  const status = ['active', 'suspended'].includes(req.body?.status) ? req.body.status : u.status;
+  const status = ['active', 'suspended', 'pending', 'rejected'].includes(req.body?.status)
+    ? req.body.status : u.status;
 
   if (u.id === req.user.id && (role !== 'admin' || status !== 'active')) {
     return res.status(400).json({ error: 'نمی‌توانید دسترسی حساب خودتان را سلب کنید.' });
@@ -501,6 +520,102 @@ router.put('/users/:id', (req, res) => {
   audit(req.user.id, 'user_update',
         { targetId: u.id, role, status, tier, quota, tokens }, req.ip);
   res.json({ ok: true });
+});
+
+/**
+ * تأیید یا رد درخواست عضویت.
+ *
+ * تأیید: وضعیت active می‌شود و اگر سرویس ایمیل تنظیم باشد، به کاربر
+ * خبر داده می‌شود. رد: وضعیت rejected با یادداشت اختیاری مدیر، که
+ * هنگام تلاش برای ورود به کاربر نشان داده می‌شود.
+ */
+router.post('/users/:id/review', async (req, res) => {
+  const u = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
+  if (!u) return res.status(404).json({ error: 'کاربر یافت نشد.' });
+
+  const decision = req.body?.decision;
+  if (!['approve', 'reject'].includes(decision)) {
+    return res.status(400).json({ error: 'تصمیم باید approve یا reject باشد.' });
+  }
+  if (u.id === req.user.id) {
+    return res.status(400).json({ error: 'حساب خودتان را نمی‌توانید بررسی کنید.' });
+  }
+
+  const note = String(req.body?.note || '').trim().slice(0, 400) || null;
+  const status = decision === 'approve' ? 'active' : 'rejected';
+
+  db.prepare(`UPDATE users SET status = ?, review_note = ?,
+              approved_at = CASE WHEN ? = 'active' THEN datetime('now') ELSE NULL END,
+              approved_by = ? WHERE id = ?`)
+    .run(status, note, status, req.user.id, u.id);
+
+  audit(req.user.id, decision === 'approve' ? 'user_approve' : 'user_reject',
+        { targetId: u.id, email: u.email, note }, req.ip);
+
+  // خبردادن به کاربر اختیاری است و نباید تصمیم مدیر را معلق کند
+  let notified = false;
+  if (mailConfigured()) {
+    try {
+      await sendMail({
+        to: u.email,
+        subject: decision === 'approve'
+          ? `${getSetting('site_title') || 'اتیکا'} — حساب شما تأیید شد`
+          : `${getSetting('site_title') || 'اتیکا'} — نتیجه بررسی درخواست عضویت`,
+        html: decision === 'approve'
+          ? `<div style="font-family:Tahoma,sans-serif;direction:rtl;padding:20px;line-height:2">
+               <h2 style="color:#16a34a">حساب شما تأیید شد ✅</h2>
+               <p>${u.name} عزیز، حساب شما فعال شد و می‌توانید وارد شوید و اولین دوراهی‌تان را تحلیل کنید.</p>
+             </div>`
+          : `<div style="font-family:Tahoma,sans-serif;direction:rtl;padding:20px;line-height:2">
+               <h2>نتیجه بررسی درخواست عضویت</h2>
+               <p>${u.name} عزیز، درخواست عضویت شما در این مرحله پذیرفته نشد.</p>
+               ${note ? `<p><strong>توضیح:</strong> ${note}</p>` : ''}
+             </div>`,
+        tag: decision
+      });
+      notified = true;
+    } catch (e) {
+      console.error('[review] اطلاع‌رسانی ناموفق:', e.message);
+    }
+  }
+
+  res.json({ ok: true, status, notified });
+});
+
+/** بررسی دوباره اعتبار ایمیل یک کاربر */
+router.post('/users/:id/check-email', async (req, res) => {
+  const u = db.prepare('SELECT id, email FROM users WHERE id = ?').get(req.params.id);
+  if (!u) return res.status(404).json({ error: 'کاربر یافت نشد.' });
+  const r = await checkAndStore(u.id, u.email);
+  audit(req.user.id, 'email_check', { targetId: u.id, valid: r.valid }, req.ip);
+  res.json({ ok: true, ...r });
+});
+
+/** گزارش فعالیت یک کاربر — برای تصمیم‌گیری هنگام بررسی */
+router.get('/users/:id/activity', (req, res) => {
+  const u = db.prepare(`SELECT id, email, name, first_name, last_name, status, tier, role,
+                               email_valid, email_check_note, email_checked_at,
+                               review_note, approved_at, created_at, last_login_at
+                        FROM users WHERE id = ?`).get(req.params.id);
+  if (!u) return res.status(404).json({ error: 'کاربر یافت نشد.' });
+
+  const stats = db.prepare(`
+    SELECT COUNT(*) analyses,
+           SUM(status = 'done') completed,
+           SUM(status = 'error') failed,
+           COALESCE(SUM(tokens_in + tokens_out), 0) tokens,
+           MIN(created_at) firstAt, MAX(created_at) lastAt
+    FROM analyses WHERE user_id = ?`).get(u.id);
+
+  const recent = db.prepare(`
+    SELECT id, title, status, created_at, duration_ms FROM analyses
+    WHERE user_id = ? ORDER BY created_at DESC LIMIT 10`).all(u.id);
+
+  const events = db.prepare(`
+    SELECT action, detail, ip, created_at FROM audit_log
+    WHERE user_id = ? ORDER BY created_at DESC LIMIT 25`).all(u.id);
+
+  res.json({ user: u, stats, recent, events });
 });
 
 router.post('/users/:id/reset-password', (req, res) => {

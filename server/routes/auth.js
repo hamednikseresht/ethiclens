@@ -5,6 +5,8 @@ import { db, audit } from '../db.js';
 import { getSetting } from '../services/settings.js';
 import { allowanceSummary } from '../services/tiers.js';
 import { absoluteUrl } from '../services/seo.js';
+import { issueCaptcha, verifyCaptcha } from '../services/captcha.js';
+import { checkAndStore, EMAIL_RE as EMAIL_PATTERN } from '../services/email-check.js';
 import {
   mailConfigured, createToken, consumeToken, sendVerification, secondsSinceLastToken
 } from '../services/mail.js';
@@ -12,12 +14,34 @@ import { requireAuth, csrfToken } from '../middleware/auth.js';
 
 export const router = express.Router();
 
+/**
+ * محدودیت ورود.
+ *
+ * فقط تلاش‌های *ناموفق* شمرده می‌شوند. اگر همه درخواست‌ها شمرده شوند،
+ * یک دفتر یا خوابگاه که پشت یک IP مشترک است خودش را قفل می‌کند — بی‌آنکه
+ * کسی حمله کرده باشد. حمله‌کننده‌ای که رمز را نمی‌داند، ناگزیر شکست
+ * می‌خورد و همچنان محدود می‌شود.
+ */
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: true,
   message: { error: 'تلاش‌های ناموفق زیاد بود. ۱۵ دقیقه دیگر دوباره امتحان کنید.' }
+});
+
+/**
+ * محدودیت ثبت‌نام — جدا از ورود و سخت‌گیرانه‌تر.
+ * اینجا برعکس: هر ثبت‌نام موفق هم شمرده می‌شود، چون دقیقاً همان چیزی
+ * است که می‌خواهیم محدودش کنیم (ساخت انبوه حساب).
+ */
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'تعداد ثبت‌نام از این نشانی بیش از حد بود. یک ساعت دیگر تلاش کنید.' }
 });
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -26,52 +50,77 @@ function publicUser(u) {
   return {
     id: u.id, email: u.email, name: u.name, role: u.role,
     tier: u.tier || 'basic', createdAt: u.created_at,
+    firstName: u.first_name || '', lastName: u.last_name || '',
+    status: u.status,
     emailVerified: !!u.email_verified
   };
 }
 
-router.post('/register', loginLimiter, async (req, res) => {
+/** تصویر امنیتی تازه برای فرم ثبت‌نام */
+router.get('/captcha', (req, res) => {
+  const { svg } = issueCaptcha(req.session);
+  res.set('Content-Type', 'image/svg+xml');
+  res.set('Cache-Control', 'no-store, max-age=0');
+  res.send(svg);
+});
+
+/**
+ * ثبت‌نام.
+ *
+ * نام و نام خانوادگی اختیاری‌اند؛ فقط ایمیل و رمز الزامی است.
+ * حساب با وضعیت pending ساخته می‌شود و تا تأیید مدیر قابل استفاده نیست.
+ */
+router.post('/register', registerLimiter, async (req, res) => {
   if (getSetting('allow_registration') !== '1') {
     return res.status(403).json({ error: 'ثبت‌نام در حال حاضر بسته است.' });
   }
-  const name = String(req.body?.name || '').trim();
-  const email = String(req.body?.email || '').trim().toLowerCase();
-  const password = String(req.body?.password || '');
 
-  if (name.length < 2) return res.status(400).json({ error: 'نام باید حداقل ۲ نویسه باشد.' });
-  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'ایمیل معتبر نیست.' });
-  if (password.length < 8) return res.status(400).json({ error: 'رمز عبور باید حداقل ۸ نویسه باشد.' });
+  // کپچا پیش از هر کار دیگر — تا ربات حتی به اعتبارسنجی هم نرسد
+  const cap = verifyCaptcha(req.session, req.body?.captcha);
+  if (!cap.ok) return res.status(400).json({ error: cap.error, field: 'captcha' });
 
+  const firstName = String(req.body?.firstName || '').trim().slice(0, 60);
+  const lastName  = String(req.body?.lastName  || '').trim().slice(0, 60);
+  const email     = String(req.body?.email || '').trim().toLowerCase();
+  const password  = String(req.body?.password || '');
+
+  if (!EMAIL_PATTERN.test(email)) {
+    return res.status(400).json({ error: 'ایمیل معتبر نیست.', field: 'email' });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'رمز عبور باید حداقل ۸ نویسه باشد.', field: 'password' });
+  }
   if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) {
-    return res.status(409).json({ error: 'این ایمیل قبلاً ثبت شده است.' });
+    return res.status(409).json({ error: 'این ایمیل قبلاً ثبت شده است.', field: 'email' });
   }
 
-  const defaultTier = getSetting('default_tier') || 'basic';
-  const info = db.prepare('INSERT INTO users (email, name, password_hash, tier) VALUES (?,?,?,?)')
-    .run(email, name, bcrypt.hashSync(password, 10), defaultTier);
+  // نام نمایشی: از نام و نام خانوادگی، وگرنه بخش ابتدایی ایمیل
+  const display = [firstName, lastName].filter(Boolean).join(' ') || email.split('@')[0];
+
+  const info = db.prepare(`
+    INSERT INTO users (email, name, first_name, last_name, password_hash, tier, status)
+    VALUES (?,?,?,?,?,?, 'pending')`)
+    .run(email, display, firstName || null, lastName || null,
+         bcrypt.hashSync(password, 10), getSetting('default_tier') || 'basic');
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
+  audit(user.id, 'register', { email, hasName: !!(firstName || lastName) }, req.ip);
+
+  // پرچم اعتبار ایمیل — بدون ارسال چیزی، فقط برای کمک به مدیر هنگام تأیید.
+  // اگر شکست بخورد نباید ثبت‌نام را خراب کند.
+  checkAndStore(user.id, email).catch(e =>
+    console.error('[email-check] ناموفق:', e.message));
+
+  // نشست ساخته می‌شود تا کاربر بتواند وضعیتش را ببیند، ولی تا تأیید
+  // مدیر هیچ مسیر کاربردی‌ای برایش باز نیست.
   req.session.userId = user.id;
-  audit(user.id, 'register', { email }, req.ip);
 
-  // اگر سرویس ایمیل تنظیم نشده باشد، ثبت‌نام نباید بشکند؛ حساب
-  // تأییدشده در نظر گرفته می‌شود تا کاربر پشت دری قفل نماند.
-  let verificationSent = false;
-  if (!mailConfigured()) {
-    db.prepare("UPDATE users SET email_verified = 1, verified_at = datetime('now') WHERE id = ?").run(user.id);
-    user.email_verified = 1;
-  } else {
-    try {
-      const token = createToken(user.id, 'verify', req.ip);
-      await sendVerification({ user, url: absoluteUrl(req, `/verify?token=${token}`) });
-      verificationSent = true;
-    } catch (e) {
-      console.error('[verify] ارسال ایمیل ناموفق:', e.message);
-      audit(user.id, 'verify_send_failed', { error: e.message }, req.ip);
-    }
-  }
-
-  res.json({ user: publicUser(user), csrf: csrfToken(req), verificationSent });
+  res.json({
+    user: publicUser(user),
+    csrf: csrfToken(req),
+    pendingApproval: true,
+    message: 'ثبت‌نام شما با موفقیت انجام شد. پس از تأیید مدیر، امکان استفاده از سامانه را خواهید داشت.'
+  });
 });
 
 router.post('/login', loginLimiter, (req, res) => {
@@ -83,8 +132,17 @@ router.post('/login', loginLimiter, (req, res) => {
     audit(user?.id ?? null, 'login_failed', { email }, req.ip);
     return res.status(401).json({ error: 'ایمیل یا رمز عبور نادرست است.' });
   }
-  if (user.status !== 'active') {
-    return res.status(403).json({ error: 'این حساب غیرفعال شده است. با مدیر تماس بگیرید.' });
+  // کاربر منتظر تأیید اجازه ورود دارد تا وضعیتش را ببیند؛ بقیه وضعیت‌ها بسته‌اند.
+  if (user.status === 'rejected') {
+    return res.status(403).json({
+      error: user.review_note
+        ? `درخواست عضویت شما پذیرفته نشد. توضیح مدیر: ${user.review_note}`
+        : 'درخواست عضویت شما پذیرفته نشد.',
+      reason: 'rejected'
+    });
+  }
+  if (user.status === 'suspended') {
+    return res.status(403).json({ error: 'این حساب مسدود شده است. با مدیر سامانه تماس بگیرید.', reason: 'suspended' });
   }
 
   req.session.regenerate(err => {

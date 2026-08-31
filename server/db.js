@@ -22,11 +22,21 @@ CREATE TABLE IF NOT EXISTS tiers (
 CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   email         TEXT    NOT NULL UNIQUE,
-  name          TEXT    NOT NULL,
+  name          TEXT    NOT NULL,                     -- نام نمایشی؛ از دو مورد زیر ساخته می‌شود
+  first_name    TEXT,                                 -- اختیاری
+  last_name     TEXT,                                 -- اختیاری
   password_hash TEXT    NOT NULL,
   role          TEXT    NOT NULL DEFAULT 'user',      -- user | admin
   tier          TEXT    NOT NULL DEFAULT 'basic',     -- basic | premium
-  status        TEXT    NOT NULL DEFAULT 'active',    -- active | suspended
+  -- pending = منتظر تأیید مدیر | active = تأییدشده | rejected = رد شده | suspended = مسدود
+  status        TEXT    NOT NULL DEFAULT 'pending',
+  approved_at   TEXT,
+  approved_by   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  review_note   TEXT,                                 -- دلیل رد یا یادداشت مدیر
+  -- پرچم اعتبار ایمیل: ۱ معتبر، ۰ مشکوک، NULL بررسی‌نشده
+  email_valid   INTEGER,
+  email_checked_at TEXT,
+  email_check_note TEXT,
   -- NULL یعنی «از گروه ارث ببر»؛ عدد یعنی این کاربر استثناست
   quota_override INTEGER,
   token_override INTEGER,
@@ -231,6 +241,14 @@ function addMissingColumns() {
       tier:           "TEXT NOT NULL DEFAULT 'basic'",
       email_verified: 'INTEGER NOT NULL DEFAULT 0',
       verified_at:    'TEXT',
+      first_name:       'TEXT',
+      last_name:        'TEXT',
+      approved_at:      'TEXT',
+      approved_by:      'INTEGER',
+      review_note:      'TEXT',
+      email_valid:      'INTEGER',
+      email_checked_at: 'TEXT',
+      email_check_note: 'TEXT',
       quota_override: 'INTEGER',
       token_override: 'INTEGER'
     },

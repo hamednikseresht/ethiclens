@@ -1,5 +1,5 @@
 import express from 'express';
-import { requireAuth, requireVerified } from '../middleware/auth.js';
+import { requireAuth, requireApproved } from '../middleware/auth.js';
 import { getSetting } from '../services/settings.js';
 import { enabledModels, modelsForTier, resolveModel, modelRef } from '../services/providers.js';
 import { allowanceSummary } from '../services/tiers.js';
@@ -43,7 +43,7 @@ router.get('/quota', requireAuth, (req, res) => {
 });
 
 /** استریم SSE برای مرورگر: رویدادها = start | delta | done | error */
-router.post('/stream', requireAuth, requireVerified, async (req, res) => {
+router.post('/stream', requireAuth, requireApproved, async (req, res) => {
   let input;
   try {
     input = normalizeInput(req.body);

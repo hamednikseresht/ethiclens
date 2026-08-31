@@ -38,6 +38,30 @@ function check(name, cond, extra = '') {
   else { fail++; console.log(`  ✗ ${name}${extra ? '  → ' + extra : ''}`); }
 }
 
+
+/**
+ * کپچا را حل می‌کند.
+ *
+ * پاسخ به‌صورت چکیده در نشست ذخیره می‌شود، پس آزمون آن را از پایگاه داده
+ * می‌خواند و در فضای کوچک اعداد ممکن جست‌وجو می‌کند. این فقط برای آزمون
+ * محلی است؛ هیچ راه دور زدنی در خود برنامه اضافه نشده.
+ */
+const { db: _db } = await import('../server/db.js');
+const _crypto = await import('node:crypto');
+
+async function solveCaptcha() {
+  await req('/api/auth/captcha');
+  const sessions = _db.prepare('SELECT data FROM sessions').all()
+    .map(r => { try { return JSON.parse(r.data); } catch { return null; } })
+    .filter(x => x && x.captcha);
+  const latest = sessions.sort((a, b) => (b.captcha.expires || 0) - (a.captcha.expires || 0))[0];
+  if (!latest) return '';
+  for (let n = -50; n <= 400; n++) {
+    if (_crypto.createHash('sha256').update(String(n)).digest('hex') === latest.captcha.hash) return String(n);
+  }
+  return '';
+}
+
 console.log('\n── صفحات ──');
 for (const [path, needle] of [
   ['/', 'اتیکا'],
@@ -68,18 +92,25 @@ const noCsrf = await req('/api/auth/login', { method: 'POST', body: { email: 'a@
 check('POST بدون توکن CSRF رد می‌شود', noCsrf.status === 403, `status=${noCsrf.status}`);
 
 const email = `test${Date.now()}@example.com`;
-const reg = await req('/api/auth/register', { method: 'POST', csrf, body: { name: 'کاربر آزمایشی', email, password: 'Test12345!' } });
+const reg = await req('/api/auth/register', { method: 'POST', csrf,
+  body: { firstName: 'کاربر', lastName: 'آزمایشی', email, password: 'Test12345!', captcha: await solveCaptcha() } });
 check('ثبت‌نام موفق', reg.status === 200 && reg.data.user?.email === email, JSON.stringify(reg.data));
 csrf = reg.data.csrf || csrf;
 
-const dupe = await req('/api/auth/register', { method: 'POST', csrf, body: { name: 'دوباره', email, password: 'Test12345!' } });
+const dupe = await req('/api/auth/register', { method: 'POST', csrf,
+  body: { email, password: 'Test12345!', captcha: await solveCaptcha() } });
 check('ایمیل تکراری رد می‌شود', dupe.status === 409, `status=${dupe.status}`);
 
-const weak = await req('/api/auth/register', { method: 'POST', csrf, body: { name: 'ض', email: 'bad', password: '123' } });
+const weak = await req('/api/auth/register', { method: 'POST', csrf,
+  body: { email: 'bad', password: '123', captcha: await solveCaptcha() } });
 check('اعتبارسنجی ورودی ثبت‌نام', weak.status === 400);
 
 me = await req('/api/auth/me');
 check('نشست پس از ثبت‌نام برقرار است', me.data.user?.email === email);
+check('کاربر تازه در وضعیت انتظار تأیید است', me.data.user?.status === 'pending', me.data.user?.status);
+
+// کاربر تازه تا تأیید مدیر فعال نیست؛ برای بقیه آزمون‌ها فعالش می‌کنیم
+_db.prepare("UPDATE users SET status = 'active' WHERE email = ?").run(email);
 
 console.log('\n── تحلیل ──');
 const meta = await req('/api/analyze/meta');
@@ -440,8 +471,10 @@ console.log('\n── تأیید ایمیل ──');
   check('کاربر قدیمی تأییدشده است', v.data.verified === true, String(v.data.verified));
 
   const users = await req('/api/admin/users');
-  check('وضعیت تأیید در فهرست کاربران هست',
-    users.data.items.every(u => u.email_verified !== undefined));
+  check('پرچم اعتبار ایمیل در فهرست کاربران هست',
+    users.data.items.every(u => 'email_valid' in u));
+  check('وضعیت حساب در فهرست کاربران هست',
+    users.data.items.every(u => ['pending', 'active', 'rejected', 'suspended'].includes(u.status)));
 
   const target = users.data.items.find(u => u.role !== 'admin');
   if (target) {

@@ -13,7 +13,8 @@
     "seed": "node server/seed.js",
     "check": "node scripts/check-pages.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "test": "node scripts/check-pages.mjs && node scripts/smoke.mjs"
+    "test": "node scripts/check-pages.mjs && node scripts/smoke.mjs && node scripts/signup-flow.mjs",
+    "signup": "node scripts/signup-flow.mjs"
   },
   "keywords": [
     "ethics",

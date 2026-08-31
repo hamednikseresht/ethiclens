@@ -253,14 +253,14 @@ tbody tr:hover{background:var(--bg-subtle)}
   .card{box-shadow:none;break-inside:avoid}
 }
 
-/* ---------- نوار تأیید ایمیل ---------- */
-.verify-bar{
+/* ---------- نوار وضعیت حساب ---------- */
+.status-bar{
   display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;
   background:var(--warn-soft);border-bottom:1px solid var(--warn);
   padding:.75rem 1.1rem;font-size:.87rem;line-height:1.8;color:var(--text);
 }
-.verify-bar .verify-ic{font-size:1.15rem;flex-shrink:0}
-.verify-bar strong{font-weight:800}
-.verify-bar .mono{direction:ltr;display:inline-block;font-size:.85em}
-.verify-bar .btn{flex-shrink:0}
-@media print{.verify-bar{display:none}}
+.status-bar .status-ic{font-size:1.15rem;flex-shrink:0}
+.status-bar strong{font-weight:800}
+.status-bar .mono{direction:ltr;display:inline-block;font-size:.85em}
+.status-bar .btn{flex-shrink:0}
+@media print{.status-bar{display:none}}

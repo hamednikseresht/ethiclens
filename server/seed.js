@@ -141,6 +141,7 @@ export function seed() {
      و ناخواسته به سقف کمتری می‌خورند. این را جبران می‌کنیم. */
   const promoted = db.prepare(
     "UPDATE users SET tier = 'premium' WHERE role = 'admin' AND tier <> 'premium'").run().changes;
+  db.prepare("UPDATE users SET status = 'active' WHERE role = 'admin' AND status = 'pending'").run();
   if (promoted) console.log(`[seed] ${promoted} مدیر به گروه ویژه منتقل شد.`);
 
   /* ---- مدیر اولیه ---- */
@@ -154,8 +155,9 @@ export function seed() {
       db.prepare("UPDATE users SET role = 'admin', tier = 'premium' WHERE id = ?").run(existing.id);
       console.log(`[seed] کاربر ${email} به مدیر ارتقا یافت.`);
     } else {
-      db.prepare(`INSERT INTO users (email, name, password_hash, role, tier, quota_override, token_override)
-                  VALUES (?,?,?,?,?,?,?)`)
+      db.prepare(`INSERT INTO users (email, name, password_hash, role, tier, status,
+                                     quota_override, token_override, email_verified, verified_at)
+                  VALUES (?,?,?,?,?, 'active', ?,?, 1, datetime('now'))`)
         .run(email, name, bcrypt.hashSync(pass, 10), 'admin', 'premium', 500, 0);
       console.log(`[seed] حساب مدیر ساخته شد: ${email}`);
       if (pass === 'ChangeMe123!') console.log('[seed] ⚠️  رمز پیش‌فرض فعال است — حتماً تغییرش دهید.');

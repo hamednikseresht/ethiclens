@@ -24,6 +24,18 @@
   .tabs button.active{background:var(--bg-surface);color:var(--text);box-shadow:var(--shadow-sm)}
   .auth-foot{text-align:center;margin-top:1.2rem;font-size:.83rem;color:var(--text-muted)}
   .theme-corner{position:fixed;top:1rem;inset-inline-end:1rem}
+  .opt{font-size:.72rem;font-weight:500;color:var(--text-faint)}
+  .req{color:var(--danger)}
+  .captcha-row{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+  .captcha-img{border:1px solid var(--border);border-radius:8px;background:var(--bg-subtle);
+               height:52px;width:auto;flex-shrink:0}
+  .captcha-input{flex:1;min-width:7rem;text-align:center;font-weight:700;letter-spacing:.05em}
+  .reg-note{font-size:.78rem;color:var(--text-muted);line-height:1.85;margin-top:.9rem;
+            background:var(--bg-subtle);border-radius:var(--r-sm);padding:.7rem .85rem}
+  .done-box{text-align:center;padding:1rem .5rem}
+  .done-ic{font-size:3rem;line-height:1;margin-bottom:.8rem}
+  .done-box h2{font-size:1.15rem;font-weight:900;margin-bottom:.6rem;line-height:1.6}
+  .done-box p{font-size:.9rem;color:var(--text-muted);line-height:2;margin-bottom:1.2rem}
 </style>
 </head>
 <body>
@@ -60,20 +72,40 @@
 
       <!-- فرم ثبت‌نام -->
       <form id="registerForm" class="hidden">
-        <div class="field">
-          <label for="rg-name">نام</label>
-          <input class="input" id="rg-name" type="text" autocomplete="name" required minlength="2" placeholder="نام و نام خانوادگی">
+        <div class="grid-2">
+          <div class="field">
+            <label for="rg-first">نام <span class="opt">اختیاری</span></label>
+            <input class="input" id="rg-first" type="text" autocomplete="given-name" maxlength="60">
+          </div>
+          <div class="field">
+            <label for="rg-last">نام خانوادگی <span class="opt">اختیاری</span></label>
+            <input class="input" id="rg-last" type="text" autocomplete="family-name" maxlength="60">
+          </div>
         </div>
         <div class="field">
-          <label for="rg-email">ایمیل</label>
+          <label for="rg-email">ایمیل <span class="req">*</span></label>
           <input class="input mono" id="rg-email" type="email" autocomplete="email" required placeholder="you@example.com">
         </div>
         <div class="field">
-          <label for="rg-pass">رمز عبور</label>
+          <label for="rg-pass">رمز عبور <span class="req">*</span></label>
           <input class="input" id="rg-pass" type="password" autocomplete="new-password" required minlength="8" placeholder="حداقل ۸ نویسه">
           <span class="hint">حداقل ۸ نویسه. رمزی انتخاب کنید که جای دیگری استفاده نکرده‌اید.</span>
         </div>
+
+        <div class="field">
+          <label for="rg-captcha">پاسخ تصویر امنیتی <span class="req">*</span></label>
+          <div class="captcha-row">
+            <img id="capImg" class="captcha-img" alt="تصویر امنیتی" width="190" height="62">
+            <button type="button" class="btn btn-icon" id="capReload" title="تصویر تازه" aria-label="تصویر تازه">↻</button>
+            <input class="input captcha-input" id="rg-captcha" inputmode="numeric" autocomplete="off" required placeholder="نتیجه">
+          </div>
+          <span class="hint">برای جلوگیری از ثبت‌نام خودکار — حاصل عبارت را وارد کنید.</span>
+        </div>
+
         <button class="btn btn-primary btn-block btn-lg" type="submit" id="registerBtn">ساخت حساب</button>
+        <p class="reg-note">
+          پس از ثبت‌نام، حساب شما توسط مدیر بررسی می‌شود. تا زمان تأیید، امکان اجرای تحلیل وجود ندارد.
+        </p>
       </form>
     </div>
   </div>
@@ -85,7 +117,7 @@
 </div>
 
 <script type="module">
-import { $, api, toggleTheme, loadSession, toast } from '/js/core.js';
+import { $, api, esc, toggleTheme, loadSession, toast } from '/js/core.js';
 
 $('#themeBtn').onclick = () => toggleTheme();
 
@@ -101,7 +133,7 @@ try {
   }
 } catch {}
 
-if (params.get('mode') === 'register') showTab('register');
+if (params.get('mode') === 'register') { showTab('register'); newCaptcha(); }
 
 function showTab(which) {
   const isLogin = which === 'login';
@@ -112,7 +144,7 @@ function showTab(which) {
   $('#alertBox').innerHTML = '';
 }
 $('#tabLogin').onclick = () => showTab('login');
-$('#tabRegister').onclick = () => showTab('register');
+$('#tabRegister').onclick = () => { showTab('register'); newCaptcha(); };
 
 function showError(msg) {
   $('#alertBox').innerHTML = `<div class="alert alert-danger">${msg}</div>`;
@@ -143,17 +175,50 @@ $('#loginForm').onsubmit = e => {
   });
 };
 
+/* ---------------- تصویر امنیتی ---------------- */
+function newCaptcha() {
+  // پارامتر زمان، کش مرورگر را دور می‌زند تا هر بار تصویر تازه بیاید
+  $('#capImg').src = '/api/auth/captcha?t=' + Date.now();
+  $('#rg-captcha').value = '';
+}
+$('#capReload').onclick = newCaptcha;
+$('#capImg').onclick = newCaptcha;
+
 $('#registerForm').onsubmit = e => {
   e.preventDefault();
   submit($('#registerBtn'), async () => {
-    await api.post('/api/auth/register', {
-      name: $('#rg-name').value.trim(),
-      email: $('#rg-email').value.trim(),
-      password: $('#rg-pass').value
-    });
-    location.replace(next);
+    try {
+      const r = await api.post('/api/auth/register', {
+        firstName: $('#rg-first').value.trim(),
+        lastName: $('#rg-last').value.trim(),
+        email: $('#rg-email').value.trim(),
+        password: $('#rg-pass').value,
+        captcha: $('#rg-captcha').value
+      });
+      showRegistered(r);
+    } catch (err) {
+      // کپچا یک‌بارمصرف است، پس در هر خطا تصویر تازه لازم است
+      newCaptcha();
+      throw err;
+    }
   });
 };
+
+/** پیام موفقیت پس از ثبت‌نام — جای فرم را می‌گیرد */
+function showRegistered(r) {
+  document.querySelector('.card .card-body').innerHTML = `
+    <div class="done-box">
+      <div class="done-ic">✅</div>
+      <h2>ثبت‌نام شما با موفقیت انجام شد</h2>
+      <p>
+        ${esc(r.message || 'پس از تأیید مدیر، امکان استفاده از سامانه را خواهید داشت.')}
+      </p>
+      <p style="font-size:.83rem">
+        نتیجه بررسی به نشانی <span class="mono">${esc(r.user?.email || '')}</span> اطلاع داده می‌شود.
+      </p>
+      <a class="btn btn-primary btn-block" href="/dashboard">مشاهده وضعیت حساب</a>
+    </div>`;
+}
 </script>
 </body>
 </html>

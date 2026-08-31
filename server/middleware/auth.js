@@ -5,12 +5,13 @@ import { getSetting } from '../services/settings.js';
 export function loadUser(req, _res, next) {
   req.user = null;
   if (req.session?.userId) {
-    const u = db.prepare(`SELECT id, email, name, role, tier, status,
-                                 email_verified, verified_at,
+    const u = db.prepare(`SELECT id, email, name, first_name, last_name,
+                                 role, tier, status, review_note,
+                                 email_verified, verified_at, email_valid,
                                  quota_override, token_override, created_at
                           FROM users WHERE id = ?`)
                 .get(req.session.userId);
-    if (u && u.status === 'active') req.user = u;
+    if (u && (u.status === 'active' || u.status === 'pending')) req.user = u;
     else req.session.destroy(() => {});
   }
   next();
@@ -18,19 +19,6 @@ export function loadUser(req, _res, next) {
 
 export function requireAuth(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'برای این کار باید وارد حساب کاربری شوید.' });
-
-  // اگر مدیر دروازه را روی «ورود» گذاشته باشد، کاربر تأییدنشده به هیچ
-  // مسیر محافظت‌شده‌ای دسترسی ندارد — جز خود مسیرهای تأیید ایمیل.
-  if (!req.user.email_verified
-      && getSetting('require_verification') === '1'
-      && getSetting('verification_gate') === 'login'
-      && !/^\/(verification|resend-verification|verify)$/.test(req.path)) {
-    return res.status(403).json({
-      error: 'برای استفاده از سامانه، ابتدا نشانی ایمیل خود را تأیید کنید.',
-      reason: 'email_unverified',
-      email: req.user.email
-    });
-  }
   next();
 }
 
@@ -41,21 +29,20 @@ export function requireAdmin(req, res, next) {
 }
 
 /**
- * دروازه تأیید ایمیل.
+ * دروازه تأیید مدیر.
  *
- * پیش‌فرض «نرم» است: کاربر تأییدنشده می‌تواند وارد شود و بگردد، ولی
- * تحلیل اجرا نمی‌کند. دلیلش این است که ریسک واقعیِ ثبت‌نام‌های جعلی،
- * سوزاندن اعتبار API است — نه صرفِ ورود. مدیر می‌تواند از پنل سخت‌گیرانه‌ترش کند.
+ * حساب تازه با وضعیت pending ساخته می‌شود. کاربر می‌تواند وارد شود و
+ * وضعیتش را ببیند، ولی تا وقتی مدیر تأییدش نکرده هیچ کار پرهزینه‌ای
+ * انجام نمی‌دهد. این جلوی سوزاندن اعتبار API با ثبت‌نام انبوه را می‌گیرد.
  */
-export function requireVerified(req, res, next) {
+export function requireApproved(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'ابتدا وارد شوید.' });
-  if (req.user.email_verified) return next();
-  if (getSetting('require_verification') !== '1') return next();
+  if (req.user.status === 'active') return next();
 
   return res.status(403).json({
-    error: 'برای اجرای تحلیل، ابتدا نشانی ایمیل خود را تأیید کنید. پیوند تأیید به ایمیلتان فرستاده شده است.',
-    reason: 'email_unverified',
-    email: req.user.email
+    error: 'حساب شما هنوز تأیید نشده است. پس از تأیید مدیر، امکان استفاده از سامانه را خواهید داشت.',
+    reason: 'pending_approval',
+    status: req.user.status
   });
 }
 

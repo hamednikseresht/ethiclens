@@ -40,6 +40,22 @@
   .plist button{text-align:start;padding:.6rem .8rem;border-radius:9px;border:1px solid var(--border);
                 background:var(--bg-surface);font-family:inherit;font-size:.85rem;cursor:pointer;color:var(--text)}
   .plist button.active{border-color:var(--primary);background:var(--primary-soft);color:var(--primary);font-weight:700}
+  .seg{display:inline-flex;background:var(--bg-subtle);border:1px solid var(--border);
+       border-radius:10px;padding:.2rem;gap:.15rem;flex-wrap:wrap}
+  .seg button{border:none;background:none;font-family:inherit;font-size:.82rem;font-weight:700;
+              color:var(--text-muted);padding:.4rem .7rem;border-radius:7px;cursor:pointer;
+              display:inline-flex;align-items:center;gap:.35rem}
+  .seg button.active{background:var(--bg-surface);color:var(--text);box-shadow:var(--shadow-sm)}
+  .seg-n{background:var(--warn);color:#fff;border-radius:999px;font-size:.68rem;
+         min-width:1.15rem;height:1.15rem;display:inline-grid;place-items:center;padding:0 .25rem}
+  .act-grid{display:grid;grid-template-columns:1fr;gap:.7rem}
+  @media (min-width:560px){.act-grid{grid-template-columns:1fr 1fr}}
+  .act-box{background:var(--bg-subtle);border-radius:var(--r-sm);padding:.7rem .85rem}
+  .act-box .k{font-size:.72rem;color:var(--text-muted);font-weight:700}
+  .act-box .v{font-size:1.05rem;font-weight:800;font-variant-numeric:tabular-nums}
+  .act-list{max-height:200px;overflow:auto;font-size:.8rem;line-height:1.9}
+  .act-list div{padding:.3rem 0;border-bottom:1px solid var(--border)}
+  .act-list div:last-child{border-bottom:none}
   .plist small{display:block;color:var(--text-muted);font-size:.72rem;font-weight:400}
 
   /* --- ارائه‌دهندگان --- */
@@ -726,6 +742,7 @@ loaders.prompts = async () => {
 
 /* ---------------- کاربران ---------------- */
 loaders.users = async () => {
+  const BASE_U = '/api/admin/users/';
   const host = $('#p-users');
   host.innerHTML = `
     <h2 class="sec-h">کاربران</h2>
@@ -734,48 +751,84 @@ loaders.users = async () => {
       عددی که با <span class="badge">استثنا</span> نشان داده شده یعنی برای آن کاربر دستی تنظیم شده است.
     </p>
     <div class="row" style="margin-bottom:1rem">
-      <input class="input" id="uq" style="max-width:320px" type="search" placeholder="جست‌وجو در نام یا ایمیل…">
+      <input class="input" id="uq" style="max-width:300px" type="search" placeholder="جست‌وجو در نام یا ایمیل…">
+      <div class="seg" id="statusFilter">
+        <button data-st="" class="active">همه</button>
+        <button data-st="pending">منتظر تأیید <span class="seg-n" id="nPending">۰</span></button>
+        <button data-st="active">تأییدشده</button>
+        <button data-st="rejected">ردشده</button>
+        <button data-st="suspended">مسدود</button>
+      </div>
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
-        <th>کاربر</th><th>ایمیل</th><th>گروه</th><th>نقش</th><th>وضعیت</th>
-        <th>سهمیه روزانه</th><th>توکن این ماه</th><th>کل توکن</th><th>تحلیل</th><th></th>
+        <th>کاربر</th><th>اعتبار ایمیل</th><th>وضعیت</th><th>گروه</th>
+        <th>ثبت‌نام</th><th>فعالیت</th><th>مصرف</th><th></th>
       </tr></thead>
       <tbody id="uRows"></tbody></table></div>
     <div class="pager" id="uPager" style="display:flex;justify-content:center;gap:.4rem;margin-top:1rem"></div>`;
 
-  let upage = 1, uq = '';
+  let upage = 1, uq = '', ustatus = '';
 
   async function loadUsers() {
     const p = new URLSearchParams({ page: upage });
     if (uq) p.set('q', uq);
+    if (ustatus) p.set('status', ustatus);
     const d = await api.get('/api/admin/users?' + p);
     const fmtT = n => n >= 1000 ? faNum((n / 1000).toFixed(n >= 10000 ? 0 : 1)) + 'K' : faNum(n);
 
+    const STATUS = {
+      pending:   ['badge-warn',    '⏳ منتظر تأیید'],
+      active:    ['badge-success', '✓ تأییدشده'],
+      rejected:  ['badge-danger',  '✗ ردشده'],
+      suspended: ['badge-danger',  '⛔ مسدود']
+    };
+
+    const emailFlag = u => {
+      if (u.email_valid === 1) return '<span class="badge badge-success" title="ساختار، دامنه و MX سالم">✓ معتبر</span>';
+      if (u.email_valid === 0) return `<span class="badge badge-danger" title="${esc(u.email_check_note || '')}">✗ مشکوک</span>`;
+      return '<span class="badge" title="هنوز بررسی نشده">؟ نامعلوم</span>';
+    };
+
     $('#uRows').innerHTML = d.items.map(u => {
-      const lvl = u.tokenPercent === null ? '' :
-        u.tokenPercent >= 90 ? 'badge-danger' : u.tokenPercent >= 70 ? 'badge-warn' : 'badge-success';
+      const [cls, label] = STATUS[u.status] || ['', u.status];
+      const full = [u.first_name, u.last_name].filter(Boolean).join(' ');
       return `
       <tr data-id="${u.id}">
-        <td><strong>${esc(u.name)}</strong><br><small class="mono" style="color:var(--text-muted)">${esc(u.email)}</small></td>
-        <td>${u.email_verified
-              ? '<span class="badge badge-success">تأییدشده</span>'
-              : '<button class="btn btn-sm btn-ghost" data-act="verify" style="color:var(--warn)">تأیید دستی</button>'}</td>
+        <td>
+          <strong>${esc(u.name)}</strong>
+          ${full && full !== u.name ? `<br><small style="color:var(--text-muted)">${esc(full)}</small>` : ''}
+          <br><small class="mono" style="color:var(--text-muted)">${esc(u.email)}</small>
+          ${u.role === 'admin' ? ' <span class="badge badge-primary">مدیر</span>' : ''}
+        </td>
+        <td>${emailFlag(u)}</td>
+        <td><span class="badge ${cls}">${label}</span>
+            ${u.review_note ? `<br><small style="color:var(--text-muted)">${esc(u.review_note.slice(0, 40))}</small>` : ''}</td>
         <td><span class="badge ${u.tier === 'premium' ? 'badge-primary' : ''}">${esc(u.tierLabel)}</span></td>
-        <td>${u.role === 'admin' ? '<span class="badge badge-primary">مدیر</span>' : '<span class="badge">کاربر</span>'}</td>
-        <td>${u.status === 'active' ? '<span class="badge badge-success">فعال</span>' : '<span class="badge badge-danger">مسدود</span>'}</td>
-        <td>${faNum(u.todayAnalyses)} / ${faNum(u.effectiveQuota)}
-            ${u.quota_override !== null ? '<br><span class="badge">استثنا</span>' : ''}</td>
-        <td>${u.effectiveTokens > 0
-              ? `${fmtT(u.monthTokens)} / ${fmtT(u.effectiveTokens)}
-                 <br><span class="badge ${lvl}">${faNum(u.tokenPercent)}٪</span>`
-              : `${fmtT(u.monthTokens)}<br><span class="badge">بی‌نهایت</span>`}
-            ${u.token_override !== null ? '<br><span class="badge">استثنا</span>' : ''}</td>
-        <td class="mono" style="font-size:.8rem">${fmtT(u.totalTokens)}</td>
-        <td>${faNum(u.analyses)}</td>
-        <td><button class="btn btn-sm" data-act="edit">ویرایش</button></td>
+        <td style="font-size:.78rem;color:var(--text-muted);white-space:nowrap">
+          ${relTime(u.created_at)}
+          <br><small>${u.last_login_at ? 'ورود: ' + relTime(u.last_login_at) : 'هرگز وارد نشده'}</small>
+        </td>
+        <td style="font-size:.8rem">
+          ${faNum(u.analyses)} تحلیل
+          <br><small style="color:var(--text-muted)">امروز ${faNum(u.todayAnalyses)} از ${faNum(u.effectiveQuota)}</small>
+        </td>
+        <td style="font-size:.8rem" class="mono">
+          ${fmtT(u.monthTokens)}${u.effectiveTokens > 0 ? ' / ' + fmtT(u.effectiveTokens) : ''}
+          <br><small style="color:var(--text-muted)">کل ${fmtT(u.totalTokens)}</small>
+        </td>
+        <td style="white-space:nowrap">
+          ${u.status === 'pending' ? `
+            <button class="btn btn-sm btn-primary" data-act="approve">تأیید</button>
+            <button class="btn btn-sm" data-act="reject" style="color:var(--danger)">رد</button>` : ''}
+          <button class="btn btn-sm btn-ghost" data-act="activity">گزارش</button>
+          <button class="btn btn-sm btn-ghost" data-act="edit">ویرایش</button>
+        </td>
       </tr>`;
-    }).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text-muted)">کاربری یافت نشد</td></tr>';
+    }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">کاربری یافت نشد</td></tr>';
+
+    $('#nPending').textContent = faNum(d.counts?.pending || 0);
+    $('#nPending').style.display = d.counts?.pending ? '' : 'none';
 
     window.__tiers = d.tiers || [];
     window.__users = Object.fromEntries(d.items.map(u => [u.id, u]));
@@ -793,21 +846,127 @@ loaders.users = async () => {
     if (b) { upage = +b.dataset.page; loadUsers(); }
   };
 
-  $('#uRows').onclick = async e => {
-    const v = e.target.closest('button[data-act="verify"]');
-    if (v) {
-      const uid = v.closest('tr').dataset.id;
+  $('#statusFilter').onclick = e => {
+    const b = e.target.closest('button[data-st]');
+    if (!b) return;
+    $$('#statusFilter button').forEach(x => x.classList.toggle('active', x === b));
+    ustatus = b.dataset.st;
+    upage = 1;
+    loadUsers();
+  };
+
+  /** تأیید یا رد یک درخواست عضویت */
+  async function review(id, decision, name) {
+    if (decision === 'approve') {
       try {
-        await api.post(`/api/admin/users/${uid}/verify-email`, { verified: true });
-        toast('ایمیل کاربر دستی تأیید شد.', 'ok');
+        const r = await api.post(BASE_U + id + '/review', { decision: 'approve' });
+        toast(r.notified ? 'تأیید شد و به کاربر ایمیل رفت.' : 'تأیید شد.', 'ok');
         loadUsers();
       } catch (err) { toast(err.message, 'err'); }
       return;
     }
 
-    const b = e.target.closest('button[data-act="edit"]');
-    if (!b) return;
-    const id = b.closest('tr').dataset.id;
+    modal({
+      title: 'رد درخواست ' + name,
+      body: '<div class="field">' +
+              '<label for="rj-note">دلیل رد (اختیاری)</label>' +
+              '<textarea class="textarea" id="rj-note" rows="3" maxlength="400" ' +
+                'placeholder="این متن هنگام تلاش برای ورود به کاربر نشان داده می‌شود."></textarea>' +
+              '<span class="hint">اگر سرویس ایمیل تنظیم باشد، همین توضیح برای کاربر فرستاده می‌شود.</span>' +
+            '</div>',
+      actions: [
+        { label: 'رد کن', className: 'btn-danger', onClick: async root => {
+            try {
+              await api.post(BASE_U + id + '/review', {
+                decision: 'reject', note: root.querySelector('#rj-note').value.trim()
+              });
+              toast('درخواست رد شد.', 'ok');
+              loadUsers();
+            } catch (err) { toast(err.message, 'err'); return 'keep'; }
+          } },
+        { label: 'انصراف' }
+      ]
+    });
+  }
+
+  /** گزارش فعالیت کاربر */
+  async function showActivity(id) {
+    let d;
+    try { d = await api.get(BASE_U + id + '/activity'); }
+    catch (err) { return toast(err.message, 'err'); }
+
+    const u = d.user, st = d.stats;
+    const LBL = { pending: 'منتظر تأیید', active: 'تأییدشده', rejected: 'ردشده', suspended: 'مسدود' };
+
+    const box = (k, v) => '<div class="act-box"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
+
+    const emailBadge = u.email_valid === 1 ? '<span class="badge badge-success">معتبر</span>'
+      : u.email_valid === 0 ? '<span class="badge badge-danger">مشکوک</span>'
+      : '<span class="badge">بررسی‌نشده</span>';
+
+    const recentHtml = d.recent.length
+      ? d.recent.map(a => '<div>' + esc(a.title.slice(0, 60)) +
+          ' — <small style="color:var(--text-muted)">' + relTime(a.created_at) + '</small></div>').join('')
+      : '<div style="color:var(--text-muted)">تحلیلی ثبت نشده</div>';
+
+    const eventsHtml = d.events.length
+      ? d.events.map(ev => '<div><span class="badge">' + esc(ev.action) + '</span> ' +
+          '<small style="color:var(--text-muted)">' + relTime(ev.created_at) + ' · ' + esc(ev.ip || '') + '</small></div>').join('')
+      : '<div style="color:var(--text-muted)">رویدادی نیست</div>';
+
+    modal({
+      title: 'گزارش فعالیت — ' + u.name,
+      body:
+        '<div class="act-grid" style="margin-bottom:1rem">' +
+          box('وضعیت', LBL[u.status] || u.status) +
+          box('تاریخ ثبت‌نام', '<span style="font-size:.9rem">' + faDate(u.created_at) + '</span>') +
+          box('کل تحلیل‌ها', faNum(st.analyses || 0)) +
+          box('توکن مصرفی', faNum(st.tokens || 0)) +
+          box('موفق / ناموفق', faNum(st.completed || 0) + ' / ' + faNum(st.failed || 0)) +
+          box('آخرین ورود', '<span style="font-size:.9rem">' + (u.last_login_at ? relTime(u.last_login_at) : 'هرگز') + '</span>') +
+        '</div>' +
+        '<div class="field"><label>اعتبار ایمیل</label>' +
+          '<div style="font-size:.85rem;line-height:1.9">' +
+            '<span class="mono">' + esc(u.email) + '</span> — ' + emailBadge +
+            (u.email_check_note ? '<br><small style="color:var(--text-muted)">' + esc(u.email_check_note) + '</small>' : '') +
+            '<br><button class="btn btn-sm" id="recheckEmail" style="margin-top:.4rem">بررسی دوباره</button>' +
+          '</div></div>' +
+        (u.review_note ? '<div class="field"><label>یادداشت بررسی</label>' +
+          '<div style="font-size:.85rem">' + esc(u.review_note) + '</div></div>' : '') +
+        '<div class="field"><label>آخرین تحلیل‌ها</label><div class="act-list">' + recentHtml + '</div></div>' +
+        '<div class="field"><label>رویدادهای اخیر</label><div class="act-list">' + eventsHtml + '</div></div>',
+      actions: [
+        ...(u.status === 'pending' ? [
+          { label: 'تأیید کاربر', className: 'btn-primary', onClick: () => review(u.id, 'approve', u.name) },
+          { label: 'رد کاربر', className: 'btn-danger', onClick: () => review(u.id, 'reject', u.name) }
+        ] : []),
+        { label: 'بستن' }
+      ],
+      onOpen: root => {
+        root.querySelector('#recheckEmail').onclick = async ev => {
+          ev.target.disabled = true;
+          try {
+            const r = await api.post(BASE_U + u.id + '/check-email');
+            toast('نتیجه: ' + r.note, r.valid === 1 ? 'ok' : 'err');
+            loadUsers();
+          } catch (err) { toast(err.message, 'err'); }
+          finally { ev.target.disabled = false; }
+        };
+      }
+    });
+  }
+
+  $('#uRows').onclick = async e => {
+    const row = e.target.closest('tr');
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (!row || !act) return;
+
+    if (act === 'approve') return review(row.dataset.id, 'approve', row.querySelector('strong').textContent);
+    if (act === 'reject')  return review(row.dataset.id, 'reject',  row.querySelector('strong').textContent);
+    if (act === 'activity') return showActivity(row.dataset.id);
+
+    if (act !== 'edit') return;
+    const id = row.dataset.id;
     const u = (window.__users || {})[id];
     if (!u) return toast('اطلاعات کاربر در دسترس نیست — صفحه را تازه کنید.', 'err');
 
@@ -836,8 +995,10 @@ loaders.users = async () => {
 
         <div class="field"><label for="eu-status">وضعیت</label>
           <select class="select" id="eu-status">
-            <option value="active" ${u.status === 'active' ? 'selected' : ''}>فعال</option>
-            <option value="suspended" ${u.status !== 'active' ? 'selected' : ''}>مسدود</option>
+            <option value="pending"   ${u.status === 'pending'   ? 'selected' : ''}>منتظر تأیید</option>
+            <option value="active"    ${u.status === 'active'    ? 'selected' : ''}>تأییدشده و فعال</option>
+            <option value="rejected"  ${u.status === 'rejected'  ? 'selected' : ''}>ردشده</option>
+            <option value="suspended" ${u.status === 'suspended' ? 'selected' : ''}>مسدود</option>
           </select></div>
 
         <hr style="border:none;border-top:1px solid var(--border);margin:1.2rem 0">

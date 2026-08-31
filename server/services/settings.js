@@ -13,6 +13,8 @@ const DEFAULTS = {
   allow_registration: '1',
   require_verification: '1',        // تأیید ایمیل لازم است؟
   verification_gate: 'analysis',    // analysis = فقط تحلیل بسته | login = ورود بسته
+  mail_provider: 'brevo',           // brevo | mailgun
+  brevo_api_key: '',
   mailgun_api_key: '',
   mailgun_domain: '',
   mailgun_base_url: 'https://api.mailgun.net',
