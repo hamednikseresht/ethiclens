@@ -7,13 +7,12 @@ import { fileURLToPath } from 'node:url';
 
 import { db } from './db.js';
 import { SqliteStore } from './session-store.js';
-import { apiKeyAuth, loadUser, requireCsrf } from './middleware/auth.js';
+import { loadUser, requireCsrf } from './middleware/auth.js';
 import { seed } from './seed.js';
 import { router as authRouter } from './routes/auth.js';
 import { router as analyzeRouter } from './routes/analyze.js';
 import { router as historyRouter } from './routes/history.js';
 import { router as adminRouter } from './routes/admin.js';
-import { router as apiV1Router } from './routes/api-v1.js';
 import { router as publicRouter } from './routes/public.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -62,7 +61,6 @@ app.use(session({
   }
 }));
 
-app.use(apiKeyAuth);
 app.use(loadUser);
 app.use('/api', requireCsrf);
 
@@ -71,7 +69,6 @@ app.use('/api/auth', authRouter);
 app.use('/api/analyze', analyzeRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/admin', adminRouter);
-app.use('/api/v1', apiV1Router);
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'مسیر API یافت نشد.' }));
 
