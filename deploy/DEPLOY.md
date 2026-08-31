@@ -94,7 +94,7 @@ sudo journalctl -u ethica -f
 
 ```bash
 sudo cp /opt/ethica/deploy/nginx.conf /etc/nginx/sites-available/ethica
-sudo nano /etc/nginx/sites-available/ethica   # example.com را با دامنه خود عوض کنید
+sudo nano /etc/nginx/sites-available/ethica   # در صورت نیاز دامنه را بررسی کنید
 sudo ln -s /etc/nginx/sites-available/ethica /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
@@ -104,7 +104,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d example.com -d www.example.com
+sudo certbot --nginx -d ethiclens.ir -d www.ethiclens.ir
 ```
 
 > **مهم:** بلوک `location /api/analyze/` باید `proxy_buffering off;` داشته باشد.
@@ -126,7 +126,7 @@ sudo ufw enable
 
 ## ۸. اولین ورود
 
-۱. به `https://example.com/login` بروید.
+۱. به `https://ethiclens.ir/login` بروید.
 ۲. با `ADMIN_EMAIL` و `ADMIN_PASSWORD` وارد شوید.
 ۳. **فوراً** از «تنظیمات حساب» رمز را عوض کنید.
 ۴. به `/admin` → «مدل و کلید» بروید و دکمه **آزمایش اتصال** را بزنید.
