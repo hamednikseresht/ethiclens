@@ -254,10 +254,10 @@ router.post('/test-mail', async (req, res) => {
   try {
     const r = await sendMail({
       to,
-      subject: 'اتیکا — ایمیل آزمایشی',
+      subject: 'EthicLens — ایمیل آزمایشی',
       html: `<div style="font-family:Tahoma,sans-serif;direction:rtl;padding:20px">
                <h2 style="color:#2563eb">اتصال ایمیل سالم است ✅</h2>
-               <p>این پیام آزمایشی از پنل مدیریت اتیکا فرستاده شده است.
+               <p>این پیام آزمایشی از پنل مدیریت EthicLens فرستاده شده است.
                   اگر آن را می‌بینید، تنظیمات میل‌گان درست است و ایمیل‌های تأیید حساب ارسال می‌شوند.</p>
              </div>`,
       tag: 'test'
@@ -559,8 +559,8 @@ router.post('/users/:id/review', async (req, res) => {
       await sendMail({
         to: u.email,
         subject: decision === 'approve'
-          ? `${getSetting('site_title') || 'اتیکا'} — حساب شما تأیید شد`
-          : `${getSetting('site_title') || 'اتیکا'} — نتیجه بررسی درخواست عضویت`,
+          ? `${getSetting('site_title') || 'EthicLens'} — حساب شما تأیید شد`
+          : `${getSetting('site_title') || 'EthicLens'} — نتیجه بررسی درخواست عضویت`,
         html: decision === 'approve'
           ? `<div style="font-family:Tahoma,sans-serif;direction:rtl;padding:20px;line-height:2">
                <h2 style="color:#16a34a">حساب شما تأیید شد ✅</h2>

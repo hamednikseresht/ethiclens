@@ -1,6 +1,6 @@
 # راهنمای استقرار روی سرور اوبونتو
 
-راهنمای گام‌به‌گام برای اجرای اتیکا روی Ubuntu 22.04 / 24.04 پشت nginx با HTTPS.
+راهنمای گام‌به‌گام برای اجرای EthicLens روی Ubuntu 22.04 / 24.04 پشت nginx با HTTPS.
 
 ---
 
@@ -27,7 +27,7 @@ node --version
 ## ۲. ساخت کاربر سرویس
 
 ```bash
-sudo useradd --system --create-home --home-dir /opt/ethica --shell /usr/sbin/nologin ethica
+sudo useradd --system --create-home --home-dir /opt/ethiclens --shell /usr/sbin/nologin ethiclens
 ```
 
 ---
@@ -35,22 +35,22 @@ sudo useradd --system --create-home --home-dir /opt/ethica --shell /usr/sbin/nol
 ## ۳. دریافت کد
 
 ```bash
-sudo -u ethica git clone https://github.com/YOUR_USER/ethica.git /opt/ethica
-cd /opt/ethica
-sudo -u ethica npm ci --omit=dev
-sudo -u ethica mkdir -p /opt/ethica/data
+sudo -u ethiclens git clone https://github.com/YOUR_USER/ethiclens.git /opt/ethiclens
+cd /opt/ethiclens
+sudo -u ethiclens npm ci --omit=dev
+sudo -u ethiclens mkdir -p /opt/ethiclens/data
 ```
 
 > اگر `npm ci` به‌خاطر اسکریپت نصب `better-sqlite3` هشدار داد،
-> با `sudo -u ethica npm install --omit=dev --foreground-scripts` نصب کنید.
+> با `sudo -u ethiclens npm install --omit=dev --foreground-scripts` نصب کنید.
 
 ---
 
 ## ۴. تنظیم متغیرهای محیطی
 
 ```bash
-sudo -u ethica cp /opt/ethica/.env.example /opt/ethica/.env
-sudo -u ethica nano /opt/ethica/.env
+sudo -u ethiclens cp /opt/ethiclens/.env.example /opt/ethiclens/.env
+sudo -u ethiclens nano /opt/ethiclens/.env
 ```
 
 مقادیری که **حتماً** باید عوض شوند:
@@ -85,8 +85,8 @@ sudo -u ethica nano /opt/ethica/.env
 سپس دسترسی فایل را محدود کنید — این فایل کلید API دارد:
 
 ```bash
-sudo chmod 600 /opt/ethica/.env
-sudo chown ethica:ethica /opt/ethica/.env
+sudo chmod 600 /opt/ethiclens/.env
+sudo chown ethiclens:ethiclens /opt/ethiclens/.env
 ```
 
 ---
@@ -94,16 +94,16 @@ sudo chown ethica:ethica /opt/ethica/.env
 ## ۵. سرویس systemd
 
 ```bash
-sudo cp /opt/ethica/deploy/ethica.service /etc/systemd/system/
+sudo cp /opt/ethiclens/deploy/ethiclens.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now ethica
-sudo systemctl status ethica
+sudo systemctl enable --now ethiclens
+sudo systemctl status ethiclens
 ```
 
 مشاهده لاگ زنده:
 
 ```bash
-sudo journalctl -u ethica -f
+sudo journalctl -u ethiclens -f
 ```
 
 ---
@@ -111,9 +111,9 @@ sudo journalctl -u ethica -f
 ## ۶. nginx و گواهی HTTPS
 
 ```bash
-sudo cp /opt/ethica/deploy/nginx.conf /etc/nginx/sites-available/ethica
-sudo nano /etc/nginx/sites-available/ethica   # در صورت نیاز دامنه را بررسی کنید
-sudo ln -s /etc/nginx/sites-available/ethica /etc/nginx/sites-enabled/
+sudo cp /opt/ethiclens/deploy/nginx.conf /etc/nginx/sites-available/ethiclens
+sudo nano /etc/nginx/sites-available/ethiclens   # در صورت نیاز دامنه را بررسی کنید
+sudo ln -s /etc/nginx/sites-available/ethiclens /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 ```
@@ -154,10 +154,10 @@ sudo ufw enable
 ## به‌روزرسانی نسخه
 
 ```bash
-cd /opt/ethica
-sudo -u ethica git pull
-sudo -u ethica npm ci --omit=dev
-sudo systemctl restart ethica
+cd /opt/ethiclens
+sudo -u ethiclens git pull
+sudo -u ethiclens npm ci --omit=dev
+sudo systemctl restart ethiclens
 ```
 
 جدول‌های پایگاه داده با `CREATE TABLE IF NOT EXISTS` ساخته می‌شوند، پس به‌روزرسانی داده‌ای را پاک نمی‌کند.
@@ -166,10 +166,10 @@ sudo systemctl restart ethica
 
 ## پشتیبان‌گیری
 
-کل وضعیت برنامه در یک پوشه است: `/opt/ethica/data`.
+کل وضعیت برنامه در یک پوشه است: `/opt/ethiclens/data`.
 
 ```bash
-sudo -u ethica sqlite3 /opt/ethica/data/ethica.db ".backup '/opt/ethica/data/backup-$(date +%F).db'"
+sudo -u ethiclens sqlite3 /opt/ethiclens/data/ethiclens.db ".backup '/opt/ethiclens/data/backup-$(date +%F).db'"
 ```
 
 پشتیبان‌گیری روزانه با cron:
@@ -179,7 +179,7 @@ sudo crontab -e
 ```
 
 ```cron
-0 3 * * * sudo -u ethica sqlite3 /opt/ethica/data/ethica.db ".backup '/var/backups/ethica-$(date +\%F).db'" && find /var/backups -name 'ethica-*.db' -mtime +14 -delete
+0 3 * * * sudo -u ethiclens sqlite3 /opt/ethiclens/data/ethiclens.db ".backup '/var/backups/ethiclens-$(date +\%F).db'" && find /var/backups -name 'ethiclens-*.db' -mtime +14 -delete
 ```
 
 ---
@@ -188,9 +188,9 @@ sudo crontab -e
 
 | نشانه | بررسی کنید |
 |---|---|
-| سرویس بالا نمی‌آید | `journalctl -u ethica -n 50` |
+| سرویس بالا نمی‌آید | `journalctl -u ethiclens -n 50` |
 | خطای «کلید API نامعتبر» | `/admin` → مدل و کلید → آزمایش اتصال |
 | تحلیل شروع می‌شود ولی متن نمی‌آید | `proxy_buffering off` در بلوک `/api/analyze/` |
 | بعد از ورود دوباره به صفحه ورود می‌رود | `SECURE_COOKIE=1` و `TRUST_PROXY=1` را بررسی کنید |
-| خطای `SQLITE_READONLY` | مالکیت پوشه: `sudo chown -R ethica:ethica /opt/ethica/data` |
+| خطای `SQLITE_READONLY` | مالکیت پوشه: `sudo chown -R ethiclens:ethiclens /opt/ethiclens/data` |
 | مدل ۴۰۴ می‌دهد | شناسه مدل را با «دریافت فهرست مدل‌های حساب» بررسی کنید |

@@ -16,7 +16,7 @@ function ensurePrintHead(meta) {
     document.querySelector('main')?.prepend(el);
   }
   el.innerHTML = `
-    <div class="ph-brand">اتیکا — تحلیل تصمیم اخلاقی</div>
+    <div class="ph-brand">EthicLens — تحلیل تصمیم اخلاقی</div>
     <div class="ph-sub">
       ${esc(meta.title || '')}
       ${meta.createdAt ? ` · ${esc(faDate(meta.createdAt))}` : ''}
@@ -32,7 +32,7 @@ export function exportPdf(meta = {}) {
   ensurePrintHead(meta);
   const restoreTitle = document.title;
   // نام فایل پیشنهادی در گفت‌وگوی ذخیره، از عنوان سند خوانده می‌شود
-  document.title = `اتیکا — ${(meta.title || 'تحلیل اخلاقی').slice(0, 60)}`;
+  document.title = `EthicLens — ${(meta.title || 'تحلیل اخلاقی').slice(0, 60)}`;
 
   const done = () => { document.title = restoreTitle; window.removeEventListener('afterprint', done); };
   window.addEventListener('afterprint', done);
@@ -119,14 +119,14 @@ function downloadHtml(meta) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(meta.title || 'تحلیل اخلاقی')} — اتیکا</title>
+<title>${esc(meta.title || 'تحلیل اخلاقی')} — EthicLens</title>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>${css}</style>
 </head>
 <body>
 <main class="wrap">
   <div class="print-head" style="display:block">
-    <div class="ph-brand">اتیکا — تحلیل تصمیم اخلاقی</div>
+    <div class="ph-brand">EthicLens — تحلیل تصمیم اخلاقی</div>
     <div class="ph-sub">${esc(meta.title || '')}${meta.createdAt ? ` · ${esc(faDate(meta.createdAt))}` : ''}</div>
   </div>
   ${head}
@@ -138,7 +138,7 @@ function downloadHtml(meta) {
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `ethica-${analysisSlug(meta)}.html`;
+  a.download = `ethiclens-${analysisSlug(meta)}.html`;
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
@@ -154,7 +154,7 @@ function analysisSlug(meta) {
 /* ---------------- متن ساده برای کپی ---------------- */
 function plainText(meta, sections = {}) {
   const L = [];
-  L.push(`اتیکا — تحلیل تصمیم اخلاقی`);
+  L.push(`EthicLens — تحلیل تصمیم اخلاقی`);
   if (meta.title) L.push(meta.title);
   if (meta.createdAt) L.push(faDate(meta.createdAt));
   L.push('', '— وضعیت دروازه‌ها —');

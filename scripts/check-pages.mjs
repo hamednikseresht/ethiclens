@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = path.join(ROOT, 'public');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ethica-check-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ethiclens-check-'));
 let pass = 0, fail = 0;
 
 function check(label, code) {

@@ -45,7 +45,7 @@ function publicNav() {
 
 function siteFooter() {
   return `<footer class="site pub-footer">
-    <p><strong>اتیکا</strong> — دستیار تصمیم‌گیری اخلاقی ·
+    <p><strong>EthicLens</strong> — دستیار تصمیم‌گیری اخلاقی ·
        <a href="/about">درباره ما</a> · <a href="/guide">دانشنامه</a> · <a href="/explore">تحلیل‌های عمومی</a></p>
     <p>تحلیل‌ها با کمک مدل‌های زبانی تولید می‌شوند و می‌توانند خطا داشته باشند.<br>
        این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</p>
@@ -82,10 +82,10 @@ router.get('/a/:slug', (req, res, next) => {
     inLanguage: 'fa-IR',
     datePublished: isoDate(row.published_at),
     dateModified: isoDate(row.published_at || row.created_at),
-    author: { '@type': author ? 'Person' : 'Organization', name: author || 'اتیکا' },
+    author: { '@type': author ? 'Person' : 'Organization', name: author || 'EthicLens' },
     publisher: {
       '@type': 'Organization',
-      name: getSetting('site_title') || 'اتیکا',
+      name: getSetting('site_title') || 'EthicLens',
       ...(siteUrl(req) ? { url: siteUrl(req) } : {})
     },
     ...(url ? { mainEntityOfPage: { '@type': 'WebPage', '@id': url } } : {}),
@@ -106,7 +106,7 @@ router.get('/a/:slug', (req, res, next) => {
 
   const head = [
     metaTags({
-      req, title: `${title} — تحلیل اخلاقی | اتیکا`, description, path,
+      req, title: `${title} — تحلیل اخلاقی | EthicLens`, description, path,
       type: 'article', publishedAt: row.published_at,
       modifiedAt: row.published_at || row.created_at, author: author || undefined
     }),
@@ -144,13 +144,13 @@ ${publicNav()}
 
     <div class="disclaimer">
       این تحلیل با کمک یک مدل زبانی تولید شده و می‌تواند خطا داشته باشد.
-      اتیکا جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست و مسئولیت تصمیم با خود فرد است.
+      EthicLens جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست و مسئولیت تصمیم با خود فرد است.
     </div>
   </article>
 
   <aside class="pub-cta">
     <h2>دوراهی خودتان را تحلیل کنید</h2>
-    <p>اتیکا موقعیت شما را از هشت منظر فلسفه اخلاق می‌سنجد، تعارض‌ها را نشان می‌دهد و مسیری موجه پیشنهاد می‌کند.</p>
+    <p>EthicLens موقعیت شما را از هشت منظر فلسفه اخلاق می‌سنجد، تعارض‌ها را نشان می‌دهد و مسیری موجه پیشنهاد می‌کند.</p>
     <a class="btn btn-primary btn-lg" href="/login?mode=register">شروع رایگان</a>
     <a class="btn btn-lg" href="/explore">تحلیل‌های دیگر</a>
   </aside>
@@ -174,7 +174,7 @@ router.get('/explore', (req, res) => {
   const path = page > 1 ? `/explore?page=${page}` : '/explore';
   const description = total
     ? `${total} تحلیل اخلاقی منتشرشده — دوراهی‌های واقعی بررسی‌شده از منظر هشت مکتب فلسفه اخلاق: فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، خیر مشترک، قراردادگرایی، اخلاق مراقبت و بیشتر.`
-    : 'تحلیل‌های اخلاقی منتشرشده در اتیکا.';
+    : 'تحلیل‌های اخلاقی منتشرشده در EthicLens.';
 
   const listLd = items.length ? {
     '@context': 'https://schema.org',
@@ -189,7 +189,7 @@ router.get('/explore', (req, res) => {
 
   const head = [
     metaTags({
-      req, title: page > 1 ? `تحلیل‌های عمومی — صفحه ${page} | اتیکا` : 'تحلیل‌های اخلاقی عمومی | اتیکا',
+      req, title: page > 1 ? `تحلیل‌های عمومی — صفحه ${page} | EthicLens` : 'تحلیل‌های اخلاقی عمومی | EthicLens',
       description, path
     }),
     page > 1 ? `<link rel="prev" href="${esc(absoluteUrl(req, page === 2 ? '/explore' : `/explore?page=${page - 1}`))}">` : '',
@@ -231,7 +231,7 @@ ${publicNav()}
   <div class="pub-head">
     <h1>تحلیل‌های اخلاقی عمومی</h1>
     <p>
-      دوراهی‌های واقعی که کاربران اتیکا تحلیل کرده و برای استفاده دیگران منتشر کرده‌اند.
+      دوراهی‌های واقعی که کاربران EthicLens تحلیل کرده و برای استفاده دیگران منتشر کرده‌اند.
       هر تحلیل موقعیت را از هشت منظر فلسفه اخلاق می‌سنجد و از پنج دروازه تصمیم می‌گذراند.
     </p>
     ${total ? `<p class="hint">${faNum(total)} تحلیل منتشرشده</p>` : ''}

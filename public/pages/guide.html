@@ -624,45 +624,13 @@
   .flow-bad{background:var(--danger-bg);border-color:var(--danger-border)}
   .flow-bad .flow-label{color:var(--danger-border)}
 
-  /* --- نوار پیمایش برنامه --- */
-  .app-nav{
-    position:sticky;top:0;z-index:200;background:var(--bg-surface);
-    border-bottom:1px solid var(--border-color);box-shadow:var(--shadow-sm);
-  }
-  .app-nav-inner{
-    max-width:1060px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;gap:.5rem;
-    overflow-x:auto;scrollbar-width:none;
-  }
-  .app-nav-inner::-webkit-scrollbar{display:none}
-  .app-nav a{
-    color:var(--text-muted);text-decoration:none;font-size:.87rem;font-weight:600;
-    padding:.4rem .7rem;border-radius:8px;white-space:nowrap;
-  }
-  .app-nav a:hover{background:var(--bg-subtle);color:var(--text-main)}
-  .app-nav a.home{font-weight:900;color:var(--text-main);display:flex;align-items:center;gap:.45rem}
-  .app-nav .mark{
-    width:28px;height:28px;border-radius:8px;display:grid;place-items:center;
-    background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;font-size:.85rem;font-weight:900;
-  }
-  .app-nav .cta{
-    margin-inline-start:auto;background:var(--primary);color:#fff;font-weight:700;
-  }
-  .app-nav .cta:hover{background:var(--primary);color:#fff;filter:brightness(1.1)}
 
 </style>
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/motion.css">
 </head>
 <body>
-<nav class="app-nav">
-  <div class="app-nav-inner">
-    <a class="home" href="/app"><span class="mark">ا</span> اتیکا</a>
-    <a href="/app">تحلیل تازه</a>
-    <a href="/dashboard">داشبورد</a>
-    <a href="/history">تاریخچه</a>
-    <a href="/about">درباره ما</a>
-    <a class="cta" href="/app">🧭 دوراهی خودت را تحلیل کن</a>
-  </div>
-</nav>
-
+<header class="topbar" id="topbar"></header>
 
 <div class="container">
 
@@ -670,9 +638,7 @@
   <header class="hero">
     <div class="top-bar">
       <span class="tag">فلسفه اخلاق کاربردی</span>
-      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="تغییر تم">
-        <span>🌓</span> حالت شب / روز
-      </button>
+      
     </div>
     <h1>دانشنامه کاربردی فلسفه اخلاق</h1>
     <p class="subtitle">راهنمای عملی تصمیم‌گیری‌های پیچیده در عصر هوش مصنوعی، بحران‌های زیستی و اقتصاد شبکه‌ای</p>
@@ -1301,7 +1267,7 @@
   </button>
 
   <footer>
-    <p>دانشنامه کاربردی فلسفه اخلاق — بخشی از سامانه اتیکا</p>
+    <p>دانشنامه کاربردی فلسفه اخلاق — بخشی از سامانه EthicLens</p>
     <p style="margin-top:.4rem"><a href="/about" style="color:var(--primary)">درباره سازندگان</a></p>
     <p style="margin-top:.5rem"><a href="/app" style="color:var(--primary);font-weight:700">بازگشت به ابزار تحلیل ←</a></p>
   </footer>
@@ -1345,5 +1311,9 @@
   }
 </script>
 
+<script type="module">
+  import { boot } from '/js/core.js';
+  await boot({ auth: false });
+</script>
 </body>
 </html>

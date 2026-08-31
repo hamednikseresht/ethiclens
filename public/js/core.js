@@ -1,5 +1,5 @@
 /* ==========================================================================
-   اتیکا — هسته مشترک کلاینت: تم، API، توست، مودال، مارک‌داون، پوسته صفحه
+   EthicLens — هسته مشترک کلاینت: تم، API، توست، مودال، مارک‌داون، پوسته صفحه
    ========================================================================== */
 
 /* ---------------- تم ---------------- */
@@ -262,13 +262,24 @@ const PUBLIC_NAV = [
   { href: '/about',   label: 'درباره ما' }
 ];
 
+/**
+ * نوار بالای صفحه — یکی برای همه صفحه‌ها.
+ *
+ * محتوایش بر اساس وضعیت کاربر تغییر می‌کند:
+ *   مهمان        → مسیرهای عمومی + دکمه ورود و ثبت‌نام
+ *   منتظر تأیید  → مسیرهای عمومی + نشان «در انتظار تأیید». مسیرهایی که
+ *                  هنوز برایش باز نیست نشان داده نمی‌شوند تا به بن‌بست نخورد.
+ *   تأییدشده     → همه مسیرها + منوی کاربر
+ *   مدیر         → به‌علاوه پیوند پنل مدیریت
+ */
 export function renderTopbar(activePath) {
   const host = $('#topbar');
   if (!host) return;
   const path = activePath || location.pathname;
   const u = state.user;
+  const approved = !!u && u.status === 'active';
 
-  const links = (u ? NAV : PUBLIC_NAV).map(n =>
+  const links = (approved ? NAV : PUBLIC_NAV).map(n =>
     `<a href="${n.href}" class="${path === n.href ? 'active' : ''}">${n.label}</a>`
   ).join('');
 
@@ -276,18 +287,20 @@ export function renderTopbar(activePath) {
     ? `<a href="/admin" class="${path === '/admin' ? 'active' : ''}">مدیریت</a>` : '';
 
   const right = u
-    ? `<div class="usermenu">
+    ? `${approved ? '' : '<span class="badge badge-warn tb-pending">در انتظار تأیید</span>'}
+       <div class="usermenu">
          <button class="usermenu-btn" id="umBtn" aria-haspopup="true" aria-expanded="false">
            <span class="avatar">${esc((u.name || u.email)[0].toUpperCase())}</span>
            <span class="um-name">${esc(u.name)}</span>
          </button>
        </div>`
-    : `<a href="/login" class="btn btn-primary btn-sm">ورود</a>`;
+    : `<a href="/login" class="btn btn-sm">ورود</a>
+       <a href="/login?mode=register" class="btn btn-primary btn-sm">ثبت‌نام</a>`;
 
   host.innerHTML = `
     <div class="topbar-inner">
-      <a class="brand" href="${u ? '/app' : '/'}">
-        <span class="brand-mark">ا</span><span class="brand-text">اتیکا</span>
+      <a class="brand" href="${approved ? '/app' : '/'}">
+        <span class="brand-mark">EL</span><span class="brand-text">EthicLens</span>
       </a>
       <nav class="nav-links">${links}${adminLink}</nav>
       <div class="grow"></div>

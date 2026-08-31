@@ -2,7 +2,11 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const dbPath = process.env.DB_PATH || './data/ethica.db';
+// نصب‌های قدیمی فایل ethica.db دارند؛ اگر باشد همان استفاده می‌شود
+// تا ارتقای نام محصول داده کسی را جا نگذارد.
+const LEGACY_DB = './data/ethica.db';
+const dbPath = process.env.DB_PATH
+  || (fs.existsSync(path.resolve(LEGACY_DB)) ? LEGACY_DB : './data/ethiclens.db');
 fs.mkdirSync(path.dirname(path.resolve(dbPath)), { recursive: true });
 
 export const db = new Database(path.resolve(dbPath));

@@ -47,7 +47,7 @@ app.use(express.json({ limit: '256kb' }));
 app.use(express.urlencoded({ extended: false, limit: '256kb' }));
 
 app.use(session({
-  name: 'ethica.sid',
+  name: 'ethiclens.sid',
   store: new SqliteStore(),
   secret: process.env.SESSION_SECRET || 'insecure-dev-secret-change-me',
   resave: false,
@@ -104,7 +104,7 @@ app.use((err, _req, res, _next) => {
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`\n  ✅ اتیکا روی http://localhost:${PORT} در حال اجراست  (${process.env.NODE_ENV || 'development'})\n`);
+  console.log(`\n  ✅ EthicLens روی http://localhost:${PORT} در حال اجراست  (${process.env.NODE_ENV || 'development'})\n`);
 });
 
 for (const sig of ['SIGINT', 'SIGTERM']) {

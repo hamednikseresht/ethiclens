@@ -164,7 +164,7 @@ router.post('/logout', (req, res) => {
   const uid = req.session?.userId;
   req.session.destroy(() => {
     audit(uid, 'logout', null, req.ip);
-    res.clearCookie('ethica.sid');
+    res.clearCookie('ethiclens.sid');
     res.json({ ok: true });
   });
 });

@@ -18,6 +18,8 @@ let html = fs.readFileSync(SRC, 'utf8');
 
 /* ---- ۱. حذف اسکریپت مرمید ---- */
 html = html.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/mermaid[^<]*<\/script>\s*/g, '');
+// دکمه تم خودِ دانشنامه حذف می‌شود؛ نوار مشترک دکمه خودش را دارد
+html = html.replace(/<button class="theme-toggle"[\s\S]*?<\/button>/, '');
 html = html.replace(/\s*\/\/ راه‌اندازی Mermaid[\s\S]*?\}\);\n/, '\n');
 
 /* ---- ۲. جایگزینی بلوک مرمید با فلوچارت بومی ---- */
@@ -103,53 +105,32 @@ const EXTRA_CSS = `
   .flow-bad{background:var(--danger-bg);border-color:var(--danger-border)}
   .flow-bad .flow-label{color:var(--danger-border)}
 
-  /* --- نوار پیمایش برنامه --- */
-  .app-nav{
-    position:sticky;top:0;z-index:200;background:var(--bg-surface);
-    border-bottom:1px solid var(--border-color);box-shadow:var(--shadow-sm);
-  }
-  .app-nav-inner{
-    max-width:1060px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;gap:.5rem;
-    overflow-x:auto;scrollbar-width:none;
-  }
-  .app-nav-inner::-webkit-scrollbar{display:none}
-  .app-nav a{
-    color:var(--text-muted);text-decoration:none;font-size:.87rem;font-weight:600;
-    padding:.4rem .7rem;border-radius:8px;white-space:nowrap;
-  }
-  .app-nav a:hover{background:var(--bg-subtle);color:var(--text-main)}
-  .app-nav a.home{font-weight:900;color:var(--text-main);display:flex;align-items:center;gap:.45rem}
-  .app-nav .mark{
-    width:28px;height:28px;border-radius:8px;display:grid;place-items:center;
-    background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;font-size:.85rem;font-weight:900;
-  }
-  .app-nav .cta{
-    margin-inline-start:auto;background:var(--primary);color:#fff;font-weight:700;
-  }
-  .app-nav .cta:hover{background:var(--primary);color:#fff;filter:brightness(1.1)}
 `;
 
 html = html.replace('</style>', EXTRA_CSS + '\n</style>');
 
-/* ---- ۴. تزریق نوار پیمایش ---- */
-const NAV = `<nav class="app-nav">
-  <div class="app-nav-inner">
-    <a class="home" href="/app"><span class="mark">ا</span> اتیکا</a>
-    <a href="/app">تحلیل تازه</a>
-    <a href="/dashboard">داشبورد</a>
-    <a href="/history">تاریخچه</a>
-    <a href="/about">درباره ما</a>
-    <a class="cta" href="/app">🧭 دوراهی خودت را تحلیل کن</a>
-  </div>
-</nav>
-`;
-html = html.replace('<body>', '<body>\n' + NAV);
+/* ---- ۴. نوار بالای مشترک ---- */
+// app.css و motion.css پس از سبک خود دانشنامه می‌آیند تا نوار
+// دقیقاً مثل بقیه صفحه‌ها رنگ و رفتار بگیرد.
+html = html.replace('</head>',
+  '<link rel="stylesheet" href="/css/app.css">\n' +
+  '<link rel="stylesheet" href="/css/motion.css">\n' +
+  '</head>');
+
+html = html.replace('<body>', '<body>\n<header class="topbar" id="topbar"></header>');
+
+// نوار را همان هسته مشترک می‌سازد، پس وضعیت ورود کاربر را نشان می‌دهد
+html = html.replace('</body>',
+  '<script type="module">\n' +
+  "  import { boot } from '/js/core.js';\n" +
+  '  await boot({ auth: false });\n' +
+  '</script>\n</body>');
 
 /* ---- ۵. عنوان و پیوند برگشت در پانوشت ---- */
 html = html.replace(
   /<footer>[\s\S]*?<\/footer>/,
   `<footer>
-    <p>دانشنامه کاربردی فلسفه اخلاق — بخشی از سامانه اتیکا</p>
+    <p>دانشنامه کاربردی فلسفه اخلاق — بخشی از سامانه EthicLens</p>
     <p style="margin-top:.4rem"><a href="/about" style="color:var(--primary)">درباره سازندگان</a></p>
     <p style="margin-top:.5rem"><a href="/app" style="color:var(--primary);font-weight:700">بازگشت به ابزار تحلیل ←</a></p>
   </footer>`

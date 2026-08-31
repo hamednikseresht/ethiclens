@@ -64,7 +64,7 @@ async function solveCaptcha() {
 
 console.log('\n── صفحات ──');
 for (const [path, needle] of [
-  ['/', 'اتیکا'],
+  ['/', 'EthicLens'],
   ['/login', 'ورود'],
   ['/guide', 'دانشنامه'],
   ['/about', 'علی مهبودی'],
@@ -336,7 +336,14 @@ console.log('\n── مصرف و سقف کاربران ──');
     check('گروه تازه ذخیره شد', t2.tier === 'premium', t2.tier);
     check('استثنای خالی یعنی ارث از گروه', t2.quota_override === null);
     check('استثنای توکن ذخیره شد', t2.token_override === 55000, String(t2.token_override));
-    check('سقف مؤثر از گروه ویژه می‌آید', t2.effectiveQuota > 5, String(t2.effectiveQuota));
+    // با عدد ثابت مقایسه نمی‌کنیم: سقف گروه از پنل قابل تغییر است و
+    // آزمون نباید به مقدار لحظه‌ای آن گره بخورد. چیزی که واقعاً باید
+    // درست باشد این است که سقف از گروه ارث برسد، نه از استثنای فردی.
+    const tiersNow = (await req('/api/admin/tiers')).data.items;
+    const premiumQuota = tiersNow.find(x => x.key === 'premium')?.daily_quota;
+    check('سقف مؤثر از گروه ویژه ارث می‌رسد',
+      t2.effectiveQuota === premiumQuota,
+      `مؤثر=${t2.effectiveQuota} گروه=${premiumQuota}`);
 
     const bad = await req(`/api/admin/users/${target.id}`, {
       method: 'PUT', csrf, body: { tier: 'superuser' }

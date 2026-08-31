@@ -43,7 +43,7 @@ export function mailConfig() {
     domain: getSetting('mailgun_domain') || process.env.MAILGUN_DOMAIN || '',
     baseUrl: (getSetting('mailgun_base_url') || process.env.MAILGUN_BASE_URL
               || 'https://api.mailgun.net').replace(/\/+$/, ''),
-    fromName: getSetting('mail_from_name') || 'اتیکا',
+    fromName: getSetting('mail_from_name') || 'EthicLens',
     fromEmail: getSetting('mail_from_email') || ''
   };
 }
@@ -246,7 +246,7 @@ export function secondsSinceLastToken(userId, purpose = 'verify') {
    قالب ایمیل
    ========================================================================== */
 function layout({ title, intro, buttonLabel, buttonUrl, footer, rawUrl }) {
-  const brand = getSetting('site_title') || 'اتیکا';
+  const brand = getSetting('site_title') || 'EthicLens';
   return `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head><meta charset="UTF-8"><title>${esc(title)}</title></head>
@@ -288,7 +288,7 @@ function layout({ title, intro, buttonLabel, buttonUrl, footer, rawUrl }) {
 
 export function verificationEmail({ name, url }) {
   return {
-    subject: `${getSetting('site_title') || 'اتیکا'} — تأیید نشانی ایمیل`,
+    subject: `${getSetting('site_title') || 'EthicLens'} — تأیید نشانی ایمیل`,
     html: layout({
       title: 'نشانی ایمیل خود را تأیید کنید',
       intro: `${esc(name || 'سلام')}، برای فعال‌شدن حساب و شروع تحلیل، روی دکمه زیر بزنید.
@@ -296,7 +296,7 @@ export function verificationEmail({ name, url }) {
       buttonLabel: 'تأیید ایمیل',
       buttonUrl: url,
       rawUrl: url,
-      footer: 'اگر شما در اتیکا ثبت‌نام نکرده‌اید، این ایمیل را نادیده بگیرید؛ بدون تأیید، حسابی فعال نمی‌شود.'
+      footer: 'اگر شما در EthicLens ثبت‌نام نکرده‌اید، این ایمیل را نادیده بگیرید؛ بدون تأیید، حسابی فعال نمی‌شود.'
     })
   };
 }

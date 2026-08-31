@@ -4,15 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>صفحه پیدا نشد — اتیکا</title>
+<title>صفحه پیدا نشد — EthicLens</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/motion.css">
+<style>body{display:flex;flex-direction:column;min-height:100vh}
+  .page-center{flex:1;display:grid;place-items:center;padding:2rem 1rem}</style>
 </head>
-<body style="display:grid;place-items:center;min-height:100vh;padding:2rem 1rem">
-  <div class="empty" style="max-width:460px">
+<body>
+<header class="topbar" id="topbar"></header>
+  <div class="page-center"><div class="empty" style="max-width:460px">
     <div class="empty-icon" style="font-size:3.5rem">🧭</div>
     <h3 style="font-size:1.3rem">این صفحه وجود ندارد</h3>
     <p>نشانی را اشتباه وارد کرده‌اید یا صفحه جابه‌جا شده است.</p>
@@ -20,7 +23,10 @@
       <a class="btn btn-primary" href="/app">صفحه تحلیل</a>
       <a class="btn" href="/">صفحه اصلی</a>
     </div>
-  </div>
-  <script type="module">import '/js/core.js';</script>
+  </div></div>
+<script type="module">
+  import { boot } from '/js/core.js';
+  await boot({ auth: false });
+</script>
 </body>
 </html>

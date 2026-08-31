@@ -1,22 +1,22 @@
 [Unit]
 Description=Ethica — Ethical Decision Assistant
-Documentation=https://github.com/YOUR_USER/ethica
+Documentation=https://github.com/YOUR_USER/ethiclens
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=ethica
-Group=ethica
-WorkingDirectory=/opt/ethica
-EnvironmentFile=/opt/ethica/.env
+User=ethiclens
+Group=ethiclens
+WorkingDirectory=/opt/ethiclens
+EnvironmentFile=/opt/ethiclens/.env
 ExecStart=/usr/bin/node server/index.js
 
 Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=ethica
+SyslogIdentifier=ethiclens
 
 # --- سخت‌سازی ---
 NoNewPrivileges=true
@@ -33,7 +33,7 @@ LockPersonality=true
 MemoryDenyWriteExecute=false
 RestrictRealtime=true
 # تنها مسیری که سرویس اجازه نوشتن دارد (پایگاه داده SQLite)
-ReadWritePaths=/opt/ethica/data
+ReadWritePaths=/opt/ethiclens/data
 
 LimitNOFILE=65535
 

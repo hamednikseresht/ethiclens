@@ -4,14 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>تأیید ایمیل — اتیکا</title>
+<title>تأیید ایمیل — EthicLens</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/motion.css">
 <style>
-  body{display:grid;place-items:center;min-height:100vh;padding:1.5rem 1rem;
+  body{display:flex;flex-direction:column;min-height:100vh}
+  .page-center{flex:1;display:grid;place-items:center;padding:1.5rem 1rem;
        background:radial-gradient(1000px 500px at 50% -15%, var(--primary-soft), transparent 62%), var(--bg-body)}
   .vbox{width:min(460px,100%);text-align:center}
   .vbrand{display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:1.6rem}
@@ -24,18 +25,18 @@
 </style>
 </head>
 <body>
+<header class="topbar" id="topbar"></header>
 
-<div class="vbox">
-  <div class="vbrand"><span class="brand-mark">ا</span><span>اتیکا</span></div>
+<div class="page-center"><div class="vbox">
+  <div class="vbrand"><span class="brand-mark">ا</span><span>EthicLens</span></div>
   <div class="card"><div class="card-body" id="host">
     <div class="vicon"><span class="spinner spinner-lg"></span></div>
     <h1>در حال بررسی پیوند…</h1>
     <p>لحظه‌ای صبر کنید.</p>
   </div></div>
 </div>
-
 <script type="module">
-import { $, api, state, loadSession, esc } from '/js/core.js';
+import { $, api, state, loadSession, renderTopbar, esc } from '/js/core.js';
 
 const token = new URLSearchParams(location.search).get('token');
 const host = $('#host');
@@ -49,6 +50,8 @@ function show({ icon, title, text, actions = '' }) {
 }
 
 if (!token) {
+  try { await loadSession(); } catch {}
+  renderTopbar();
   show({
     icon: '🔗',
     title: 'پیوند تأیید ناقص است',
@@ -59,6 +62,7 @@ if (!token) {
   try {
     // این درخواست به توکن CSRF نیاز دارد؛ اول نشست را بگیر
     await loadSession();
+    renderTopbar();
     const r = await api.post('/api/auth/verify', { token });
 
     show({
