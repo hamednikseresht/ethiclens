@@ -79,7 +79,8 @@ CREATE TABLE IF NOT EXISTS analyses (
   prompt_key   TEXT,
   raw_output   TEXT,
   sections     TEXT,                                   -- JSON: parsed sections
-  status       TEXT    NOT NULL DEFAULT 'pending',     -- pending | done | error
+  status       TEXT    NOT NULL DEFAULT 'pending',     -- pending | done | partial | error
+  completeness TEXT,                                   -- JSON: which sections came back short or empty
   error        TEXT,
   is_favorite  INTEGER NOT NULL DEFAULT 0,
   decision     TEXT,                                   -- گزینه‌ای که کاربر واقعاً انتخاب کرد
@@ -255,7 +256,8 @@ function addMissingColumns() {
       public_title:   'TEXT',
       public_summary: 'TEXT',
       public_author:  'TEXT',
-      views:          'INTEGER NOT NULL DEFAULT 0'
+      views:          'INTEGER NOT NULL DEFAULT 0',
+      completeness:   'TEXT'
     },
     users: {
       tier:           "TEXT NOT NULL DEFAULT 'basic'",

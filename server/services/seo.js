@@ -149,19 +149,19 @@ export function publishedAnalyses({ limit = 50, offset = 0 } = {}) {
     SELECT id, slug, title, public_title, public_summary, public_author,
            dilemma, context, published_at, created_at, views
     FROM analyses
-    WHERE is_public = 1 AND slug IS NOT NULL AND status = 'done'
+    WHERE is_public = 1 AND slug IS NOT NULL AND status IN ('done','partial')
     ORDER BY published_at DESC
     LIMIT ? OFFSET ?`).all(limit, offset);
 }
 
 export function publishedCount() {
   return db.prepare(
-    "SELECT COUNT(*) c FROM analyses WHERE is_public = 1 AND slug IS NOT NULL AND status = 'done'"
+    "SELECT COUNT(*) c FROM analyses WHERE is_public = 1 AND slug IS NOT NULL AND status IN ('done','partial')"
   ).get().c;
 }
 
 export function findBySlug(slug) {
   return db.prepare(`
     SELECT * FROM analyses
-    WHERE slug = ? AND is_public = 1 AND status = 'done'`).get(String(slug));
+    WHERE slug = ? AND is_public = 1 AND status IN ('done','partial')`).get(String(slug));
 }

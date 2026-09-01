@@ -18,13 +18,13 @@ router.get('/', (req, res) => {
   if (q) { where.push('(title LIKE ? OR dilemma LIKE ?)'); params.push(`%${q}%`, `%${q}%`); }
   if (fav) where.push('is_favorite = 1');
   if (req.query.reflected === '1') where.push('reflected_at IS NOT NULL');
-  if (req.query.reflected === '0') where.push("reflected_at IS NULL AND status = 'done'");
+  if (req.query.reflected === '0') where.push("reflected_at IS NULL AND status IN ('done','partial')");
   const clause = where.join(' AND ');
 
   const total = db.prepare(`SELECT COUNT(*) c FROM analyses WHERE ${clause}`).get(...params).c;
   const items = db.prepare(
     `SELECT id, title, model, status, is_favorite, duration_ms, created_at,
-            decision, reflected_at, is_public, slug, views,
+            decision, reflected_at, is_public, slug, views, completeness,
             substr(dilemma, 1, 220) AS excerpt
      FROM analyses WHERE ${clause}
      ORDER BY created_at DESC LIMIT ? OFFSET ?`
@@ -40,7 +40,7 @@ router.get('/stats', (req, res) => {
             SUM(status = 'done') done,
             SUM(is_favorite = 1) favorites,
             SUM(reflected_at IS NOT NULL) reflected,
-            SUM(reflected_at IS NULL AND status = 'done') awaiting,
+            SUM(reflected_at IS NULL AND status IN ('done','partial')) awaiting,
             COALESCE(AVG(NULLIF(duration_ms,0)), 0) avgMs
      FROM analyses WHERE user_id = ?`).get(uid);
 
@@ -64,7 +64,8 @@ router.get('/:id', (req, res) => {
   res.json({
     ...row,
     context: safeJson(row.context, {}),
-    sections: safeJson(row.sections, {})
+    sections: safeJson(row.sections, {}),
+    completeness: safeJson(row.completeness, null)
   });
 });
 
@@ -113,7 +114,11 @@ router.post('/:id/publish', (req, res) => {
   const row = db.prepare('SELECT * FROM analyses WHERE id = ? AND user_id = ?')
                 .get(req.params.id, req.user.id);
   if (!row) return res.status(404).json({ error: 'تحلیل یافت نشد.' });
-  if (row.status !== 'done') {
+  // A partial analysis may still be published — the owner decides whether an
+  // incomplete result is worth sharing. What must not happen is publishing
+  // succeeding while the public page 404s, so the same predicate is used here
+  // and in the public/sitemap lookups.
+  if (row.status !== 'done' && row.status !== 'partial') {
     return res.status(400).json({ error: 'فقط تحلیل کامل‌شده را می‌توان منتشر کرد.' });
   }
 

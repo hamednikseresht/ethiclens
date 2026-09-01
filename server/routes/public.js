@@ -293,7 +293,7 @@ router.get('/sitemap.xml', (req, res) => {
 
   const posts = db.prepare(`
     SELECT slug, published_at, created_at FROM analyses
-    WHERE is_public = 1 AND slug IS NOT NULL AND status = 'done'
+    WHERE is_public = 1 AND slug IS NOT NULL AND status IN ('done','partial')
     ORDER BY published_at DESC LIMIT 20000`).all();
 
   const url = (loc, lastmod, freq, priority) =>

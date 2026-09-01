@@ -89,7 +89,9 @@ router.post('/stream', requireAuth, requireApproved, async (req, res) => {
       analysisId: result.analysisId,
       sections: result.sections,
       usage: result.usage,
-      durationMs: result.durationMs
+      durationMs: result.durationMs,
+      status: result.status,
+      completeness: result.completeness
     });
   } catch (err) {
     if (ac.signal.aborted) { /* کاربر رفته — چیزی نفرست */ }
