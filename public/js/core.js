@@ -272,6 +272,61 @@ const PUBLIC_NAV = [
  *   approved  → every route + the user menu
  *   admin     → plus a link to the admin panel
  */
+/**
+ * The narrow-screen navigation drawer.
+ *
+ * Below the CSS breakpoint the nav links live in a panel behind the menu
+ * button instead of on the bar. The open state is held in one place — the
+ * button's aria-expanded — so the accessible state and the visual state
+ * cannot disagree.
+ */
+function wireNavDrawer(host) {
+  const btn = $('#navBtn', host);
+  const panel = $('#navPanel', host);
+  if (!btn || !panel) return;
+
+  const drawerMode = matchMedia('(max-width:899px)');
+  const isOpen = () => btn.getAttribute('aria-expanded') === 'true';
+
+  // Only the open/closed state is tracked here. Whether the closed panel is
+  // reachable by keyboard is settled in CSS by `visibility`, tied to the same
+  // media query that creates the drawer — so the two can never disagree.
+  const setOpen = (open) => {
+    btn.setAttribute('aria-expanded', String(open));
+    panel.classList.toggle('open', open);
+  };
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    setOpen(!isOpen());
+  });
+
+  // Following a link navigates anyway, but closing first avoids the drawer
+  // flashing on pages that render without a full reload.
+  panel.addEventListener('click', e => {
+    if (e.target.closest('a')) setOpen(false);
+  });
+
+  document.addEventListener('click', e => {
+    if (isOpen() && !panel.contains(e.target) && !btn.contains(e.target)) setOpen(false);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && isOpen()) {
+      setOpen(false);
+      btn.focus();
+    }
+  });
+
+  // Crossing between layouts must reset the state: otherwise the panel keeps
+  // its `open` class and reappears the next time the window narrows, and the
+  // links would stay inert after switching to the wide bar.
+  // Missing this event is now cosmetic rather than a correctness problem:
+  // the widened bar shows its links either way, and the stale `open` class
+  // only matters if the window narrows again.
+  drawerMode.addEventListener?.('change', () => setOpen(false));
+}
+
 export function renderTopbar(activePath) {
   const host = $('#topbar');
   if (!host) return;
@@ -302,13 +357,17 @@ export function renderTopbar(activePath) {
       <a class="brand" href="${approved ? '/app' : '/'}">
         <span class="brand-mark">EL</span><span class="brand-text">دیدگاه اخلاق</span>
       </a>
-      <nav class="nav-links">${links}${adminLink}</nav>
+      <nav class="nav-links" id="navPanel">${links}${adminLink}</nav>
       <div class="grow"></div>
       <button class="btn btn-icon btn-ghost" id="themeBtn" title="حالت شب / روز" aria-label="تغییر تم">◐</button>
       ${right}
+      <button class="burger" id="navBtn" aria-expanded="false" aria-controls="navPanel" aria-label="فهرست مسیرها">
+        <span></span><span></span><span></span>
+      </button>
     </div>`;
 
   $('#themeBtn', host).onclick = () => toggleTheme();
+  wireNavDrawer(host);
 
   const umBtn = $('#umBtn', host);
   if (umBtn) {

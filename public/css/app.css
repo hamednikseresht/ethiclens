@@ -73,7 +73,13 @@ img,svg{max-width:100%}
   width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
   background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;font-size:.95rem;font-weight:900;
 }
-.nav-links{display:flex;gap:.2rem;margin-inline-start:.75rem;overflow-x:auto;scrollbar-width:none}
+/* The nav must be allowed to shrink and scroll rather than squeeze its
+   siblings. Without min-width:0 a flex item refuses to go below its content
+   width, so the row overflows instead of the strip scrolling. */
+.nav-links{
+  display:flex;gap:.2rem;margin-inline-start:.75rem;
+  flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;
+}
 .nav-links::-webkit-scrollbar{display:none}
 .nav-links a{
   padding:.45rem .8rem;border-radius:9px;font-size:.9rem;font-weight:600;
@@ -81,6 +87,68 @@ img,svg{max-width:100%}
 }
 .nav-links a:hover{background:var(--bg-subtle);color:var(--text);text-decoration:none}
 .nav-links a.active{background:var(--primary-soft);color:var(--primary)}
+
+/* ---------- Menu button ----------
+   Hidden on desktop; the media query below turns it on. */
+.burger{
+  display:none;flex-shrink:0;
+  width:38px;height:38px;border-radius:var(--r-sm);
+  border:1px solid var(--border);background:var(--bg-surface);
+  cursor:pointer;padding:0;
+  /* A fixed 5px gap between three 2px bars puts the middle bar exactly 7px
+     from each outer one, which is the distance the open state translates by
+     to make the two diagonals cross. */
+  flex-direction:column;align-items:center;justify-content:center;gap:5px;
+}
+.burger:hover{background:var(--bg-subtle)}
+.burger span{
+  display:block;width:17px;height:2px;border-radius:2px;background:var(--text);
+  transition:transform var(--dur-fast,.18s) ease, opacity var(--dur-fast,.18s) ease;
+}
+.burger[aria-expanded="true"] span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.burger[aria-expanded="true"] span:nth-child(2){opacity:0}
+.burger[aria-expanded="true"] span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+/* ---------- Narrow screens ----------
+   Below this width the seven nav links cannot share the row with the brand
+   and the user menu — they were being crushed into a few pixels of unusable
+   horizontal scroll, leaving most of the site unreachable on a phone. They
+   move into a drawer instead. */
+@media (max-width:899px){
+  .burger{display:flex}
+
+  .nav-links{
+    position:absolute;top:var(--nav-h);inset-inline:0;
+    flex-direction:column;gap:.15rem;margin:0;padding:.5rem;
+    background:var(--bg-surface);border-bottom:1px solid var(--border);
+    box-shadow:var(--shadow-lg);
+    overflow:hidden auto;max-height:calc(100vh - var(--nav-h));
+    /* Collapsed by default.
+       `visibility:hidden` is what keeps the closed panel's links out of the
+       tab order, and it is deliberately NOT transitioned. An earlier version
+       delayed it so the panel could fade out, which made "is this reachable
+       by keyboard?" depend on transition timing. Toggling the same guarantee
+       from JS was worse still: it desynced whenever a resize event was
+       missed, leaving either invisible links focusable or visible links
+       unreachable. Declaring it here ties it to the media query itself, so
+       it cannot drift. The cost is no fade on close. */
+    opacity:0;visibility:hidden;transform:translateY(-6px);
+    transition:opacity var(--dur-fast,.18s) ease,
+               transform var(--dur-fast,.18s) ease;
+  }
+  .nav-links.open{opacity:1;visibility:visible;transform:none}
+  .nav-links a{padding:.7rem .9rem;font-size:.95rem}
+
+  /* The account name is the widest thing competing for the row; the avatar
+     alone still identifies who is signed in. */
+  .um-name{display:none}
+  .usermenu-btn{padding:.35rem}
+  .tb-pending{display:none}
+}
+
+@media (max-width:380px){
+  .brand-text{display:none}
+}
 
 /* ---------- منوی کاربر ---------- */
 .usermenu{position:relative}
