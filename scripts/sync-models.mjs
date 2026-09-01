@@ -1,10 +1,10 @@
 /**
- * همگام‌سازی فهرست مدل‌ها با آنچه واقعاً روی حساب هر ارائه‌دهنده در دسترس است.
+ * Sync the model list with what is actually available on each provider account.
  *
- *   node scripts/sync-models.mjs                    گزارش وضعیت (بدون تغییر)
- *   node scripts/sync-models.mjs --apply            مدل‌های منتخبِ موجود را ثبت/فعال می‌کند
- *   node scripts/sync-models.mjs --apply --probe    قبل از فعال‌سازی، هر مدل را عملاً می‌آزماید
- *   node scripts/sync-models.mjs --provider=openai  فقط یک ارائه‌دهنده
+ *   node scripts/sync-models.mjs                    status report (no changes)
+ *   node scripts/sync-models.mjs --apply            registers/enables the curated models that exist
+ *   node scripts/sync-models.mjs --apply --probe    probes each model before enabling it
+ *   node scripts/sync-models.mjs --provider=openai  one provider only
  */
 import 'dotenv/config';
 import { db } from '../server/db.js';
@@ -17,8 +17,8 @@ const PROBE = process.argv.includes('--probe');
 const ONLY = (process.argv.find(a => a.startsWith('--provider=')) || '').split('=')[1] || null;
 
 /**
- * مدل‌های منتخب هر ارائه‌دهنده، به ترتیب اولویت نمایش.
- * `on:1` یعنی اگر روی حساب موجود بود فعال شود؛ `on:0` یعنی ثبت ولی خاموش.
+ * Curated models per provider, in display priority order.
+ * `on:1` means enable it when present on the account; `on:0` means register but leave off.
  */
 const CURATED = {
   nvidia: [
@@ -83,8 +83,8 @@ for (const p of listProviders()) {
   console.log(`  ${present.length} مورد از ${wanted.length} مدل منتخب روی این حساب هست.`);
   if (absent.length) console.log(`  ✗ نیست: ${absent.map(a => a.id).join('، ')}`);
 
-  /* ---- آزمایش واقعی (اختیاری) ---- */
-  // خطای دائمی یعنی مدل واقعاً روی حساب نیست؛ تایم‌اوت و ۵۰۳ گذرا هستند
+  /* ---- Real probe (optional) ---- */
+  // A permanent error means the model really is absent; timeouts and 503s are transient
   const PERMANENT = new Set([400, 401, 403, 404, 410]);
   let usable = present;
   if (PROBE && present.length) {
@@ -107,7 +107,7 @@ for (const p of listProviders()) {
     };
     await Promise.all(Array.from({ length: Math.min(6, present.length) }, worker));
 
-    // فقط خطای دائمی مدل را از فهرست استفاده‌پذیر بیرون می‌برد
+    // Only a permanent error takes a model out of the usable list
     usable = present.filter(w => {
       const r = results.find(x => x.id === w.id);
       return !r || r.ok || !r.permanent;
@@ -120,7 +120,7 @@ for (const p of listProviders()) {
 
   if (!APPLY) continue;
 
-  /* ---- ثبت در پایگاه داده ---- */
+  /* ---- Writing to the database ---- */
   const curatedIds = new Set(wanted.map(w => w.id));
 
   db.transaction(() => {
@@ -132,13 +132,13 @@ for (const p of listProviders()) {
     });
 
     for (const r of db.prepare('SELECT id, model_id, enabled FROM models WHERE provider_id = ?').all(p.id)) {
-      // روی حساب نیست → حذف
+      // Not on the account → remove
       if (!remote.includes(r.model_id)) {
         db.prepare('DELETE FROM models WHERE id = ?').run(r.id);
         console.log(`  حذف شد (روی حساب نیست): ${r.model_id}`);
         continue;
       }
-      // هست ولی در فهرست منتخب نیست → ثبت بماند، ولی خاموش شود
+      // Present but not curated → keep registered, but disable
       if (!curatedIds.has(r.model_id) && r.enabled) {
         db.prepare('UPDATE models SET enabled = 0 WHERE id = ?').run(r.id);
         console.log(`  خاموش شد (خارج از فهرست منتخب): ${r.model_id}`);
@@ -154,7 +154,7 @@ for (const p of listProviders()) {
   }
 }
 
-/* ---- اطمینان از معتبر بودن مدل پیش‌فرض ---- */
+  /* ---- Make sure the default model is still valid ---- */
 if (APPLY) {
   const current = getSetting('default_model');
   const valid = current && db.prepare(`

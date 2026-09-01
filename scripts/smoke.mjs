@@ -1,6 +1,6 @@
 /**
- * آزمون دود (smoke test) — بررسی سرتاسری مسیرهای API بدون نیاز به کلید انویدیا.
- * اجرا:  node scripts/smoke.mjs
+ * Smoke test — end-to-end check of the API routes, with no NVIDIA key needed.
+ * Run:  node scripts/smoke.mjs
  */
 const BASE = process.env.BASE || 'http://localhost:3000';
 
@@ -40,11 +40,11 @@ function check(name, cond, extra = '') {
 
 
 /**
- * کپچا را حل می‌کند.
+ * Solves the CAPTCHA.
  *
- * پاسخ به‌صورت چکیده در نشست ذخیره می‌شود، پس آزمون آن را از پایگاه داده
- * می‌خواند و در فضای کوچک اعداد ممکن جست‌وجو می‌کند. این فقط برای آزمون
- * محلی است؛ هیچ راه دور زدنی در خود برنامه اضافه نشده.
+ * The answer is stored hashed in the session, so the test reads it from the
+ * database and searches the small space of possible numbers. This is for
+ * local testing only; no bypass was added to the application itself.
  */
 const { db: _db } = await import('../server/db.js');
 const _crypto = await import('node:crypto');
@@ -109,7 +109,7 @@ me = await req('/api/auth/me');
 check('نشست پس از ثبت‌نام برقرار است', me.data.user?.email === email);
 check('کاربر تازه در وضعیت انتظار تأیید است', me.data.user?.status === 'pending', me.data.user?.status);
 
-// کاربر تازه تا تأیید مدیر فعال نیست؛ برای بقیه آزمون‌ها فعالش می‌کنیم
+  // A new user is inactive until an admin approves; activate for the rest of the tests
 _db.prepare("UPDATE users SET status = 'active' WHERE email = ?").run(email);
 
 console.log('\n── تحلیل ──');
@@ -237,7 +237,7 @@ check('تنظیمات غیرمجاز فیلتر می‌شوند',
   badSetting.status === 200 && badSetting.data.changed.includes('temperature') && !badSetting.data.changed.includes('evil_key'),
   JSON.stringify(badSetting.data));
 
-/* ---------------- بازنگری (فاز پنجم) ---------------- */
+/* ---------------- Reflection (phase five) ---------------- */
 console.log('\n── دفترچه بازنگری ──');
 {
   const mine = await req('/api/history?perPage=5');
@@ -269,7 +269,7 @@ console.log('\n── دفترچه بازنگری ──');
     });
     check('پاک‌کردن بازنگری', cleared.status === 200 && cleared.data.cleared === true);
 
-    // بازگرداندن مقدار اولیه تا داده کاربر دست‌نخورده بماند
+  // Restore the original value so the user's data is left untouched
     if (original.decision || original.reflection) {
       await req(`/api/history/${target.id}/reflection`, { method: 'POST', csrf, body: original });
     }
@@ -282,7 +282,7 @@ console.log('\n── دفترچه بازنگری ──');
 }
 
 
-/* ---------------- گروه‌های کاربری و سقف‌ها ---------------- */
+/* ---------------- User tiers and ceilings ---------------- */
 console.log('\n── گروه‌های کاربری ──');
 {
   const t = await req('/api/admin/tiers');
@@ -318,7 +318,7 @@ console.log('\n── مصرف و سقف کاربران ──');
   check('سقف مؤثر محاسبه می‌شود', u.data.items.every(x => typeof x.effectiveQuota === 'number'));
   check('فهرست گروه‌ها همراه پاسخ می‌آید', Array.isArray(u.data.tiers) && u.data.tiers.length >= 2);
 
-  // کاربر آزمایشی که در بخش احراز هویت ساخته شد
+  // The test user created in the auth section
   const target = u.data.items.find(x => x.email === email);
   if (!target) { console.log('  (کاربر آزمایشی پیدا نشد — رد شد)'); }
   else {
@@ -336,9 +336,9 @@ console.log('\n── مصرف و سقف کاربران ──');
     check('گروه تازه ذخیره شد', t2.tier === 'premium', t2.tier);
     check('استثنای خالی یعنی ارث از گروه', t2.quota_override === null);
     check('استثنای توکن ذخیره شد', t2.token_override === 55000, String(t2.token_override));
-    // با عدد ثابت مقایسه نمی‌کنیم: سقف گروه از پنل قابل تغییر است و
-    // آزمون نباید به مقدار لحظه‌ای آن گره بخورد. چیزی که واقعاً باید
-    // درست باشد این است که سقف از گروه ارث برسد، نه از استثنای فردی.
+  // Not compared against a fixed number: a tier ceiling is editable from the
+  // panel and the test must not be tied to its momentary value. What really
+  // must hold is that the ceiling is inherited from the tier, not an override.
     const tiersNow = (await req('/api/admin/tiers')).data.items;
     const premiumQuota = tiersNow.find(x => x.key === 'premium')?.daily_quota;
     check('سقف مؤثر از گروه ویژه ارث می‌رسد',
@@ -369,16 +369,16 @@ console.log('\n── دسترسی مدل بر اساس گروه ──');
 }
 
 
-/* ---------------- انتشار عمومی و SEO ---------------- */
-// مقدار واقعی را نگه می‌داریم؛ site_url در پیوند ایمیل‌های تأیید استفاده می‌شود
-// و جا ماندنِ مقدار آزمایشی، آن پیوندها را خراب می‌کند.
+/* ---------------- Publishing and SEO ---------------- */
+  // The real value is preserved; site_url is used in verification email links
+  // and leaving a test value behind would break them.
 const SENTINEL_URL = 'https://smoke.test';
 let realSiteUrl = '';
 console.log('\n── انتشار عمومی و SEO ──');
 {
   const captured = (await req('/api/admin/settings')).data.site_url || '';
-  // اگر اجرای قبلی مقدار آزمایشی را جا گذاشته باشد، آن را برنمی‌گردانیم —
-  // وگرنه آلودگی برای همیشه می‌ماند و پیوند ایمیل‌های تأیید خراب می‌شود.
+  // If an earlier run left the test value behind, it is not restored —
+  // otherwise the pollution persists and verification links stay broken.
   realSiteUrl = captured === SENTINEL_URL ? '' : captured;
   await req('/api/admin/settings', { method: 'POST', csrf, body: { site_url: SENTINEL_URL } });
 
@@ -447,7 +447,7 @@ console.log('\n── انتشار عمومی و SEO ──');
   check('نشانی ناموجود ۴۰۴ می‌دهد', missing.status === 404, `status=${missing.status}`);
 }
 
-/* ---------------- noindex روی صفحه‌های خصوصی ---------------- */
+/* ---------------- noindex on private pages ---------------- */
 console.log('\n── noindex صفحه‌های درون‌برنامه‌ای ──');
 for (const p of ['/app', '/dashboard', '/history', '/admin', '/login', '/settings']) {
   const r = await req(p);
@@ -455,7 +455,7 @@ for (const p of ['/app', '/dashboard', '/history', '/admin', '/login', '/setting
 }
 
 
-/* ---------------- بازگردانی تنظیمات آزمون ---------------- */
+/* ---------------- Restoring test settings ---------------- */
 {
   await req('/api/admin/settings', { method: 'POST', csrf, body: { site_url: realSiteUrl } });
   const back = await req('/api/admin/settings');
@@ -463,7 +463,7 @@ for (const p of ['/app', '/dashboard', '/history', '/admin', '/login', '/setting
     (back.data.site_url || '') === realSiteUrl, `مانده: ${back.data.site_url}`);
 }
 
-/* ---------------- تأیید ایمیل ---------------- */
+/* ---------------- Email verification ---------------- */
 console.log('\n── تأیید ایمیل ──');
 {
   const st = await req('/api/admin/settings');
@@ -472,7 +472,7 @@ console.log('\n── تأیید ایمیل ──');
     !/mailgun_api_key/.test(JSON.stringify(st.data)) || !st.data.mailgun_api_key,
     JSON.stringify(st.data).slice(0, 120));
 
-  // مدیر خودش تأییدشده است (کاربر قدیمی)
+  // The admin is verified already (a legacy user)
   const v = await req('/api/auth/verification');
   check('GET /api/auth/verification', v.status === 200 && typeof v.data.verified === 'boolean');
   check('کاربر قدیمی تأییدشده است', v.data.verified === true, String(v.data.verified));

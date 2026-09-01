@@ -1,9 +1,9 @@
 /**
- * بررسی نحوی اسکریپت‌های درون‌خطی صفحه‌ها و ماژول‌های کلاینت.
+ * Syntax check for the pages' inline scripts and the client modules.
  *
- * صفحه‌ای که <script type="module"> آن خطای نحوی داشته باشد،
- * همچنان با کد ۲۰۰ سرو می‌شود و ظاهراً سالم است — ولی هیچ‌کدام از
- * دکمه‌هایش کار نمی‌کند. آزمون دود این را نمی‌گیرد، این اسکریپت می‌گیرد.
+ * A page whose <script type="module"> has a syntax error is still served
+ * with a 200 and looks healthy — but none of its buttons work. The smoke
+ * test does not catch that; this script does.
  *
  *   node scripts/check-pages.mjs
  */
@@ -35,13 +35,13 @@ function check(label, code) {
   }
 }
 
-/* ---- ماژول‌های کلاینت ---- */
+/* ---- Client modules ---- */
 console.log('\n── ماژول‌های /js ──');
 for (const f of fs.readdirSync(path.join(PUBLIC, 'js')).filter(f => f.endsWith('.js')).sort()) {
   check(`js/${f}`, fs.readFileSync(path.join(PUBLIC, 'js', f), 'utf8'));
 }
 
-/* ---- اسکریپت‌های درون‌خطی صفحه‌ها ---- */
+/* ---- Inline page scripts ---- */
 console.log('\n── اسکریپت درون‌خطی صفحه‌ها ──');
 const pages = [
   path.join(PUBLIC, 'index.html'),
@@ -61,18 +61,18 @@ for (const p of pages) {
   for (const m of html.matchAll(SCRIPT_RE)) {
     const attrs = m[1] || '';
     const body = m[2] || '';
-    if (/\bsrc=/.test(attrs)) continue;          // اسکریپت بیرونی
+    if (/\bsrc=/.test(attrs)) continue;          // external script
     if (!body.trim()) continue;
     found++;
     const isModule = /type\s*=\s*["']module["']/.test(attrs);
-    // اسکریپت غیرماژولی هم باید نحو درست داشته باشد
+    // A non-module script must parse too
     check(`${rel}${found > 1 ? ` (#${found})` : ''}${isModule ? '' : ' [classic]'}`, body);
   }
 
   if (!found) console.log(`  · ${rel} — بدون اسکریپت درون‌خطی`);
 }
 
-/* ---- شناسه‌های تکراری در import ---- */
+/* ---- Duplicate identifiers in imports ---- */
 console.log('\n── تکرار در فهرست import ──');
 let dupes = 0;
 for (const p of pages) {

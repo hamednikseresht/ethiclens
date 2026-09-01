@@ -1,4 +1,4 @@
-/** آزمون سرتاسری جریان تازه ثبت‌نام و تأیید مدیر */
+/** End-to-end test of the signup and admin-approval flow */
 const BASE = 'http://localhost:3000';
 
 function client() {
@@ -24,7 +24,7 @@ function client() {
 let pass = 0, fail = 0;
 const ok = (n, c, x = '') => { c ? (pass++, console.log('  ✓ ' + n)) : (fail++, console.log(`  ✗ ${n}  → ${x}`)); };
 
-/* ================= کپچا ================= */
+/* ================= CAPTCHA ================= */
 console.log('\n── کپچا ──');
 const U = client();
 let me = await U('/api/auth/me');
@@ -45,19 +45,19 @@ const wrongCap = await U('/api/auth/register', {
 });
 ok('پاسخ اشتباه کپچا رد می‌شود', wrongCap.s === 400, JSON.stringify(wrongCap.d));
 
-/* ================= ثبت‌نام ================= */
+/* ================= Registration ================= */
 console.log('\n── ثبت‌نام ──');
-// پاسخ درست را از سمت سرور می‌گیریم (در آزمون واقعی کاربر تصویر را می‌خواند)
+  // The correct answer is taken from the server side (a real user reads the image)
 const { db } = await import('../server/db.js');
 
 async function registerWith(body) {
-  await U('/api/auth/captcha');                       // چالش تازه در نشست
+  await U('/api/auth/captcha');                       // a fresh challenge in the session
   const sid = [...(await U('/api/auth/me')).raw ? [] : []];
-  // پاسخ را از نشست ذخیره‌شده بازیابی می‌کنیم
+  // Recover the answer from the stored session
   const row = db.prepare('SELECT data FROM sessions ORDER BY rowid DESC').all()
     .map(r => { try { return JSON.parse(r.data); } catch { return null; } })
     .find(x => x?.captcha);
-  // چالش‌ها با چکیده ذخیره می‌شوند، پس عدد را با جست‌وجو پیدا می‌کنیم
+  // Challenges are stored hashed, so the number is found by search
   const crypto = await import('node:crypto');
   let answer = null;
   for (let n = -50; n <= 400; n++) {
@@ -85,7 +85,7 @@ ok('نام نمایشی از ایمیل ساخته شد', reg.d.user?.name === e
 const dupe = await registerWith({ email, password: 'Test12345!' });
 ok('ایمیل تکراری رد می‌شود', dupe.s === 409, `status=${dupe.s}`);
 
-/* ================= دروازه تأیید ================= */
+/* ================= Approval gate ================= */
 console.log('\n── دروازه تأیید مدیر ──');
 const blocked = await U('/api/analyze/stream', {
   method: 'POST', csrf: reg.d.csrf,
@@ -97,9 +97,9 @@ ok('کاربر تأییدنشده تحلیل اجرا نمی‌کند', blocked.
 const canSee = await U('/api/auth/me');
 ok('کاربر تأییدنشده می‌تواند وضعیتش را ببیند', canSee.d.user?.status === 'pending');
 
-/* ================= پرچم اعتبار ایمیل ================= */
+/* ================= Email validity flag ================= */
 console.log('\n── پرچم اعتبار ایمیل ──');
-await new Promise(r => setTimeout(r, 2500));      // بررسی MX ناهمگام است
+await new Promise(r => setTimeout(r, 2500));      // the MX lookup is asynchronous
 const row = db.prepare('SELECT email_valid, email_check_note FROM users WHERE email = ?').get(email);
 ok('پرچم اعتبار ثبت شد', row.email_valid !== undefined,
    `valid=${row.email_valid} note=${row.email_check_note}`);
@@ -113,7 +113,7 @@ ok('غلط تایپی دامنه تشخیص داده می‌شود', bad2.valid 
 const bad3 = await checkEmail('not-an-email');
 ok('ساختار نامعتبر رد می‌شود', bad3.valid === 0, bad3.note);
 
-/* ================= بررسی توسط مدیر ================= */
+/* ================= Admin review ================= */
 console.log('\n── بررسی توسط مدیر ──');
 const A = client();
 let ame = await A('/api/auth/me');
@@ -145,7 +145,7 @@ ok('وضعیت کاربر به active تغییر کرد', after.d.user?.status =
 const quotaNow = await U('/api/analyze/quota');
 ok('پس از تأیید، دسترسی باز می‌شود', quotaNow.s === 200, `status=${quotaNow.s}`);
 
-/* ================= رد کردن ================= */
+/* ================= Rejection ================= */
 console.log('\n── رد درخواست ──');
 const email2 = `rej${Date.now()}@gmail.com`;
 const reg2 = await registerWith({ firstName: 'علی', lastName: 'رضایی', email: email2, password: 'Test12345!' });
@@ -165,7 +165,7 @@ const rlogin = await R('/api/auth/login', {
 ok('کاربر ردشده نمی‌تواند وارد شود', rlogin.s === 403 && rlogin.d.reason === 'rejected', `status=${rlogin.s}`);
 ok('دلیل رد به کاربر نشان داده می‌شود', /اطلاعات ناقص/.test(rlogin.d.error || ''), rlogin.d.error);
 
-/* ---- پاک‌سازی ---- */
+/* ---- Cleanup ---- */
 db.prepare("DELETE FROM users WHERE email LIKE 'flow%@gmail.com' OR email LIKE 'rej%@gmail.com'").run();
 
 console.log(`\n${'═'.repeat(46)}\n  موفق: ${pass}   ناموفق: ${fail}\n${'═'.repeat(46)}\n`);
