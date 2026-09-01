@@ -662,7 +662,7 @@ router.get('/audit', (req, res) => {
 });
 
 /* ==========================================================================
-   محتوای دانشنامه
+   Encyclopedia content
    ========================================================================== */
 router.get('/guide', (req, res) => {
   const items = listSections().map(s => ({ ...s, modified: isModified(s) }));

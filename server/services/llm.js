@@ -26,13 +26,13 @@ function requireKey(provider) {
 }
 
 /* ==========================================================================
-   سازگاری پارامترها میان نسل‌های مختلف مدل‌ها
+   Parameter compatibility across model generations
    --------------------------------------------------------------------------
-   خانواده‌های تازه اوپن‌ای‌آی (GPT-5 و سری o) به‌جای max_tokens پارامتر
-   max_completion_tokens می‌خواهند و temperature/top_p سفارشی را رد می‌کنند.
-   دو لایه دفاع داریم:
-     ۱. حدسِ اولیه از روی نام مدل (تا درخواست اول هم درست باشد)
-     ۲. تطبیق خودکار پس از خطای ۴۰۰ (تا مدل‌های آینده هم کار کنند)
+   The newer OpenAI families (GPT-5 and the o series) want
+   max_completion_tokens instead of max_tokens, and reject a custom
+   temperature/top_p. Two layers of defence:
+     1. an initial guess from the model name, so the first request is right
+     2. automatic adaptation after a 400, so future models work too
    ========================================================================== */
 
 /** Models that require max_completion_tokens instead of max_tokens */

@@ -167,8 +167,8 @@ CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
 `);
 
 /* --------------------------------------------------------------------------
-   مهاجرت: پایگاه‌های داده‌ای که پیش از افزودن مفهوم «ارائه‌دهنده» ساخته شده‌اند.
-   جدول models قدیمی ستون provider_id نداشت و model_id در آن یکتای سراسری بود.
+   Migration: databases created before the "provider" concept existed.
+   The old models table had no provider_id and model_id was globally unique.
    -------------------------------------------------------------------------- */
 function migrateModelsToProviders() {
   const cols = db.prepare('PRAGMA table_info(models)').all().map(c => c.name);

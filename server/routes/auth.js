@@ -204,7 +204,7 @@ router.post('/profile', requireAuth, (req, res) => {
 });
 
 /* ==========================================================================
-   تأیید ایمیل
+   Email verification
    ========================================================================== */
 
 /** Verification status, and whether the system sends mail at all */

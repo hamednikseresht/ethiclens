@@ -181,7 +181,7 @@ function stripHtml(h) {
 }
 
 /* ==========================================================================
-   توکن‌های ایمیل
+   Email tokens
    ========================================================================== */
 const TOKEN_TTL_HOURS = 24;
 
@@ -243,7 +243,7 @@ export function secondsSinceLastToken(userId, purpose = 'verify') {
 }
 
 /* ==========================================================================
-   قالب ایمیل
+   Email layout
    ========================================================================== */
 function layout({ title, intro, buttonLabel, buttonUrl, footer, rawUrl }) {
   const brand = getSetting('site_title') || 'Ethic Lens';
