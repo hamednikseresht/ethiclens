@@ -27,15 +27,26 @@ const PORT = Number(process.env.PORT) || 3000;
 if (process.env.TRUST_PROXY === '1') app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
+// Google Analytics needs three separate holes in the policy and fails silently
+// without any one of them: the tag script itself, the endpoints it beacons to,
+// and the tracking pixel it falls back to. Listed here rather than widened to
+// a blanket 'https:' so the policy still says exactly who is trusted.
+const GA_SCRIPT  = ['https://www.googletagmanager.com'];
+const GA_CONNECT = ['https://www.google-analytics.com', 'https://analytics.google.com',
+                    'https://*.analytics.google.com', 'https://*.googletagmanager.com',
+                    'https://*.google-analytics.com'];
+const GA_IMG     = ['https://www.google-analytics.com', 'https://*.google-analytics.com',
+                    'https://www.googletagmanager.com'];
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", ...GA_SCRIPT],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
-      imgSrc: ["'self'", 'data:'],
-      connectSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', ...GA_IMG],
+      connectSrc: ["'self'", ...GA_CONNECT],
       objectSrc: ["'none'"],
       frameAncestors: ["'self'"]
     }

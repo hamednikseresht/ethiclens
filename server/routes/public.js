@@ -1,9 +1,13 @@
 import express from 'express';
 import { db } from '../db.js';
 import { getSetting } from '../services/settings.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   metaTags, siteUrl, absoluteUrl, escapeHtml as esc, jsonLd, isoDate, faDate,
-  metaDescription, publishedAnalyses, publishedCount, findBySlug
+  metaDescription, publishedAnalyses, publishedCount, findBySlug,
+  siteJsonLd, breadcrumbJsonLd, injectHead
 } from '../services/seo.js';
 import { renderAnalysis, verdictChips, faNum, splitVerdict } from '../services/render-analysis.js';
 import { guideContent } from '../services/guide.js';
@@ -32,6 +36,7 @@ ${FONTS}
 <link rel="stylesheet" href="/css/result.css">
 <link rel="stylesheet" href="/css/motion.css">
 <link rel="stylesheet" href="/css/public.css">
+<script src="/js/analytics.js"></script>
 </head>
 <body class="${bodyClass}">
 ${body}
@@ -312,3 +317,71 @@ ${posts.map(p => url(`/a/${encodeURIComponent(p.slug)}`,
 
   res.set('Cache-Control', 'public, max-age=3600').type('application/xml').send(xml);
 });
+
+/* ==========================================================================
+   Landing and reference pages
+   --------------------------------------------------------------------------
+   These are static files, which means they cannot know the site's own
+   address — so they shipped without a canonical link, and /guide had no
+   OpenGraph or robots tag at all. Serving them through here lets the same
+   metaTags() that produces the published pages produce theirs too, so all
+   public pages stay consistent, and it adds the site-level structured data
+   that tells Google what this domain is.
+
+   The files are read on each request rather than cached: they change only on
+   deploy, the pages are small, and a stale cache after an edit is a far more
+   annoying bug than one extra read.
+   ========================================================================== */
+const PUBLIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public');
+
+const SEO_PAGES = {
+  '/': {
+    file: 'index.html',
+    title: () => getSetting('site_title') || 'دیدگاه اخلاق — Ethic Lens',
+    description: () => getSetting('site_tagline') ||
+      'دوراهی‌های اخلاقی‌تان را از منظر هشت مکتب بزرگ فلسفه اخلاق بررسی کنید.',
+    trail: null,
+    extra: req => siteJsonLd(req)
+  },
+  '/guide': {
+    file: 'pages/guide.html',
+    title: () => 'دانشنامه لنزهای اخلاقی — راهنمای هشت مکتب فلسفه اخلاق',
+    description: () => 'راهنمای هشت لنز فلسفه اخلاق و فرایند پنج‌فازی تصمیم‌گیری: ' +
+      'فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، خیر مشترک، قراردادگرایی، اخلاق مراقبت، ' +
+      'اگزیستانسیالیسم و تبارشناسی — با ارجاع به منابع اصلی.',
+    trail: [{ name: 'خانه', path: '/' }, { name: 'دانشنامه', path: '/guide' }],
+    extra: req => [{
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: 'دانشنامه لنزهای اخلاقی',
+      inLanguage: 'fa-IR',
+      author: { '@type': 'Organization', name: getSetting('site_title') || 'Ethic Lens' },
+      publisher: { '@type': 'Organization', name: getSetting('site_title') || 'Ethic Lens' },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(req, '/guide') }
+    }]
+  },
+  '/about': {
+    file: 'pages/about.html',
+    title: () => 'درباره دیدگاه اخلاق',
+    description: () => 'Ethic Lens حاصل همکاری یک دانش‌آموخته فلسفه و یک مهندس نرم‌افزار است؛ ' +
+      'ابزاری برای مستدل و قابل‌دفاع کردن تصمیم‌های اخلاقی روزمره.',
+    trail: [{ name: 'خانه', path: '/' }, { name: 'درباره ما', path: '/about' }],
+    extra: () => []
+  }
+};
+
+for (const [route, page] of Object.entries(SEO_PAGES)) {
+  router.get(route, (req, res, next) => {
+    let html;
+    try { html = fs.readFileSync(path.join(PUBLIC_DIR, page.file), 'utf8'); }
+    catch { return next(); }
+
+    const blocks = [
+      metaTags({ req, title: page.title(), description: page.description(), path: route }),
+      ...(page.trail ? [`<script type="application/ld+json">${jsonLd(breadcrumbJsonLd(req, page.trail))}</script>`] : []),
+      ...page.extra(req).map(o => `<script type="application/ld+json">${jsonLd(o)}</script>`)
+    ];
+
+    res.type('html').send(injectHead(html, blocks.join('\n')));
+  });
+}
