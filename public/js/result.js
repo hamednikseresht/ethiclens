@@ -1,8 +1,9 @@
 /* ==========================================================================
-   نمایش نتیجه تحلیل.
-   ساختار روایی = پنج فاز تصمیم‌گیری اخلاقی، و در دل فاز سوم،
-   پنج مرحله فلوچارت پالایش (هر مرحله = دروازه + مکاتب تغذیه‌کننده‌اش).
-   مشترک میان صفحه تحلیل زنده و صفحه مشاهده تحلیل ذخیره‌شده.
+   Rendering an analysis result.
+   Narrative structure: the five phases of ethical decision-making and, inside
+   phase three, the five refinement stages of the flowchart — each stage being
+   one gate plus the schools that feed it.
+   Shared by the live analysis page and the saved-analysis view.
    ========================================================================== */
 import { esc, md, faNum } from './core.js';
 import { syncStageLinks } from './motion.js';
@@ -64,7 +65,7 @@ export const MATRIX_COLUMNS = [
   { key: 'authenticity', label: 'اصالت' }
 ];
 
-/* بلوک‌های متنی هر فاز */
+/* Text blocks for each phase */
 const PHASE1 = [
   { key: 'issue', title: 'آیا این یک مسئله اخلاقی است؟', icon: '🎯',
     lead: 'پیش از تحلیل: جنس تعارض چیست و چرا فراتر از قانون و کارایی است.' }
@@ -108,7 +109,7 @@ export function sectionLabel(key) {
   return SECTION_LABELS[key] || key;
 }
 
-/* ------- حکم‌ها و رنگ آن‌ها ------- */
+/* ------- Verdicts and their colours ------- */
 function verdictClass(v) {
   if (!v) return '';
   if (/موافق|عبور|تأیید|تایید/.test(v)) return 'v-yes';
@@ -127,7 +128,7 @@ export function splitVerdict(body) {
 }
 
 /* ==========================================================================
-   ماتریس مقایسه گزینه‌ها
+   Option comparison matrix
    ========================================================================== */
 const FA_DIGIT_MAP = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9',
                        '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9' };
@@ -139,7 +140,7 @@ function toScore(cell) {
   return Math.max(-2, Math.min(2, parseInt(m[0], 10)));
 }
 
-/** جدول مارک‌داون مدل را به ردیف‌های امتیاز تبدیل می‌کند */
+/** Turns the model's markdown table into scored rows */
 export function parseMatrix(raw) {
   if (!raw) return [];
   const rows = [];
@@ -148,9 +149,9 @@ export function parseMatrix(raw) {
     if (!t.startsWith('|')) continue;
     const cells = t.split('|').slice(1, -1).map(c => c.trim());
     if (cells.length < 2) continue;
-    if (/^[-:\s]+$/.test(cells.join(''))) continue;              // خط جداکننده
+    if (/^[-:\s]+$/.test(cells.join(''))) continue;              // separator row
     const scores = cells.slice(1).map(toScore);
-    if (scores.every(s => s === null)) continue;                  // سرستون
+    if (scores.every(s => s === null)) continue;                  // header row
     rows.push({ option: cells[0].replace(/[*`]/g, '').trim(), scores });
   }
   return rows;
@@ -206,7 +207,7 @@ function renderMatrix(raw) {
 }
 
 /* ==========================================================================
-   اسکلت نتیجه
+   Result skeleton
    ========================================================================== */
 function blockHtml(b, featured = false) {
   return `
@@ -297,7 +298,7 @@ export function buildSkeleton(host) {
 }
 
 /* ==========================================================================
-   تجزیه بلوک‌های @@key@@
+   Parsing the @@key@@ blocks
    ========================================================================== */
 const MARKER_RE = /^\s*@@\s*([a-zA-Z:_-]+)\s*@@\s*$/;
 
@@ -314,7 +315,7 @@ export function parseSections(text) {
 }
 
 /* ==========================================================================
-   اعمال محتوا
+   Applying content
    ========================================================================== */
 export function applySections(sections, { streaming = false } = {}) {
   const setBlock = (key, content, html) => {
@@ -377,7 +378,7 @@ export function applySections(sections, { streaming = false } = {}) {
   syncStageLinks();
 }
 
-/* ------- پیشرفت ------- */
+/* ------- Progress ------- */
 export const TOTAL_SECTIONS = TEXT_BLOCKS.length + 1 + SCHOOLS.length + STAGES.length;
 
 export function progressOf(sections) {
@@ -385,7 +386,7 @@ export function progressOf(sections) {
   return Math.min(100, Math.round((done / TOTAL_SECTIONS) * 100));
 }
 
-/* ------- خلاصه‌ها ------- */
+/* ------- Summaries ------- */
 export function verdictSummary(sections) {
   const counts = { yes: 0, no: 0, maybe: 0 };
   for (const s of SCHOOLS) {
@@ -415,7 +416,7 @@ export function gateSummary(sections) {
   });
 }
 
-/** گزینه برنده ماتریس — برای نمایش در سربرگ */
+/** The matrix's winning option — shown in the header */
 export function topOption(sections) {
   const rows = parseMatrix(sections.matrix);
   if (!rows.length) return null;

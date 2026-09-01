@@ -1,12 +1,12 @@
 /* ==========================================================================
-   خروجی گرفتن از تحلیل — PDF (از راه چاپ مرورگر) و HTML مستقل
+   Exporting an analysis — PDF via the browser print dialog, and standalone HTML
    ========================================================================== */
 import { esc, faDate, toast } from './core.js';
 import { gateSummary } from './result.js';
 
 /**
- * سربرگ مخصوص چاپ را به ابتدای صفحه تزریق می‌کند.
- * در نمایش عادی پنهان است و فقط در PDF دیده می‌شود.
+ * Injects a print-only header at the top of the page.
+ * Hidden in normal display, visible only in the PDF.
  */
 function ensurePrintHead(meta) {
   let el = document.querySelector('.print-head');
@@ -25,23 +25,23 @@ function ensurePrintHead(meta) {
 }
 
 /**
- * خروجی PDF. مرورگر خودش شکل‌دهی فارسی و صفحه‌بندی را انجام می‌دهد،
- * بنابراین متن راست‌به‌چپ در PDF درست و قابل انتخاب باقی می‌ماند.
+ * PDF export. The browser handles Persian shaping and pagination itself,
+ * so right-to-left text stays correct and selectable in the PDF.
  */
 export function exportPdf(meta = {}) {
   ensurePrintHead(meta);
   const restoreTitle = document.title;
-  // نام فایل پیشنهادی در گفت‌وگوی ذخیره، از عنوان سند خوانده می‌شود
+  // The suggested filename in the save dialog comes from the document title
   document.title = `Ethic Lens — ${(meta.title || 'تحلیل اخلاقی').slice(0, 60)}`;
 
   const done = () => { document.title = restoreTitle; window.removeEventListener('afterprint', done); };
   window.addEventListener('afterprint', done);
 
-  // یک فریم صبر می‌کنیم تا سربرگ چاپ در DOM بنشیند
+  // Wait a frame so the print header lands in the DOM first
   requestAnimationFrame(() => setTimeout(() => window.print(), 60));
 }
 
-/** دکمه‌های خروجی — نوار عملیات مشترک صفحه تحلیل و صفحه مشاهده */
+/** Export buttons — the action bar shared by the analysis and view pages */
 export function exportBar({ analysisId, meta, extra = '' }) {
   return `
     <div class="row no-print" style="gap:.4rem;flex-wrap:wrap">
@@ -56,8 +56,8 @@ export function exportBar({ analysisId, meta, extra = '' }) {
 }
 
 /**
- * رویدادهای نوار خروجی را وصل می‌کند.
- * host: عنصری که دکمه‌ها داخلش هستند.
+ * Wire up the export bar's events.
+ * host: the element the buttons live inside.
  */
 export function wireExport(host, { analysisId, meta, sections }) {
   if (!host) return;
@@ -103,7 +103,7 @@ export function wireExport(host, { analysisId, meta, sections }) {
   });
 }
 
-/* ---------------- خروجی HTML مستقل ---------------- */
+/* ---------------- Standalone HTML export ---------------- */
 function downloadHtml(meta) {
   const result = document.querySelector('.result');
   if (!result) return toast('محتوایی برای خروجی نیست.', 'err');
@@ -151,7 +151,7 @@ function analysisSlug(meta) {
   return `${meta.analysisId || 'analysis'}-${stamp}`;
 }
 
-/* ---------------- متن ساده برای کپی ---------------- */
+/* ---------------- Plain text for copying ---------------- */
 function plainText(meta, sections = {}) {
   const L = [];
   L.push(`دیدگاه اخلاق — تحلیل تصمیم اخلاقی`);
