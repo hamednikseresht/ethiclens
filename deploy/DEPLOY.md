@@ -1,6 +1,9 @@
 # راهنمای استقرار روی سرور اوبونتو
 
-راهنمای گام‌به‌گام برای اجرای دیدگاه اخلاق روی Ubuntu 22.04 / 24.04 پشت nginx با HTTPS.
+راهنمای گام‌به‌گام برای اجرای دیدگاه اخلاق روی Ubuntu 22.04 / 24.04، پشت
+nginx و کلادفلر، با گواهی Origin و حالت Full (strict).
+
+شاخه استقرار `main` است.
 
 ---
 
@@ -34,12 +37,40 @@ sudo useradd --system --create-home --home-dir /opt/ethiclens --shell /usr/sbin/
 
 ## ۳. دریافت کد
 
+شاخه استقرار **`main`** است.
+
+گام قبل، `/opt/ethiclens` را به‌عنوان خانه کاربر سرویس ساخته است، پس این
+پوشه **خالی نیست** و `git clone` مستقیم روی آن شکست می‌خورد:
+
+```
+fatal: destination path '/opt/ethiclens' already exists and is not an empty directory
+```
+
+به‌جایش در پوشه موقت clone کنید و محتوا را بکشید داخل:
+
 ```bash
-sudo -u ethiclens git clone https://github.com/YOUR_USER/ethiclens.git /opt/ethiclens
+sudo -u ethiclens git clone -b main https://github.com/hamednikseresht/ethiclens.git /tmp/ethiclens-src
+sudo -u ethiclens cp -a /tmp/ethiclens-src/. /opt/ethiclens/
+sudo -u ethiclens git -C /opt/ethiclens remote -v
+rm -rf /tmp/ethiclens-src
+```
+
+سپس نصب وابستگی‌ها:
+
+```bash
 cd /opt/ethiclens
 sudo -u ethiclens npm ci --omit=dev
 sudo -u ethiclens mkdir -p /opt/ethiclens/data
 ```
+
+> **اگر `npm ci` گفت `package-lock.json` پیدا نشد**، یعنی مرحله بالا ناقص
+> انجام شده و فایل‌ها کامل کپی نشده‌اند. با `ls /opt/ethiclens` بررسی کنید
+> که `package.json`، `package-lock.json` و پوشه `server/` هر سه باشند.
+>
+> به‌جای `npm ci` از `npm install` **استفاده نکنید**: نسخه‌ها را تازه حل
+> می‌کند و درختی متفاوت با آنچه آزموده شده نصب می‌شود. `better-sqlite3`
+> باینری بومی دارد و یک جهش خاموش نسخه در آن، هنگام اجرا خطا می‌دهد نه
+> هنگام نصب. فایل قفل را درست بیاورید و روی `npm ci` بمانید.
 
 > اگر `npm ci` به‌خاطر اسکریپت نصب `better-sqlite3` هشدار داد،
 > با `sudo -u ethiclens npm install --omit=dev --foreground-scripts` نصب کنید.
@@ -69,7 +100,8 @@ sudo -u ethiclens nano /opt/ethiclens/.env
 |---|---|
 | `NVIDIA_API_KEY` | کلید `nvapi-…` |
 | `OPENAI_API_KEY` | کلید `sk-…` |
-| `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` | برای ایمیل تأیید حساب |
+| `BREVO_API_KEY` | سرویس ایمیل پیش‌فرض — برای ایمیل تأیید حساب |
+| `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` | فقط اگر به‌جای Brevo از میل‌گان استفاده می‌کنید |
 | `MAILGUN_BASE_URL` | حساب اروپایی: `https://api.eu.mailgun.net` |
 
 > این متغیرها فقط برای **راه‌اندازی اولیه**اند. پس از بالا آمدن سرویس، همه
@@ -108,37 +140,126 @@ sudo journalctl -u ethiclens -f
 
 ---
 
-## ۶. nginx و گواهی HTTPS
+## ۶. کلادفلر — DNS و SSL
+
+معماری نهایی سه حلقه دارد:
+
+```
+کاربر ──TLS عمومی──▶ کلادفلر ──TLS با گواهی Origin──▶ nginx ──HTTP محلی──▶ برنامه
+```
+
+### ۶.۱ افزودن دامنه و رکوردها
+
+در پیشخان کلادفلر دامنه `ethiclens.ir` را اضافه کنید، سپس nameserverهایی
+که می‌دهد را در پنل ثبت‌کننده دامنه بگذارید. بعد دو رکورد بسازید:
+
+| نوع | نام | مقدار | وضعیت |
+|---|---|---|---|
+| A | `ethiclens.ir` | نشانی IP سرور | ☁️ Proxied (نارنجی) |
+| A | `www` | نشانی IP سرور | ☁️ Proxied (نارنجی) |
+
+ابر باید **نارنجی** باشد. اگر خاکستری بماند، کلادفلر فقط DNS می‌دهد و نه
+گواهی، نه محافظت، و نه پنهان‌کردن نشانی سرور.
+
+### ۶.۲ گواهی Origin
+
+در **SSL/TLS → Origin Server → Create Certificate** یک گواهی بسازید
+(پیش‌فرض‌ها خوب‌اند: RSA، اعتبار ۱۵ سال، شامل `ethiclens.ir` و `*.ethiclens.ir`).
+دو متن به شما می‌دهد. روی سرور:
 
 ```bash
+sudo mkdir -p /etc/ssl/cloudflare
+sudo nano /etc/ssl/cloudflare/ethiclens.ir.pem   # بخش Origin Certificate
+sudo nano /etc/ssl/cloudflare/ethiclens.ir.key   # بخش Private Key
+sudo chmod 600 /etc/ssl/cloudflare/ethiclens.ir.key
+sudo chmod 644 /etc/ssl/cloudflare/ethiclens.ir.pem
+```
+
+> کلید خصوصی فقط همان یک بار نمایش داده می‌شود. اگر نبستیدش، باید گواهی
+> تازه بسازید.
+
+این گواهی را فقط کلادفلر معتبر می‌داند و همین کافی است، چون تنها کلادفلر
+مستقیم با سرور حرف می‌زند. اعتبارش ۱۵ سال است، پس برخلاف Let's Encrypt
+تمدید خودکار نمی‌خواهد.
+
+### ۶.۳ حالت SSL
+
+در **SSL/TLS → Overview** حالت را روی **Full (strict)** بگذارید.
+
+| حالت | چه می‌کند | مناسب؟ |
+|---|---|---|
+| Flexible | کلادفلر تا سرور رمزنگاری نمی‌کند | ❌ حلقه تغییر مسیر می‌سازد و ترافیک لخت می‌ماند |
+| Full | رمزنگاری می‌شود ولی گواهی بررسی نمی‌شود | ⚠️ در برابر حمله میانی باز است |
+| **Full (strict)** | رمزنگاری + بررسی گواهی | ✅ همین را انتخاب کنید |
+
+همچنین **Always Use HTTPS** را روشن کنید.
+
+### ۶.۴ قاعده کش برای مسیرهای API
+
+کلادفلر نباید پاسخ‌های API را کش کند. در **Caching → Cache Rules** یک
+قاعده بسازید:
+
+- **اگر** `URI Path` با `/api/` شروع شود
+- **آنگاه** `Bypass cache`
+
+### ۶.۵ نصب پیکربندی nginx
+
+```bash
+sudo cp /opt/ethiclens/deploy/cloudflare-realip.conf /etc/nginx/cloudflare-realip.conf
 sudo cp /opt/ethiclens/deploy/nginx.conf /etc/nginx/sites-available/ethiclens
-sudo nano /etc/nginx/sites-available/ethiclens   # در صورت نیاز دامنه را بررسی کنید
 sudo ln -s /etc/nginx/sites-available/ethiclens /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-گواهی رایگان Let's Encrypt:
+بازه‌های کلادفلر را تازه کنید و ماهانه تکرارش کنید:
 
 ```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d ethiclens.ir -d www.ethiclens.ir
+sudo bash /opt/ethiclens/deploy/update-cloudflare-ips.sh
 ```
 
-> **مهم:** بلوک `location /api/analyze/` باید `proxy_buffering off;` داشته باشد.
-> بدون آن، پاسخ استریمی بافر می‌شود و کاربر تا پایان تحلیل صفحه‌ای خالی می‌بیند.
+```cron
+17 4 1 * * bash /opt/ethiclens/deploy/update-cloudflare-ips.sh >> /var/log/cf-ips.log 2>&1
+```
+
+> **چرا `cloudflare-realip.conf` اختیاری نیست:** بدون آن، nginx نشانی سرور
+> لبه کلادفلر را به‌عنوان نشانی کاربر می‌بیند. محدودکننده نرخ ورود در
+> `server/routes/auth.js` بر پایه `req.ip` کار می‌کند و سقفش ۲۰ تلاش ناموفق
+> در ۱۵ دقیقه است — یعنی بیست تلاش ناموفق از هر جای دنیا، ورود را برای
+> **همه کاربران** قفل می‌کند. همین برای سقف ثبت‌نام هم صادق است.
+
+> **درباره استریم:** بلوک `location ~ ^/api/(v1/)?analyze` باید
+> `proxy_buffering off;` داشته باشد، وگرنه کاربر تا پایان تحلیل چیزی
+> نمی‌بیند. کلادفلر هم مهلت حدود ۱۰۰ ثانیه‌ای برای پاسخ مبدأ دارد
+> (خطای ۵۲۴)، ولی برنامه هر ۱۵ ثانیه یک ضربان روی استریم می‌فرستد و
+> سربرگ‌های `no-transform` و `X-Accel-Buffering: no` را می‌گذارد، پس
+> تحلیل‌های طولانی (تا ۳۴۰ ثانیه) بی‌مشکل رد می‌شوند.
 
 ---
 
-## ۷. فایروال
+## ۷. فایروال — فقط کلادفلر
+
+اگر پورت ۴۴۳ برای همه باز باشد، هر کسی که نشانی IP سرور را پیدا کند
+می‌تواند کلادفلر را دور بزند. پس ورودی را به بازه‌های کلادفلر محدود کنید:
 
 ```bash
 sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
+for ip in $(curl -fsS https://www.cloudflare.com/ips-v4) $(curl -fsS https://www.cloudflare.com/ips-v6); do
+  sudo ufw allow proto tcp from "$ip" to any port 443
+done
 sudo ufw enable
 ```
 
-پورت ۳۰۰۰ نباید از بیرون باز باشد — برنامه فقط از طریق nginx در دسترس است.
+> پیش از `ufw enable` مطمئن شوید `OpenSSH` اجازه دارد، وگرنه خودتان را
+> بیرون می‌گذارید.
+
+پورت ۸۰ را می‌توانید بسته نگه دارید، چون کلادفلر با **Always Use HTTPS**
+خودش تغییر مسیر می‌دهد. پورت ۳۰۰۰ هرگز نباید از بیرون باز باشد — برنامه
+فقط از راه nginx در دسترس است.
+
+**لایه دوم (توصیه‌شده):** Authenticated Origin Pulls را روشن کنید تا nginx
+گواهی خود کلادفلر را هم بررسی کند. دستورش در بالای `deploy/nginx.conf`
+به‌صورت توضیح آمده است.
 
 ---
 
@@ -155,10 +276,14 @@ sudo ufw enable
 
 ```bash
 cd /opt/ethiclens
-sudo -u ethiclens git pull
+sudo -u ethiclens git pull origin main
 sudo -u ethiclens npm ci --omit=dev
 sudo systemctl restart ethiclens
 ```
+
+> اگر گام ۳ را با کپی از پوشه موقت انجام داده‌اید، `git pull` کار می‌کند
+> چون پوشه `.git` هم کپی شده است. با `git -C /opt/ethiclens remote -v`
+> بررسی کنید که مخزن به‌درستی وصل باشد.
 
 جدول‌های پایگاه داده با `CREATE TABLE IF NOT EXISTS` ساخته می‌شوند، پس به‌روزرسانی داده‌ای را پاک نمی‌کند.
 
@@ -194,3 +319,10 @@ sudo crontab -e
 | بعد از ورود دوباره به صفحه ورود می‌رود | `SECURE_COOKIE=1` و `TRUST_PROXY=1` را بررسی کنید |
 | خطای `SQLITE_READONLY` | مالکیت پوشه: `sudo chown -R ethiclens:ethiclens /opt/ethiclens/data` |
 | مدل ۴۰۴ می‌دهد | شناسه مدل را با «دریافت فهرست مدل‌های حساب» بررسی کنید |
+| `npm ci` می‌گوید فایل قفل نیست | فایل‌ها کامل کپی نشده‌اند — گام ۳ را دوباره ببینید |
+| خطای ۵۲۱ کلادفلر | nginx بالا نیست یا فایروال بازه‌های کلادفلر را نمی‌پذیرد |
+| خطای ۵۲۶ کلادفلر | حالت Full (strict) است ولی گواهی Origin نصب نشده یا مسیرش غلط است |
+| خطای ۵۲۴ کلادفلر | پاسخ بیش از ۱۰۰ ثانیه ساکت مانده — سرویس را بررسی کنید |
+| حلقه بی‌پایان تغییر مسیر | حالت SSL روی Flexible است؛ باید Full (strict) باشد |
+| همه کاربران با هم قفل می‌شوند | `cloudflare-realip.conf` نصب یا `include` نشده است |
+| نشانی همه کاربران یکی دیده می‌شود | همان مورد بالا — با `tail /var/log/nginx/ethiclens.access.log` بررسی کنید |

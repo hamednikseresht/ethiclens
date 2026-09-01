@@ -1,0 +1,20 @@
+# پایان خط را قطعی می‌کند، مستقل از تنظیم core.autocrlf هر توسعه‌دهنده.
+#
+# فایل‌های پوشه deploy روی سرور لینوکسی اجرا می‌شوند. اگر با پایان خط
+# ویندوزی (CRLF) آنجا برسند، bash روی کاراکتر \r گیر می‌کند و خطای
+# گنگی مثل «$'\r': command not found» می‌دهد.
+
+*                     text=auto eol=lf
+
+deploy/*.sh           text eol=lf
+deploy/*.conf         text eol=lf
+deploy/*.service      text eol=lf
+*.sh                  text eol=lf
+
+package-lock.json     text eol=lf -diff
+
+*.png                 binary
+*.jpg                 binary
+*.ico                 binary
+*.woff                binary
+*.woff2               binary
