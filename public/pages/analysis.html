@@ -120,9 +120,16 @@ revealOnScroll('.res-block, .stage');
 initMotion({ reveal: null });
 
 $('#favBtn')?.addEventListener('click', async e => {
+  // The element has to be captured before the await. `currentTarget` is only
+  // set while the event is being dispatched, and the handler yields at the
+  // await — by the time the request resolves it has been reset to null, so
+  // reading it here threw "Cannot set properties of null". Because the throw
+  // landed inside the try, it surfaced as an error toast even though the
+  // favourite had in fact been saved.
+  const btn = e.currentTarget;
   try {
     const r = await api.post(`/api/history/${a.id}/favorite`);
-    e.currentTarget.textContent = r.isFavorite ? '⭐ نشان‌شده' : '☆ نشان کردن';
+    btn.textContent = r.isFavorite ? '⭐ نشان‌شده' : '☆ نشان کردن';
   } catch (err) { toast(err.message, 'err'); }
 });
 
