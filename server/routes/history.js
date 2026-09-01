@@ -142,6 +142,22 @@ router.post('/:id/publish', (req, res) => {
   const publicSummary = pick(req.body?.public_summary, row.public_summary).slice(0, 300);
   const publicAuthor  = pick(req.body?.public_author, row.public_author).slice(0, 60);
 
+  // A published title has to be unique. Two analyses sharing one name are
+  // indistinguishable in the public index and in search results, and the
+  // slug would silently gain a random suffix that means nothing to anyone.
+  // Better to say so and let the author pick a name they intended.
+  const clash = db.prepare(`
+    SELECT id FROM analyses
+    WHERE is_public = 1 AND id <> ? AND lower(trim(COALESCE(public_title, title))) = lower(trim(?))
+    LIMIT 1`).get(row.id, publicTitle);
+
+  if (clash) {
+    return res.status(409).json({
+      error: 'تحلیل دیگری با همین عنوان منتشر شده است. عنوان عمومی را عوض کنید.',
+      code: 'title_taken'
+    });
+  }
+
   // The slug is minted once only, so a published address never breaks
   const slug = row.slug || uniqueSlug(publicTitle, row.id);
 

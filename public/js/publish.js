@@ -161,10 +161,11 @@ export function openPublishDialog(analysis, onChange) {
         <span class="hint">ایمیل و حساب کاربری شما هرگز نمایش داده نمی‌شود.</span></div>`,
     actions: [
       { label: 'انتشار عمومی', className: 'btn-primary', onClick: async root => {
+          const titleField = root.querySelector('#pt');
           try {
             const r = await api.post(`/api/history/${analysis.id}/publish`, {
               publish: true,
-              public_title:   root.querySelector('#pt').value,
+              public_title:   titleField.value,
               public_summary: root.querySelector('#ps').value,
               public_author:  root.querySelector('#pa').value
             });
@@ -176,7 +177,26 @@ export function openPublishDialog(analysis, onChange) {
             });
             toast('منتشر شد.', 'ok');
             onChange?.(analysis);
-          } catch (e) { toast(e.message, 'err'); return 'keep'; }
+          } catch (e) {
+            // A taken title is the one failure the user can fix right here,
+            // so the dialog stays open with the field selected rather than
+            // making them reopen it and retype what they wrote.
+            toast(e.message, 'err');
+            if (/عنوان/.test(e.message)) {
+              let warn = root.querySelector('#ptTaken');
+              if (!warn) {
+                warn = document.createElement('span');
+                warn.id = 'ptTaken';
+                warn.className = 'hint';
+                warn.style.color = 'var(--danger)';
+                titleField.insertAdjacentElement('afterend', warn);
+              }
+              warn.textContent = 'این عنوان قبلاً استفاده شده — عنوان دیگری بنویسید.';
+              titleField.focus();
+              titleField.select();
+            }
+            return 'keep';
+          }
         } },
       { label: 'انصراف' }
     ]

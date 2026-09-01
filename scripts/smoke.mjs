@@ -389,10 +389,13 @@ console.log('\n── انتشار عمومی و SEO ──');
     console.log('  (تحلیل کاملی برای آزمون انتشار نبود — رد شد)');
   } else {
     const wasPublic = !!target.is_public;
+    // Published titles must be unique, so each run needs its own — reusing a
+    // constant would collide with the row a previous run left published.
+    const pubTitle = `عنوان آزمایشی انتشار ${Date.now().toString(36)}`;
 
     const pub = await req(`/api/history/${target.id}/publish`, {
       method: 'POST', csrf,
-      body: { publish: true, public_title: 'عنوان آزمایشی انتشار', public_summary: 'خلاصه آزمایشی برای موتور جست‌وجو.' }
+      body: { publish: true, public_title: pubTitle, public_summary: 'خلاصه آزمایشی برای موتور جست‌وجو.' }
     });
     check('انتشار تحلیل', pub.status === 200 && !!pub.data.slug, JSON.stringify(pub.data).slice(0, 100));
 
@@ -428,7 +431,7 @@ console.log('\n── انتشار عمومی و SEO ──');
     const again = await req(`/api/history/${target.id}/publish`, { method: 'POST', csrf, body: { publish: true } });
     check('انتشار مجدد نشانی را عوض نمی‌کند', again.data.slug === slug);
     check('انتشار مجدد عنوان عمومی را پاک نمی‌کند',
-      again.data.public_title === 'عنوان آزمایشی انتشار', String(again.data.public_title));
+      again.data.public_title === pubTitle, String(again.data.public_title));
     check('انتشار مجدد خلاصه عمومی را پاک نمی‌کند',
       String(again.data.public_summary).startsWith('خلاصه آزمایشی'), String(again.data.public_summary).slice(0, 40));
 
