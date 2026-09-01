@@ -204,13 +204,23 @@ sudo chmod 644 /etc/ssl/cloudflare/ethiclens.ir.pem
 
 ### ۶.۵ نصب پیکربندی nginx
 
+**گواهی را پیش از این گام نصب کنید.** nginx اگر فایل گواهی را پیدا نکند
+اصلاً بالا نمی‌آید و کلادفلر خطای ۵۲۱ می‌دهد.
+
 ```bash
 sudo cp /opt/ethiclens/deploy/cloudflare-realip.conf /etc/nginx/cloudflare-realip.conf
 sudo cp /opt/ethiclens/deploy/nginx.conf /etc/nginx/sites-available/ethiclens
-sudo ln -s /etc/nginx/sites-available/ethiclens /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/ethiclens /etc/nginx/sites-enabled/ethiclens
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 ```
+
+> `ln -sf` می‌گذارد اجرای دوباره این گام بی‌خطر باشد؛ با `ln -s` ساده،
+> بار دوم خطای `File exists` می‌گیرید.
+
+اگر `nginx -t` خطای `unknown directive "http2"` داد، نسخه nginx شما قدیمی‌تر
+از 1.25.1 است و فایل `deploy/nginx.conf` را از مخزن تازه نکرده‌اید — با
+`git pull origin main` به‌روزش کنید. نسخه را با `nginx -v` ببینید.
 
 بازه‌های کلادفلر را تازه کنید و ماهانه تکرارش کنید:
 
@@ -244,11 +254,30 @@ sudo bash /opt/ethiclens/deploy/update-cloudflare-ips.sh
 
 ```bash
 sudo ufw allow OpenSSH
-for ip in $(curl -fsS https://www.cloudflare.com/ips-v4) $(curl -fsS https://www.cloudflare.com/ips-v6); do
-  sudo ufw allow proto tcp from "$ip" to any port 443
-done
+
+CF="$(curl -fsS --max-time 20 https://www.cloudflare.com/ips-v4; echo; curl -fsS --max-time 20 https://www.cloudflare.com/ips-v6)"
+COUNT="$(echo "$CF" | grep -c '/')"
+
+if [ "$COUNT" -lt 10 ]; then
+  echo "خطا: فقط $COUNT بازه گرفته شد. فایروال دست‌نخورده ماند."
+else
+  for ip in $CF; do sudo ufw allow proto tcp from "$ip" to any port 443; done
+  echo "$COUNT بازه اجازه گرفت."
+fi
+```
+
+سپس بررسی کنید که قواعد ۴۴۳ واقعاً ساخته شده‌اند و بعد فایروال را روشن کنید:
+
+```bash
+sudo ufw status | grep -c 443
 sudo ufw enable
 ```
+
+> **این ترتیب مهم است.** اگر گرفتن بازه‌ها شکست بخورد — نبود دسترسی
+> خروجی، اشکال DNS، هر چیزی — حلقه هیچ قاعده‌ای نمی‌سازد ولی `ufw enable`
+> باز هم اجرا می‌شود و شما را با فایروالی رها می‌کند که فقط SSH را
+> می‌پذیرد. سایت بالا می‌ماند ولی کلادفلر به آن نمی‌رسد و خطای ۵۲۱
+> می‌دهد. شمارش پیش از روشن‌کردن، همین را می‌گیرد.
 
 > پیش از `ufw enable` مطمئن شوید `OpenSSH` اجازه دارد، وگرنه خودتان را
 > بیرون می‌گذارید.
