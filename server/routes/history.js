@@ -18,13 +18,13 @@ router.get('/', (req, res) => {
   if (q) { where.push('(title LIKE ? OR dilemma LIKE ?)'); params.push(`%${q}%`, `%${q}%`); }
   if (fav) where.push('is_favorite = 1');
   if (req.query.reflected === '1') where.push('reflected_at IS NOT NULL');
-  if (req.query.reflected === '0') where.push("reflected_at IS NULL AND status = 'done'");
+  if (req.query.reflected === '0') where.push("reflected_at IS NULL AND status IN ('done','partial')");
   const clause = where.join(' AND ');
 
   const total = db.prepare(`SELECT COUNT(*) c FROM analyses WHERE ${clause}`).get(...params).c;
   const items = db.prepare(
     `SELECT id, title, model, status, is_favorite, duration_ms, created_at,
-            decision, reflected_at, is_public, slug, views,
+            decision, reflected_at, is_public, slug, views, completeness,
             substr(dilemma, 1, 220) AS excerpt
      FROM analyses WHERE ${clause}
      ORDER BY created_at DESC LIMIT ? OFFSET ?`
@@ -40,7 +40,7 @@ router.get('/stats', (req, res) => {
             SUM(status = 'done') done,
             SUM(is_favorite = 1) favorites,
             SUM(reflected_at IS NOT NULL) reflected,
-            SUM(reflected_at IS NULL AND status = 'done') awaiting,
+            SUM(reflected_at IS NULL AND status IN ('done','partial')) awaiting,
             COALESCE(AVG(NULLIF(duration_ms,0)), 0) avgMs
      FROM analyses WHERE user_id = ?`).get(uid);
 
@@ -64,7 +64,8 @@ router.get('/:id', (req, res) => {
   res.json({
     ...row,
     context: safeJson(row.context, {}),
-    sections: safeJson(row.sections, {})
+    sections: safeJson(row.sections, {}),
+    completeness: safeJson(row.completeness, null)
   });
 });
 
@@ -77,9 +78,9 @@ router.post('/:id/favorite', (req, res) => {
 });
 
 /**
- * فاز پنجم چارچوب: «اجرا و بازنگری».
- * کاربر ثبت می‌کند چه تصمیمی گرفت و بعداً چه شد — چیزی که هیچ مدلی
- * نمی‌تواند جایش را پر کند و تنها بخشِ واقعاً یادگیرنده فرایند است.
+ * Phase five of the framework: "act and reflect".
+ * The user records what they decided and what happened afterwards — which
+ * no model can supply, and is the only genuinely learning part of the process.
  */
 router.post('/:id/reflection', (req, res) => {
   const own = db.prepare('SELECT id FROM analyses WHERE id = ? AND user_id = ?')
@@ -103,17 +104,21 @@ router.post('/:id/reflection', (req, res) => {
 });
 
 /**
- * انتشار عمومی یک تحلیل.
+ * Publishing an analysis.
  *
- * انتشار همیشه انتخاب صریح صاحب تحلیل است و هرگز خودکار نیست:
- * متن دوراهی‌ها شخصی است و ممکن است اطلاعات قابل‌شناسایی داشته باشد.
- * کاربر می‌تواند عنوان و خلاصه عمومی جداگانه بگذارد و نامش را پنهان کند.
+ * Publishing is always an explicit choice by the analysis owner and never
+ * automatic: dilemma text is personal and may carry identifying detail.
+ * The user can set a separate public title and summary, and stay anonymous.
  */
 router.post('/:id/publish', (req, res) => {
   const row = db.prepare('SELECT * FROM analyses WHERE id = ? AND user_id = ?')
                 .get(req.params.id, req.user.id);
   if (!row) return res.status(404).json({ error: 'تحلیل یافت نشد.' });
-  if (row.status !== 'done') {
+  // A partial analysis may still be published — the owner decides whether an
+  // incomplete result is worth sharing. What must not happen is publishing
+  // succeeding while the public page 404s, so the same predicate is used here
+  // and in the public/sitemap lookups.
+  if (row.status !== 'done' && row.status !== 'partial') {
     return res.status(400).json({ error: 'فقط تحلیل کامل‌شده را می‌توان منتشر کرد.' });
   }
 
@@ -125,8 +130,8 @@ router.post('/:id/publish', (req, res) => {
     return res.json({ ok: true, isPublic: false, slug: row.slug });
   }
 
-  // اگر فیلدی فرستاده نشده، مقدار قبلی حفظ می‌شود — انتشار دوباره نباید
-  // عنوان و خلاصه‌ای را که کاربر قبلاً نوشته پاک کند.
+  // Fields that were not sent keep their previous value — re-publishing must
+  // not wipe a title or summary the user already wrote.
   const pick = (sent, previous, fallback = '') => {
     const v = String(sent ?? '').trim();
     if (v) return v;
@@ -137,7 +142,23 @@ router.post('/:id/publish', (req, res) => {
   const publicSummary = pick(req.body?.public_summary, row.public_summary).slice(0, 300);
   const publicAuthor  = pick(req.body?.public_author, row.public_author).slice(0, 60);
 
-  // slug فقط بار اول ساخته می‌شود تا نشانی منتشرشده نشکند
+  // A published title has to be unique. Two analyses sharing one name are
+  // indistinguishable in the public index and in search results, and the
+  // slug would silently gain a random suffix that means nothing to anyone.
+  // Better to say so and let the author pick a name they intended.
+  const clash = db.prepare(`
+    SELECT id FROM analyses
+    WHERE is_public = 1 AND id <> ? AND lower(trim(COALESCE(public_title, title))) = lower(trim(?))
+    LIMIT 1`).get(row.id, publicTitle);
+
+  if (clash) {
+    return res.status(409).json({
+      error: 'تحلیل دیگری با همین عنوان منتشر شده است. عنوان عمومی را عوض کنید.',
+      code: 'title_taken'
+    });
+  }
+
+  // The slug is minted once only, so a published address never breaks
   const slug = row.slug || uniqueSlug(publicTitle, row.id);
 
   let sections = {};

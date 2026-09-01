@@ -1,6 +1,6 @@
 /**
- * آزمون ویرایشگر دانشنامه: فهرست، ویرایش، بازگرداندن، ساخت، حذف و دسترسی.
- * اجرا:  node scripts/guide-flow.mjs
+ * Encyclopedia editor test: list, edit, reset, create, delete and access.
+ * Run:  node scripts/guide-flow.mjs
  */
 const BASE = process.env.BASE || 'http://localhost:3000';
 const jar = new Map();

@@ -2,12 +2,12 @@ import { db } from '../db.js';
 import { GUIDE_SEED } from './guide-content.js';
 
 /**
- * محتوای دانشنامه.
+ * Encyclopedia content.
  *
- * متن‌ها در پایگاه داده‌اند و مدیر از پنل ویرایششان می‌کند. محتوای
- * کارخانه فقط بار اول ریخته می‌شود؛ از آن پس اجرای دوباره seed
- * چیزی را بازنویسی نمی‌کند — وگرنه هر به‌روزرسانی نسخه، کار مدیر را
- * از بین می‌برد.
+ * The text lives in the database and admins edit it from the panel. Factory
+ * content is seeded once only; re-running seed after that overwrites
+ * nothing — otherwise every version update would wipe out the admin's
+ * work.
  */
 
 const KINDS = ['prose', 'phase', 'lens', 'gate', 'experiment'];
@@ -40,7 +40,7 @@ export function seedGuide() {
   return added;
 }
 
-/** همه بخش‌ها، گروه‌بندی‌شده بر اساس نوع — برای رندر صفحه */
+/** Every section, grouped by kind — for rendering the page */
 export function guideContent({ includeDisabled = false } = {}) {
   const rows = db.prepare(`
     SELECT * FROM guide_sections
@@ -58,7 +58,7 @@ export function guideContent({ includeDisabled = false } = {}) {
   return out;
 }
 
-/** فهرست تخت برای پنل مدیریت */
+/** Flat list for the admin panel */
 export function listSections() {
   return db.prepare('SELECT * FROM guide_sections ORDER BY kind, sort_order, id')
            .all().map(parse);
@@ -102,7 +102,7 @@ export function createSection(data, userId) {
   const base = String(data.key || '').trim().replace(/[^a-zA-Z0-9:_-]/g, '') ||
                `${kind}:custom-${Date.now().toString(36)}`;
 
-  // اگر کلید تکراری بود، پسوند بگیرد
+  // On a duplicate key, add a suffix
   let key = base, i = 2;
   while (db.prepare('SELECT 1 FROM guide_sections WHERE key = ?').get(key)) key = `${base}-${i++}`;
 
@@ -127,7 +127,7 @@ export function deleteSection(id) {
   return db.prepare('DELETE FROM guide_sections WHERE id = ?').run(id).changes > 0;
 }
 
-/** بازگرداندن یک بخش به متن کارخانه */
+/** Restore one section to its factory text */
 export function resetSection(id, userId) {
   const cur = getSection(id);
   if (!cur) return null;
@@ -141,7 +141,7 @@ export function resetSection(id, userId) {
   }, userId);
 }
 
-/** آیا این بخش با متن کارخانه فرق دارد؟ */
+/** Does this section differ from the factory text? */
 export function isModified(section) {
   const factory = GUIDE_SEED.find(s => s.key === section.key);
   if (!factory) return true;

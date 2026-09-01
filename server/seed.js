@@ -7,9 +7,9 @@ import { setSetting, getSetting } from './services/settings.js';
 import { seedGuide } from './services/guide.js';
 
 /**
- * مدل‌های پیش‌فرض هر ارائه‌دهنده.
- * این‌ها فقط نقطه شروع‌اند؛ مدیر از پنل می‌تواند مدل اضافه/کم کند
- * یا با «دریافت فهرست مدل‌های حساب» فهرست واقعی را ببیند.
+ * Default models per provider.
+ * These are only a starting point; an admin can add or remove models from
+ * the panel, or pull the real list with "fetch account models".
  */
 const CATALOG = {
   nvidia: [
@@ -23,15 +23,20 @@ const CATALOG = {
     ['minimaxai/minimax-m3',                           'MiniMax M3',             'گزینه جایگزین چندزبانه — کندتر', 1, 80],
     ['openai/gpt-oss-20b',                             'GPT-OSS 20B',            'نسخه کوچک — سریع ولی سطحی‌تر', 0, 90]
   ],
+  // Ordered by measured fit for this task rather than by raw capability.
+  // scripts/compare-models.mjs ran the same layered dilemma through each of
+  // these three times: all returned 26/26 blocks with a verdict line for all
+  // eight schools, so the deciding factors became how much of the output
+  // stayed in Persian, how long it took, and what it cost in tokens.
   openai: [
-    ['gpt-4o',          'GPT-4o',          'چندزبانه قوی — فارسی بسیار روان', 1, 10],
-    ['gpt-4o-mini',     'GPT-4o mini',     'ارزان و سریع — برای حجم بالا', 1, 20],
-    ['gpt-4.1',         'GPT-4.1',         'پیروی دقیق‌تر از دستور و قالب', 1, 30],
-    ['gpt-4.1-mini',    'GPT-4.1 mini',    'نسخه سبک ۴٫۱', 1, 40],
-    ['o4-mini',         'o4-mini',         'مدل استدلالی — برای دوراهی‌های پیچیده', 1, 50],
-    ['gpt-5',           'GPT-5',           'در صورت دسترسی روی حساب شما', 0, 60],
-    ['gpt-5-mini',      'GPT-5 mini',      'در صورت دسترسی روی حساب شما', 0, 70],
-    ['o3',              'o3',              'استدلال عمیق — پرهزینه', 0, 80]
+    ['gpt-5.4-nano',    'GPT-5.4 nano',    'پیشنهادی — ۹۵٪ فارسی، ارزان‌ترین رده با کیفیت کامل', 1, 10],
+    ['gpt-5.4-mini',    'GPT-5.4 mini',    'کیفیت یکسان با nano و کمی سریع‌تر — رده گران‌تر', 1, 20],
+    ['gpt-4.1-mini',    'GPT-4.1 mini',    'کم‌مصرف‌ترین در توکن (~۲۲۰۰) ولی کندتر و ۹۳٪ فارسی', 1, 30],
+    ['gpt-4o-mini',     'GPT-4o mini',     'سریع‌ترین (۱۸ ثانیه) ولی بیشترین نشت انگلیسی — ۹۱٪', 1, 40],
+    ['gpt-4.1',         'GPT-4.1',         'پیروی دقیق از قالب، رده کامل', 1, 50],
+    ['gpt-5-mini',      'GPT-5 mini',      'استدلالی — سه برابر کندتر بدون کیفیت بیشتر', 0, 60],
+    ['gpt-5',           'GPT-5',           'رده کامل — برای دوراهی‌های بسیار پیچیده', 0, 70],
+    ['o4-mini',         'o4-mini',         'استدلالی سبک', 0, 80]
   ]
 };
 
@@ -50,16 +55,16 @@ const TIER_SEED = [
 ];
 
 export function seed() {
-  /* ---- محتوای دانشنامه ---- */
+  /* ---- Encyclopedia content ---- */
   seedGuide();
 
-  /* ---- گروه‌های کاربری ---- */
+  /* ---- User tiers ---- */
   const insTier = db.prepare(
     `INSERT INTO tiers (key, label, daily_quota, monthly_tokens, sort_order)
      VALUES (?,?,?,?,?) ON CONFLICT(key) DO NOTHING`);
   for (const t of TIER_SEED) insTier.run(t.key, t.label, t.daily_quota, t.monthly_tokens, t.sort);
 
-  /* ---- ارائه‌دهندگان ---- */
+  /* ---- Providers ---- */
   const insProvider = db.prepare(
     `INSERT INTO providers (key, label, base_url, api_key, enabled, sort_order)
      VALUES (?,?,?,?,?,?) ON CONFLICT(key) DO NOTHING`);
@@ -67,10 +72,10 @@ export function seed() {
   for (const p of PROVIDER_SEED) {
     const envKeyValue = process.env[p.envKey] || '';
     const baseUrl = process.env[p.envUrl] || p.base_url;
-    // ارائه‌دهنده‌ای که کلیدش را نداریم، ساخته ولی خاموش می‌ماند
+    // A provider whose key we do not have is created but left disabled
     insProvider.run(p.key, p.label, baseUrl, envKeyValue, envKeyValue ? 1 : 0, p.sort);
 
-    // اگر ردیف از قبل بود ولی کلید نداشت و حالا در env هست، پرش کن
+    // If the row existed without a key and env now has one, fill it in
     if (envKeyValue) {
       const row = db.prepare('SELECT id, api_key FROM providers WHERE key = ?').get(p.key);
       if (row && !row.api_key) {
@@ -79,7 +84,7 @@ export function seed() {
     }
   }
 
-  /* ---- مدل‌ها ---- */
+  /* ---- Models ---- */
   const insModel = db.prepare(
     `INSERT INTO models (provider_id, model_id, label, note, enabled, sort_order)
      VALUES (?,?,?,?,?,?) ON CONFLICT(provider_id, model_id) DO NOTHING`);
@@ -92,10 +97,10 @@ export function seed() {
     }
   }
 
-  /* ---- دستور پیش‌فرض ----
-     اگر مدیر متن را دست نزده باشد، با نسخه تازه کارخانه به‌روزرسانی می‌شود.
-     اگر ویرایشش کرده باشد، دست نمی‌خورد و فقط هشدار داده می‌شود — تا
-     ارتقای نسخه، کار سفارشی‌شده کسی را از بین نبرد. */
+  /* ---- Default prompt ----
+     If the admin has not touched the text, it is updated to the new factory
+     version. If they have edited it, it is left alone and only a warning is
+     logged — so a version upgrade never destroys someone's customisation. */
   const factoryHash = sha(DEFAULT_PROMPT);
   const existing = db.prepare('SELECT * FROM prompts WHERE key = ?').get(DEFAULT_PROMPT_KEY);
 
@@ -122,7 +127,7 @@ export function seed() {
     setSetting('active_prompt_key', DEFAULT_PROMPT_KEY);
   }
 
-  /* ---- مدل پیش‌فرض: اولین مدل فعالِ یک ارائه‌دهنده فعال ---- */
+  /* ---- Default model: the first enabled model of an enabled provider ---- */
   const current = getSetting('default_model');
   const stillValid = current && db.prepare(`
     SELECT 1 FROM models m JOIN providers p ON p.id = m.provider_id
@@ -140,15 +145,15 @@ export function seed() {
     }
   }
 
-  /* ---- مدیران همیشه در گروه ویژه‌اند ----
-     مدیرانی که پیش از افزودن مفهوم گروه ساخته شده‌اند در گروه پایه می‌افتند
-     و ناخواسته به سقف کمتری می‌خورند. این را جبران می‌کنیم. */
+  /* ---- Admins always sit in the premium tier ----
+     Admins created before tiers existed land in the basic tier and would hit
+     a lower ceiling unintentionally. This corrects that. */
   const promoted = db.prepare(
     "UPDATE users SET tier = 'premium' WHERE role = 'admin' AND tier <> 'premium'").run().changes;
   db.prepare("UPDATE users SET status = 'active' WHERE role = 'admin' AND status = 'pending'").run();
   if (promoted) console.log(`[seed] ${promoted} مدیر به گروه ویژه منتقل شد.`);
 
-  /* ---- مدیر اولیه ---- */
+  /* ---- Initial admin ---- */
   const adminCount = db.prepare("SELECT COUNT(*) c FROM users WHERE role = 'admin'").get().c;
   if (adminCount === 0) {
     const email = (process.env.ADMIN_EMAIL || 'admin@example.com').toLowerCase();

@@ -1,13 +1,13 @@
 /* ==========================================================================
-   رندر دانشنامه از روی محتوای پایگاه داده.
-   ساختار و سبک اینجا ثابت است؛ فقط متن‌ها از API می‌آیند تا مدیر
-   بتواند ویرایششان کند بدون اینکه چیدمان صفحه بشکند.
+   Rendering the encyclopedia from database content.
+   Structure and styling are fixed here. Only the text comes from the API, so
+   an admin can edit it without breaking the page layout.
    ========================================================================== */
 import { esc, md } from './core.js';
 
 const el = (html) => html;
 
-/* ---------------- متن آزاد ---------------- */
+/* ---------------- Free prose ---------------- */
 function prose(p, { as = 'section' } = {}) {
   if (!p) return '';
   if (p.extra?.style === 'note') {
@@ -22,7 +22,7 @@ function prose(p, { as = 'section' } = {}) {
     </${as}>`;
 }
 
-/* ---------------- فاز ---------------- */
+/* ---------------- Phase ---------------- */
 function phase(p) {
   const pts = p.extra?.points || [];
   return `
@@ -33,7 +33,7 @@ function phase(p) {
     </div>`;
 }
 
-/* ---------------- لنز ---------------- */
+/* ---------------- Lens ---------------- */
 function lens(l) {
   const x = l.extra || {};
   const concepts = (x.concepts || []).map(c => `
@@ -63,7 +63,7 @@ function lens(l) {
     </article>`;
 }
 
-/* ---------------- دروازه ---------------- */
+/* ---------------- Gate ---------------- */
 function gate(g, isLast) {
   const x = g.extra || {};
   return `
@@ -78,7 +78,7 @@ function gate(g, isLast) {
     ${isLast ? '' : '<div class="gate-link"></div>'}`;
 }
 
-/* ---------------- آزمایش فکری ---------------- */
+/* ---------------- Thought experiment ---------------- */
 function experiment(e) {
   return `
     <div class="exp">
@@ -88,11 +88,11 @@ function experiment(e) {
     </div>`;
 }
 
-/* ---------------- جدول تطبیقی ---------------- */
+/* ---------------- Comparison table ---------------- */
 function comparison(lenses) {
   const rows = lenses.map(l => {
     const x = l.extra || {};
-    // عنوان بدون شماره ابتدایی
+    // Title without its leading number
     const name = l.title.replace(/^[۰-۹\d]+\.\s*/, '');
     const critique = String(x.critique || '').replace(/\*/g, '').split(/[.،]/)[0].trim().slice(0, 45);
     return `<tr>
@@ -117,7 +117,7 @@ function comparison(lenses) {
 }
 
 /* ==========================================================================
-   رندر کامل
+   Full render
    ========================================================================== */
 export function renderGuide(host, data) {
   const P = data.prose || {};

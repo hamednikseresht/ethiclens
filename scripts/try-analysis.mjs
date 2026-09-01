@@ -1,10 +1,10 @@
 /**
- * اجرای یک تحلیل واقعی از مسیر کامل برنامه (ورود → استریم SSE → تجزیه بلوک‌ها)
- * و گزارش اینکه مدل قالب خواسته‌شده را چقدر درست رعایت کرده است.
+ * Run a real analysis through the full application path (login → SSE stream →
+ * block parsing) and report how well the model followed the requested format.
  *
- *   node scripts/try-analysis.mjs                     مدل پیش‌فرض
- *   node scripts/try-analysis.mjs <model-id>          مدل دلخواه
- *   node scripts/try-analysis.mjs --show              چاپ کامل متن تحلیل
+ *   node scripts/try-analysis.mjs                     default model
+ *   node scripts/try-analysis.mjs <model-id>          a specific model
+ *   node scripts/try-analysis.mjs --show              print the full analysis text
  */
 import 'dotenv/config';
 
@@ -37,7 +37,7 @@ async function req(path, { method = 'GET', body, csrf, stream } = {}) {
   try { return { status: res.status, data: JSON.parse(t) }; } catch { return { status: res.status, data: t }; }
 }
 
-/* ---- ورود ---- */
+/* ---- Login ---- */
 let { data: me } = await req('/api/auth/me');
 const login = await req('/api/auth/login', {
   method: 'POST', csrf: me.csrf,
@@ -50,7 +50,7 @@ const model = MODEL || (await req('/api/analyze/meta')).data.defaultModel;
 console.log(`\nمدل: ${model}`);
 console.log('در حال ارسال دوراهی آزمایشی…\n');
 
-/* ---- یک دوراهی واقعی و چندلایه ---- */
+/* ---- A real, multi-layered dilemma ---- */
 const payload = {
   model,
   dilemma:
@@ -70,7 +70,7 @@ const started = Date.now();
 const res = await req('/api/analyze/stream', { method: 'POST', csrf, body: payload, stream: true });
 if (!res.ok) { console.error('خطا:', res.status, await res.text()); process.exit(1); }
 
-/* ---- خواندن SSE ---- */
+/* ---- Reading the SSE stream ---- */
 const reader = res.body.getReader();
 const dec = new TextDecoder();
 let buf = '', acc = '', analysisId = null, firstByte = null, err = null, doneInfo = null;
@@ -107,7 +107,7 @@ if (err) { console.error('✗ خطای مدل:', err); process.exit(1); }
 const elapsed = Date.now() - started;
 const sections = doneInfo?.sections || {};
 
-/* ---- گزارش ---- */
+/* ---- Report ---- */
 console.log('═'.repeat(58));
 console.log(`  شناسه تحلیل   : ${analysisId}`);
 console.log(`  اولین توکن    : ${firstByte} م‌ث`);
@@ -126,7 +126,7 @@ console.log(`\n  بلوک‌های لازم : ${REQUIRED.length - missing.length
 if (missing.length) console.log(`  ✗ جا افتاده   : ${missing.join(', ')}`);
 if (extra.length)   console.log(`  ! بلوک اضافه  : ${extra.join(', ')}`);
 
-/* ---- بررسی خط «حکم:» در هر مکتب ---- */
+/* ---- Check the verdict line in each school ---- */
 const schools = REQUIRED.filter(k => k.startsWith('school:'));
 const gates = REQUIRED.filter(k => k.startsWith('gate:'));
 const hasVerdict = k => /^\s*(حکم|وضعیت)\s*[:：]/.test((sections[k] || '').split('\n')[0] || '');
@@ -135,12 +135,12 @@ const gv = gates.filter(hasVerdict).length;
 console.log(`  خط «حکم»      : ${sv}/${schools.length} مکتب`);
 console.log(`  خط «وضعیت»    : ${gv}/${gates.length} دروازه`);
 
-/* ---- بررسی زبان: نسبت نویسه‌های فارسی ---- */
+/* ---- Language check: ratio of Persian characters ---- */
 const fa = (acc.match(/[؀-ۿ]/g) || []).length;
 const la = (acc.match(/[A-Za-z]/g) || []).length;
 console.log(`  نسبت فارسی    : ${((fa / (fa + la || 1)) * 100).toFixed(1)}٪`);
 
-/* ---- بررسی ماتریس مقایسه ---- */
+/* ---- Comparison matrix check ---- */
 const FA_D = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
 const mLines = String(sections.matrix || '').split('\n').map(l => l.trim()).filter(l => l.startsWith('|'));
 const mRows = [];
@@ -161,7 +161,7 @@ for (const r of mRows) {
   console.log(`      ${r.option.padEnd(28)} ${r.scores.map(s => String(s ?? '?').padStart(3)).join('')}  = ${r.scores.reduce((a, b) => a + (b ?? 0), 0)}`);
 }
 
-/* ---- نمونه خروجی ---- */
+/* ---- Sample output ---- */
 console.log('\n── نمونه: بازخوانی مسئله ──');
 console.log((sections.reframe || '(خالی)').slice(0, 500));
 console.log('\n── نمونه: حکم وظیفه‌گرایی (کانت) ──');

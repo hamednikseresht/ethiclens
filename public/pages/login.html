@@ -38,6 +38,7 @@
   .done-box h2{font-size:1.15rem;font-weight:900;margin-bottom:.6rem;line-height:1.6}
   .done-box p{font-size:.9rem;color:var(--text-muted);line-height:2;margin-bottom:1.2rem}
 </style>
+<script src="/js/analytics.js"></script>
 </head>
 <body>
 <header class="topbar" id="topbar"></header>
@@ -59,7 +60,7 @@
 
       <div id="alertBox"></div>
 
-      <!-- فرم ورود -->
+    <!-- Sign-in form -->
       <form id="loginForm">
         <div class="field">
           <label for="li-email">ایمیل</label>
@@ -72,7 +73,7 @@
         <button class="btn btn-primary btn-block btn-lg" type="submit" id="loginBtn">ورود</button>
       </form>
 
-      <!-- فرم ثبت‌نام -->
+    <!-- Sign-up form -->
       <form id="registerForm" class="hidden">
         <div class="grid-2">
           <div class="field">
@@ -126,7 +127,7 @@ $('#themeBtn').onclick = () => toggleTheme();
 const params = new URLSearchParams(location.search);
 const next = params.get('next') || '/app';
 
-// اگر از قبل وارد شده، مستقیم برو
+  // Already signed in — go straight through
 try {
   const s = await loadSession();
   renderTopbar();
@@ -178,9 +179,9 @@ $('#loginForm').onsubmit = e => {
   });
 };
 
-/* ---------------- تصویر امنیتی ---------------- */
+/* ---------------- CAPTCHA image ---------------- */
 function newCaptcha() {
-  // پارامتر زمان، کش مرورگر را دور می‌زند تا هر بار تصویر تازه بیاید
+  // The timestamp parameter defeats the browser cache, so a fresh image loads each time
   $('#capImg').src = '/api/auth/captcha?t=' + Date.now();
   $('#rg-captcha').value = '';
 }
@@ -200,14 +201,14 @@ $('#registerForm').onsubmit = e => {
       });
       showRegistered(r);
     } catch (err) {
-      // کپچا یک‌بارمصرف است، پس در هر خطا تصویر تازه لازم است
+    // The CAPTCHA is single-use, so every error needs a fresh image
       newCaptcha();
       throw err;
     }
   });
 };
 
-/** پیام موفقیت پس از ثبت‌نام — جای فرم را می‌گیرد */
+/** Success message after registration — replaces the form */
 function showRegistered(r) {
   document.querySelector('.card .card-body').innerHTML = `
     <div class="done-box">

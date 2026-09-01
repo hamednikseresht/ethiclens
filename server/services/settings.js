@@ -4,15 +4,22 @@ import { DEFAULT_PROMPT, DEFAULT_PROMPT_KEY } from './default-prompt.js';
 const DEFAULTS = {
   site_title: 'دیدگاه اخلاق — Ethic Lens',
   site_tagline: 'دوراهی‌ات را از هشت منظر فلسفه اخلاق ببین',
-  site_url: '',                      // برای canonical و نقشه سایت — مثلاً https://ethiclens.ir
-  default_model: '',                 // به شکل "providerKey:modelId"
+  site_url: '',                      // for canonical links and the sitemap — e.g. https://ethiclens.ir
+  // Social preview image, 1200x630. Empty means the card degrades to a plain
+  // text summary rather than promising a picture the site cannot supply.
+  og_image: '',
+  default_model: '',                 // in the form "providerKey:modelId"
   temperature: '0.6',
   top_p: '0.95',
-  max_tokens: '4096',
+  max_tokens: '4096',           // budget for the visible answer
+  // Extra budget for models that bill their reasoning to the same counter
+  // (GPT-5 family, o-series). Added on top of max_tokens rather than taken
+  // out of it, so switching model does not shrink the analysis.
+  reasoning_headroom: '4000',
   active_prompt_key: DEFAULT_PROMPT_KEY,
   allow_registration: '1',
-  require_verification: '1',        // تأیید ایمیل لازم است؟
-  verification_gate: 'analysis',    // analysis = فقط تحلیل بسته | login = ورود بسته
+  require_verification: '1',        // is email verification required?
+  verification_gate: 'analysis',    // analysis = only analysis gated | login = login gated
   mail_provider: 'brevo',           // brevo | mailgun
   brevo_api_key: '',
   mailgun_api_key: '',

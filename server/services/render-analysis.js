@@ -2,17 +2,17 @@ import { SCHOOLS, STAGES, MATRIX_COLUMNS } from './schools.js';
 import { escapeHtml as esc } from './seo.js';
 
 /**
- * رندر سمت سرور تحلیل.
+ * Server-side rendering of an analysis.
  *
- * صفحه‌های عمومی باید محتوا را در همان پاسخ نخست داشته باشند، نه اینکه
- * بعداً با جاوااسکریپت پر شوند: خزنده‌های موتور جست‌وجو این‌طور مطمئن‌تر و
- * سریع‌تر ایندکس می‌کنند. پس منطق نمایش result.js اینجا هم پیاده شده است.
- * ساختار خروجی عمداً با کلاس‌های همان CSS هم‌نام است تا ظاهر یکی باشد.
+ * Public pages must carry their content in the first response rather than
+ * filling in later via JavaScript: search-engine crawlers index that more
+ * reliably and sooner. So result.js's display logic is reimplemented here.
+ * The output deliberately reuses the same CSS class names so both look alike.
  */
 
 const SCHOOL = Object.fromEntries(SCHOOLS.map(s => [s.key, s]));
 
-/* ---------------- مارک‌داون سبک ---------------- */
+/* ---------------- Lightweight markdown ---------------- */
 export function md(src) {
   if (!src) return '';
   const lines = String(src).replace(/\r/g, '').split('\n');
@@ -56,7 +56,7 @@ export function md(src) {
   return out.join('');
 }
 
-/* ---------------- احکام ---------------- */
+/* ---------------- Verdicts ---------------- */
 function verdictClass(v) {
   if (!v) return '';
   if (/موافق|عبور|تأیید|تایید/.test(v)) return 'v-yes';
@@ -73,11 +73,11 @@ export function splitVerdict(body) {
   return { verdict: null, rest: body };
 }
 
-/* ---------------- ارقام فارسی ---------------- */
+/* ---------------- Persian numerals ---------------- */
 const FA = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
 const faNum = n => String(n).replace(/[0-9]/g, d => FA[+d]);
 
-/* ---------------- ماتریس ---------------- */
+/* ---------------- Matrix ---------------- */
 const FA_MAP = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
 
 export function parseMatrix(raw) {
@@ -128,7 +128,7 @@ function renderMatrix(raw) {
     </div>`;
 }
 
-/* ---------------- بلوک‌های متنی ---------------- */
+/* ---------------- Text blocks ---------------- */
 const PHASES = [
   { n: '۱', label: 'تشخیص مسئله اخلاقی', blocks: [
     { key: 'issue', title: 'آیا این یک مسئله اخلاقی است؟', icon: '🎯' }] },
@@ -171,7 +171,7 @@ function phase(p, sections, extra = '') {
     </div>`;
 }
 
-/* ---------------- مراحل فلوچارت ---------------- */
+/* ---------------- Flowchart stages ---------------- */
 function renderStages(sections) {
   const html = STAGES.map(st => {
     const raw = sections[`gate:${st.key}`];
@@ -223,7 +223,7 @@ function renderStages(sections) {
   return `<div class="stages">${html}</div>`;
 }
 
-/* ---------------- خروجی کامل ---------------- */
+/* ---------------- Full output ---------------- */
 export function renderAnalysis(sections) {
   const matrix = sections.matrix ? `
     <section class="res-block" id="rs-matrix">
@@ -248,7 +248,7 @@ export function renderAnalysis(sections) {
   </div>`;
 }
 
-/** خلاصه احکام برای نمایش در سربرگ */
+/** Verdict summary for the page header */
 export function verdictChips(sections) {
   const c = { yes: 0, no: 0, maybe: 0 };
   for (const s of SCHOOLS) {

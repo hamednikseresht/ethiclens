@@ -1,13 +1,13 @@
 /* ==========================================================================
-   Ethic Lens — رفتارهای حرکتی
-   همه چیز با prefers-reduced-motion غیرفعال می‌شود و هیچ‌کدام برای
-   کارکرد صفحه ضروری نیست: اگر این فایل بارگذاری نشود، صفحه سالم می‌ماند.
+   Ethic Lens — motion behaviours
+   Everything here is disabled by prefers-reduced-motion, and none of it is
+   required: if this file fails to load, the page still works.
    ========================================================================== */
 
 export const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* --------------------------------------------------------------------------
-   ۱. آشکارسازی هنگام اسکرول
+   1. Reveal on scroll
    -------------------------------------------------------------------------- */
 let observer = null;
 
@@ -24,13 +24,13 @@ function ensureObserver() {
 }
 
 /**
- * عناصر انتخاب‌شده را هنگام ورود به دید نمایان می‌کند.
+ * Reveals the selected elements as they scroll into view.
  *
- * کلاس `reveal` عنصر را نامرئی می‌کند، پس اگر ناظر به هر دلیلی کار نکند
- * محتوا برای همیشه پنهان می‌ماند. برای همین دو محافظ داریم:
- *  ۱. اگر IntersectionObserver در دسترس نباشد، اصلاً چیزی پنهان نمی‌شود.
- *  ۲. یک مهلت امن، هر چیزی را که تا آن زمان نمایان نشده آشکار می‌کند
- *     (مثلاً وقتی صفحه در تب پنهان باز شده و ناظر شلیک نکرده است).
+ * The `reveal` class makes an element invisible, so if the observer fails
+ * for any reason the content would stay hidden forever. Hence two guards:
+ *  1. when IntersectionObserver is unavailable, nothing is hidden at all.
+ *  2. a safety timeout reveals anything still not shown by then
+ *     (e.g. the page opened in a background tab and the observer never fired).
  */
 const REVEAL_FAILSAFE_MS = 4000;
 let failsafeTimer = null;
@@ -54,26 +54,26 @@ export function revealOnScroll(selector, root = document) {
   armFailsafe();
 }
 
-/** وقتی کاربر به تب برمی‌گردد، هر چیز جامانده را نمایان کن */
+/** When the user returns to the tab, reveal anything left behind */
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') armFailsafe();
 });
 
 /* --------------------------------------------------------------------------
-   ۲. شمارش عددی
+   2. Number counting
    -------------------------------------------------------------------------- */
 const FA = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
 const toFa = n => String(n).replace(/[0-9]/g, d => FA[+d]);
 
 /**
- * عدد را از صفر تا مقدار نهایی می‌شمارد.
- * el باید data-count داشته باشد یا مقدار در آرگومان بیاید.
+ * Counts a number up from zero to its final value.
+ * el must carry data-count, or the value is passed as an argument.
  */
 export function countUp(el, value, { duration = 900, decimals = 0, suffix = '' } = {}) {
   const target = Number(value);
-  if (!Number.isFinite(target)) return;      // مقدار موجود در HTML دست‌نخورده می‌ماند
+  if (!Number.isFinite(target)) return;      // the value already in the HTML is left untouched
 
-  // در تب پنهان، requestAnimationFrame اجرا نمی‌شود — مستقیم مقدار نهایی را بگذار
+  // In a hidden tab requestAnimationFrame never runs — set the final value directly
   if (reduced || target === 0 || document.hidden) {
     el.textContent = toFa(target.toFixed(decimals)) + suffix;
     return;
@@ -92,7 +92,7 @@ export function countUp(el, value, { duration = 900, decimals = 0, suffix = '' }
   requestAnimationFrame(tick);
 }
 
-/** همه عناصر [data-count] را وقتی وارد دید شدند می‌شمارد */
+/** Counts every [data-count] element once it enters the viewport */
 export function countUpAll(root = document) {
   const els = [...root.querySelectorAll('[data-count]')].filter(e => !e.dataset.counted);
   if (!els.length) return;
@@ -118,13 +118,13 @@ export function countUpAll(root = document) {
 }
 
 /* --------------------------------------------------------------------------
-   ۳. رشد میله‌های نمودار
+   3. Chart bar growth
    -------------------------------------------------------------------------- */
 export function animateBars(host) {
   if (!host || reduced) return;
 
-  // در تب پنهان انیمیشن پیش نمی‌رود و میله‌ها در ارتفاع صفر گیر می‌کنند،
-  // پس رشد را به لحظه‌ای موکول می‌کنیم که صفحه واقعاً دیده شود.
+    // In a hidden tab the animation never advances and the bars stick at zero
+    // height, so growth is deferred until the page is actually visible.
   if (document.hidden) {
     document.addEventListener('visibilitychange', function once() {
       if (document.visibilityState !== 'visible') return;
@@ -141,9 +141,9 @@ export function animateBars(host) {
 }
 
 /* --------------------------------------------------------------------------
-   ۴. پر شدن پیش‌رونده خط اتصال مراحل فلوچارت
+   4. Progressive fill of the flowchart stage connector
    -------------------------------------------------------------------------- */
-/** خط میان مرحله i و i+1 را وقتی مرحله i نتیجه گرفت، پر می‌کند */
+/** Fills the line between stage i and i+1 once stage i has a verdict */
 export function syncStageLinks(root = document) {
   const stages = [...root.querySelectorAll('.stage')];
   const links = [...root.querySelectorAll('.stage-link')];
@@ -154,7 +154,7 @@ export function syncStageLinks(root = document) {
 }
 
 /* --------------------------------------------------------------------------
-   ۵. موج لمس روی دکمه‌ها
+   5. Touch ripple on buttons
    -------------------------------------------------------------------------- */
 export function wireButtonRipple() {
   if (reduced) return;
@@ -168,7 +168,7 @@ export function wireButtonRipple() {
 }
 
 /* --------------------------------------------------------------------------
-   ۶. اسکرول نرم به یک عنصر
+   6. Smooth scroll to an element
    -------------------------------------------------------------------------- */
 export function scrollToEl(el, offset = 80) {
   if (!el) return;
@@ -177,7 +177,7 @@ export function scrollToEl(el, offset = 80) {
 }
 
 /* --------------------------------------------------------------------------
-   ۷. راه‌اندازی عمومی صفحه
+   7. General page bootstrap
    -------------------------------------------------------------------------- */
 export function initMotion({ reveal = '.card, .res-block, .stat, .rec, .item' } = {}) {
   wireButtonRipple();

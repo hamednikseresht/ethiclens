@@ -27,15 +27,26 @@ const PORT = Number(process.env.PORT) || 3000;
 if (process.env.TRUST_PROXY === '1') app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
+// Google Analytics needs three separate holes in the policy and fails silently
+// without any one of them: the tag script itself, the endpoints it beacons to,
+// and the tracking pixel it falls back to. Listed here rather than widened to
+// a blanket 'https:' so the policy still says exactly who is trusted.
+const GA_SCRIPT  = ['https://www.googletagmanager.com'];
+const GA_CONNECT = ['https://www.google-analytics.com', 'https://analytics.google.com',
+                    'https://*.analytics.google.com', 'https://*.googletagmanager.com',
+                    'https://*.google-analytics.com'];
+const GA_IMG     = ['https://www.google-analytics.com', 'https://*.google-analytics.com',
+                    'https://www.googletagmanager.com'];
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", ...GA_SCRIPT],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
-      imgSrc: ["'self'", 'data:'],
-      connectSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', ...GA_IMG],
+      connectSrc: ["'self'", ...GA_CONNECT],
       objectSrc: ["'none'"],
       frameAncestors: ["'self'"]
     }
@@ -70,13 +81,13 @@ app.use('/api/analyze', analyzeRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/admin', adminRouter);
 
-// ---- صفحه‌های عمومی و قابل ایندکس (رندر سمت سرور) ----
-// پیش از ۴۰۴ مسیرهای API می‌آید، چون /api/guide هم میان همین‌هاست
+// ---- Public, indexable pages (server-rendered) ----
+// Mounted before the API 404, because /api/guide lives among these too
 app.use('/', publicRouter);
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'مسیر API یافت نشد.' }));
 
-// ---- فایل‌های ایستا و مسیرهای صفحه ----
+// ---- Static files and page routes ----
 app.use(express.static(PUBLIC, { extensions: ['html'], maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0 }));
 
 const PAGES = {

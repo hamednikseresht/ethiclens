@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/css/result.css">
 <link rel="stylesheet" href="/css/motion.css">
 <link rel="stylesheet" href="/css/public.css">
+<script src="/js/analytics.js"></script>
 </head>
 <body>
 <header class="topbar" id="topbar"></header>
@@ -25,6 +26,7 @@
 import { $, api, boot, esc, faNum, faDate, duration, toast, confirmDialog, modal } from '/js/core.js';
 import { buildSkeleton, applySections, verdictChips, gateSummary } from '/js/result.js';
 import { exportBar, wireExport } from '/js/export.js';
+import { openPublishDialog, pubStateMarkup, wirePubState, gapsMarkup } from '/js/publish.js';
 import { initMotion, revealOnScroll } from '/js/motion.js';
 
 if (!await boot()) throw new Error('unauthenticated');
@@ -45,7 +47,8 @@ const sections = a.sections || {};
 const ctx = a.context || {};
 const ctxBits = [ctx.domain && `حوزه: ${ctx.domain}`, ctx.urgency && `فوریت: ${ctx.urgency}`].filter(Boolean);
 
-const gateStrip = a.status === 'done'
+const finished = a.status === 'done' || a.status === 'partial';
+const gateStrip = finished
   ? `<div class="gate-strip">${gateSummary(sections).map(g =>
       `<span class="gate-pill" data-state="${g.state}"><b>${g.n}</b> ${esc(g.title)}: ${esc(g.label)}</span>`).join('')}</div>`
   : '';
@@ -68,9 +71,10 @@ $('#headHost').innerHTML = `
       <span class="badge">${esc(a.model)}</span>
       <span class="badge">${duration(a.duration_ms)}</span>
       ${ctxBits.map(b => `<span class="badge">${esc(b)}</span>`).join('')}
-      ${a.status === 'done' ? verdictChips(sections) : ''}
+      ${finished ? verdictChips(sections) : ''}
     </div>
     ${gateStrip}
+    ${gapsMarkup(a.completeness)}
     <div id="pubState"></div>
     <div class="result-dilemma">${esc(a.dilemma)}</div>
     <div class="row no-print" style="margin-top:.8rem;justify-content:flex-start">
@@ -90,7 +94,7 @@ if (a.status === 'error') {
   buildSkeleton($('#resultHost'));
   applySections(sections, { streaming: false });
 
-  // فاز پنجم: ثبت تصمیم واقعی و بازنگری بعدی
+      // Phase five: record the actual decision and the later reflection
   $('#resultHost').insertAdjacentHTML('beforeend', `
     <section class="res-block reflect" id="reflectBlock">
       <h3 class="res-h"><span class="res-ic">📔</span> دفترچه بازنگری</h3>
@@ -117,102 +121,36 @@ revealOnScroll('.res-block, .stage');
 initMotion({ reveal: null });
 
 $('#favBtn')?.addEventListener('click', async e => {
+  // The element has to be captured before the await. `currentTarget` is only
+  // set while the event is being dispatched, and the handler yields at the
+  // await — by the time the request resolves it has been reset to null, so
+  // reading it here threw "Cannot set properties of null". Because the throw
+  // landed inside the try, it surfaced as an error toast even though the
+  // favourite had in fact been saved.
+  const btn = e.currentTarget;
   try {
     const r = await api.post(`/api/history/${a.id}/favorite`);
-    e.currentTarget.textContent = r.isFavorite ? '⭐ نشان‌شده' : '☆ نشان کردن';
+    btn.textContent = r.isFavorite ? '⭐ نشان‌شده' : '☆ نشان کردن';
   } catch (err) { toast(err.message, 'err'); }
 });
 
-/* ---------------- انتشار عمومی ---------------- */
+/* ---------------- Publishing and sharing ----------------
+   Delegated to /js/publish.js so this page and the post-analysis bar on
+   /app cannot drift apart — in particular the privacy warning, which is
+   the only thing between a user and indexing a personal dilemma. */
 function renderPubState() {
   const host = $('#pubState');
   if (!host) return;
-  if (!a.is_public || !a.slug) { host.innerHTML = ''; return; }
-  const url = location.origin + '/a/' + encodeURIComponent(a.slug);
-  host.innerHTML = `
-    <div class="pub-state no-print">
-      <span>🌐</span>
-      <span class="grow">این تحلیل عمومی است: <code>${esc(url)}</code></span>
-      <button class="btn btn-sm" id="copyPub">کپی نشانی</button>
-      <a class="btn btn-sm" href="/a/${encodeURIComponent(a.slug)}" target="_blank" rel="noopener">دیدن صفحه</a>
-    </div>`;
-  $('#copyPub').onclick = async () => {
-    try { await navigator.clipboard.writeText(url); toast('نشانی کپی شد.', 'ok'); }
-    catch { toast('کپی ممکن نشد.', 'err'); }
-  };
+  host.innerHTML = pubStateMarkup(a);
+  wirePubState(host, a);
+  const btn = $('#pubBtn');
+  if (btn) btn.textContent = a.is_public ? '🌐 منتشرشده' : '🌐 انتشار عمومی';
 }
 renderPubState();
 
-$('#pubBtn')?.addEventListener('click', () => {
-  if (a.is_public) {
-    modal({
-      title: 'این تحلیل عمومی است',
-      body: `<p style="font-size:.9rem;line-height:1.9">
-               نشانی عمومی: <code style="direction:ltr;display:inline-block">/a/${esc(a.slug)}</code><br><br>
-               اگر آن را از حالت عمومی خارج کنید، صفحه دیگر در دسترس نخواهد بود؛ ولی نشانی محفوظ می‌ماند
-               تا اگر بعداً دوباره منتشرش کردید همان لینک کار کند.
-             </p>`,
-      actions: [
-        { label: 'خارج‌کردن از حالت عمومی', className: 'btn-danger', onClick: async () => {
-            try {
-              await api.post(`/api/history/${a.id}/publish`, { publish: false });
-              a.is_public = 0;
-              $('#pubBtn').textContent = '🌐 انتشار عمومی';
-              renderPubState();
-              toast('از حالت عمومی خارج شد.', 'ok');
-            } catch (e) { toast(e.message, 'err'); return 'keep'; }
-          } },
-        { label: 'بستن' }
-      ]
-    });
-    return;
-  }
+$('#pubBtn')?.addEventListener('click', () => openPublishDialog(a, renderPubState));
 
-  modal({
-    title: 'انتشار عمومی این تحلیل',
-    body: `
-      <div class="alert alert-warn" style="font-size:.86rem">
-        <strong>پیش از انتشار بخوانید:</strong> متن دوراهی همان‌طور که نوشته‌اید در صفحه عمومی
-        دیده می‌شود و موتورهای جست‌وجو آن را ایندکس می‌کنند. اگر نام افراد، نام شرکت یا
-        جزئیات قابل‌شناسایی در متن هست، پیش از انتشار عنوان و خلاصه عمومی را طوری بنویسید
-        که کسی شناسایی نشود — یا اصلاً منتشرش نکنید.
-      </div>
-      <div class="field"><label for="pt">عنوان عمومی</label>
-        <input class="input" id="pt" maxlength="120" value="${esc(a.public_title || a.title)}">
-        <span class="hint">همین عنوان در نتایج گوگل نمایش داده می‌شود.</span></div>
-      <div class="field"><label for="ps">خلاصه عمومی</label>
-        <textarea class="textarea" id="ps" rows="3" maxlength="300"
-          placeholder="اگر خالی بگذارید، از بازخوانی مسئله ساخته می‌شود.">${esc(a.public_summary || '')}</textarea>
-        <span class="hint">توضیح زیر عنوان در نتایج جست‌وجو — حدود ۱۵۰ نویسه بهترین است.</span></div>
-      <div class="field"><label for="pa">نام نویسنده (اختیاری)</label>
-        <input class="input" id="pa" maxlength="60" placeholder="خالی بگذارید تا ناشناس منتشر شود"
-               value="${esc(a.public_author || '')}">
-        <span class="hint">ایمیل و حساب کاربری شما هرگز نمایش داده نمی‌شود.</span></div>`,
-    actions: [
-      { label: 'انتشار عمومی', className: 'btn-primary', onClick: async root => {
-          try {
-            const r = await api.post(`/api/history/${a.id}/publish`, {
-              publish: true,
-              public_title: root.querySelector('#pt').value,
-              public_summary: root.querySelector('#ps').value,
-              public_author: root.querySelector('#pa').value
-            });
-            Object.assign(a, {
-              is_public: 1, slug: r.slug,
-              public_title: r.public_title, public_summary: r.public_summary,
-              public_author: r.public_author
-            });
-            $('#pubBtn').textContent = '🌐 منتشرشده';
-            renderPubState();
-            toast('منتشر شد.', 'ok');
-          } catch (e) { toast(e.message, 'err'); return 'keep'; }
-        } },
-      { label: 'انصراف' }
-    ]
-  });
-});
-
-/* ---------------- دفترچه بازنگری ---------------- */
+/* ---------------- Reflection notebook ---------------- */
 function renderReflection(rec) {
   const host = $('#reflectBody');
   if (!host) return;

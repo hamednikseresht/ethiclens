@@ -15,12 +15,12 @@ import { requireAuth, csrfToken } from '../middleware/auth.js';
 export const router = express.Router();
 
 /**
- * محدودیت ورود.
+ * Login rate limit.
  *
- * فقط تلاش‌های *ناموفق* شمرده می‌شوند. اگر همه درخواست‌ها شمرده شوند،
- * یک دفتر یا خوابگاه که پشت یک IP مشترک است خودش را قفل می‌کند — بی‌آنکه
- * کسی حمله کرده باشد. حمله‌کننده‌ای که رمز را نمی‌داند، ناگزیر شکست
- * می‌خورد و همچنان محدود می‌شود.
+ * Only *failed* attempts are counted. Counting every request would let an
+ * office or dormitory behind one shared IP lock itself out without anyone
+ * attacking. An attacker who does not know the password fails by necessity,
+ * and is still limited.
  */
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -32,12 +32,12 @@ const loginLimiter = rateLimit({
 });
 
 /**
- * محدودیت ثبت‌نام — جدا از ورود و سخت‌گیرانه‌تر.
- * اینجا برعکس: هر ثبت‌نام موفق هم شمرده می‌شود، چون دقیقاً همان چیزی
- * است که می‌خواهیم محدودش کنیم (ساخت انبوه حساب).
+ * Registration limit — separate from login, and stricter.
+ * The opposite rule applies here: successful signups count too, because
+ * bulk account creation is exactly what we mean to limit.
  *
- * سقف در تولید تنگ است ولی در توسعه گشاد، وگرنه آزمودن دستی جریان
- * ثبت‌نام پس از چند بار غیرممکن می‌شود. با REGISTER_LIMIT قابل تنظیم است.
+ * The ceiling is tight in production but loose in development, or testing the
+ * signup flow by hand becomes impossible. Tunable with REGISTER_LIMIT.
  */
 const REGISTER_LIMIT = Number(process.env.REGISTER_LIMIT)
   || (process.env.NODE_ENV === 'production' ? 10 : 200);
@@ -62,7 +62,7 @@ function publicUser(u) {
   };
 }
 
-/** تصویر امنیتی تازه برای فرم ثبت‌نام */
+/** A fresh CAPTCHA image for the signup form */
 router.get('/captcha', (req, res) => {
   const { svg } = issueCaptcha(req.session);
   res.set('Content-Type', 'image/svg+xml');
@@ -71,17 +71,17 @@ router.get('/captcha', (req, res) => {
 });
 
 /**
- * ثبت‌نام.
+ * Registration.
  *
- * نام و نام خانوادگی اختیاری‌اند؛ فقط ایمیل و رمز الزامی است.
- * حساب با وضعیت pending ساخته می‌شود و تا تأیید مدیر قابل استفاده نیست.
+ * First and last name are optional; only email and password are required.
+ * The account is created pending and is unusable until an admin approves it.
  */
 router.post('/register', registerLimiter, async (req, res) => {
   if (getSetting('allow_registration') !== '1') {
     return res.status(403).json({ error: 'ثبت‌نام در حال حاضر بسته است.' });
   }
 
-  // کپچا پیش از هر کار دیگر — تا ربات حتی به اعتبارسنجی هم نرسد
+  // CAPTCHA before anything else — so a bot never even reaches validation
   const cap = verifyCaptcha(req.session, req.body?.captcha);
   if (!cap.ok) return res.status(400).json({ error: cap.error, field: 'captcha' });
 
@@ -100,7 +100,7 @@ router.post('/register', registerLimiter, async (req, res) => {
     return res.status(409).json({ error: 'این ایمیل قبلاً ثبت شده است.', field: 'email' });
   }
 
-  // نام نمایشی: از نام و نام خانوادگی، وگرنه بخش ابتدایی ایمیل
+  // Display name: from first and last name, else the local part of the email
   const display = [firstName, lastName].filter(Boolean).join(' ') || email.split('@')[0];
 
   const info = db.prepare(`
@@ -112,13 +112,13 @@ router.post('/register', registerLimiter, async (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
   audit(user.id, 'register', { email, hasName: !!(firstName || lastName) }, req.ip);
 
-  // پرچم اعتبار ایمیل — بدون ارسال چیزی، فقط برای کمک به مدیر هنگام تأیید.
-  // اگر شکست بخورد نباید ثبت‌نام را خراب کند.
+  // Email plausibility flag — sends nothing, only helps the admin at approval
+  // time. A failure here must not break registration.
   checkAndStore(user.id, email).catch(e =>
     console.error('[email-check] ناموفق:', e.message));
 
-  // نشست ساخته می‌شود تا کاربر بتواند وضعیتش را ببیند، ولی تا تأیید
-  // مدیر هیچ مسیر کاربردی‌ای برایش باز نیست.
+  // A session is created so the user can see their own status, but until an
+  // admin approves them no useful route is open.
   req.session.userId = user.id;
 
   res.json({
@@ -138,7 +138,7 @@ router.post('/login', loginLimiter, (req, res) => {
     audit(user?.id ?? null, 'login_failed', { email }, req.ip);
     return res.status(401).json({ error: 'ایمیل یا رمز عبور نادرست است.' });
   }
-  // کاربر منتظر تأیید اجازه ورود دارد تا وضعیتش را ببیند؛ بقیه وضعیت‌ها بسته‌اند.
+  // A pending user may sign in to see their status; other states are closed.
   if (user.status === 'rejected') {
     return res.status(403).json({
       error: user.review_note
@@ -204,10 +204,10 @@ router.post('/profile', requireAuth, (req, res) => {
 });
 
 /* ==========================================================================
-   تأیید ایمیل
+   Email verification
    ========================================================================== */
 
-/** وضعیت تأیید و اینکه آیا سامانه اصلاً ایمیل می‌فرستد */
+/** Verification status, and whether the system sends mail at all */
 router.get('/verification', requireAuth, (req, res) => {
   const wait = Math.max(0, 60 - secondsSinceLastToken(req.user.id, 'verify'));
   res.json({
@@ -220,7 +220,7 @@ router.get('/verification', requireAuth, (req, res) => {
   });
 });
 
-/** ارسال دوباره ایمیل تأیید — با فاصله اجباری تا ایمیل کسی بمباران نشود */
+/** Resend the verification email — throttled so nobody gets mail-bombed */
 router.post('/resend-verification', requireAuth, async (req, res) => {
   if (req.user.email_verified) {
     return res.status(400).json({ error: 'ایمیل شما از قبل تأیید شده است.' });
@@ -248,7 +248,7 @@ router.post('/resend-verification', requireAuth, async (req, res) => {
   }
 });
 
-/** مصرف توکن — صفحه /verify این را صدا می‌زند */
+/** Consume a token — the /verify page calls this */
 router.post('/verify', (req, res) => {
   const result = consumeToken(String(req.body?.token || ''), 'verify');
 
@@ -268,7 +268,7 @@ router.post('/verify', (req, res) => {
     audit(u.id, 'email_verified', { email: u.email }, req.ip);
   }
 
-  // تأیید، کاربر را وارد هم می‌کند تا مسیر بدون اصطکاک باشد
+  // Verifying also signs the user in, to keep the path frictionless
   req.session.regenerate(err => {
     if (err) return res.json({ ok: true, signedIn: false });
     req.session.userId = u.id;

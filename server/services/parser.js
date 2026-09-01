@@ -1,6 +1,6 @@
 /**
- * خروجی مدل را به بخش‌های نشانه‌گذاری‌شده تبدیل می‌کند.
- * نشانه‌ها خطوطی به شکل  @@key@@  هستند.
+ * Turns raw model output into marked sections.
+ * Markers are lines of the form  @@key@@  and nothing else.
  */
 const MARKER = /^\s*@@\s*([a-zA-Z:_-]+)\s*@@\s*$/;
 
@@ -23,7 +23,7 @@ export function parseSections(text) {
   return sections;
 }
 
-/** استخراج «حکم: …» یا «وضعیت: …» از ابتدای یک بخش */
+/** Pull a leading verdict line off the front of a section body */
 export function extractVerdict(body) {
   if (!body) return { verdict: null, body: '' };
   const lines = body.split(/\r?\n/);
@@ -33,7 +33,7 @@ export function extractVerdict(body) {
   return { verdict: null, body };
 }
 
-/** عنوان کوتاه از متن دوراهی برای فهرست تاریخچه */
+/** Short title derived from the dilemma text, for the history list */
 export function makeTitle(dilemma) {
   const clean = String(dilemma || '').replace(/\s+/g, ' ').trim();
   if (!clean) return 'دوراهی بدون عنوان';

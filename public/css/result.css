@@ -337,3 +337,80 @@
 
 /* نشان «منتظر بازنگری» در فهرست تاریخچه */
 .badge-reflect{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+
+/* ==========================================================================
+   Waiting screen
+   --------------------------------------------------------------------------
+   Shown instead of the result while an analysis runs. The sections used to
+   fill in live, which meant the user watched a half-written analysis and read
+   conclusions that later changed. Now the work is hidden until it is whole,
+   and the wait is given something worth reading.
+   ========================================================================== */
+.wait{
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding:2.5rem 1.25rem 2rem;
+  background:var(--bg-surface);border:1px solid var(--border);
+  border-radius:var(--r);box-shadow:var(--shadow-sm);
+}
+
+/* The orb is the only thing that moves continuously, so a stalled request
+   still looks alive even when the progress bar has nothing new to report. */
+.wait-orb{position:relative;width:82px;height:82px;margin-bottom:1.1rem}
+.wait-orb i{
+  position:absolute;inset:0;border-radius:50%;
+  border:2px solid transparent;border-top-color:var(--primary);
+  animation:wait-spin 1.5s linear infinite;
+}
+.wait-orb i:nth-child(2){inset:11px;border-top-color:var(--accent);animation-duration:2.1s;animation-direction:reverse}
+.wait-orb i:nth-child(3){inset:22px;border-top-color:var(--warn);animation-duration:2.9s}
+.wait-orb b{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-size:1.5rem;animation:wait-pulse 2.4s ease-in-out infinite;
+}
+@keyframes wait-spin{to{transform:rotate(360deg)}}
+@keyframes wait-pulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.12);opacity:1}}
+
+.wait-title{font-size:1.05rem;font-weight:900;margin-bottom:.3rem}
+.wait-sub{font-size:.85rem;color:var(--text-muted);margin-bottom:1.1rem}
+
+.wait-bar{width:100%;max-width:430px;height:7px;border-radius:99px;background:var(--bg-inset);overflow:hidden}
+.wait-bar i{
+  display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,var(--primary),var(--accent));
+  transition:width .6s cubic-bezier(.4,0,.2,1);
+}
+.wait-pct{font-size:.78rem;color:var(--text-muted);margin-top:.45rem;font-variant-numeric:tabular-nums}
+
+/* ---- Rotating quotation ---- */
+.wait-quote{
+  margin-top:1.6rem;max-width:520px;min-height:150px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:1.1rem 1.2rem;border-radius:var(--r-sm);
+  background:var(--bg-subtle);border:1px solid var(--border);
+}
+.wait-quote.swap{animation:q-swap .5s var(--ease-out,ease)}
+@keyframes q-swap{
+  0%{opacity:0;transform:translateY(9px)}
+  100%{opacity:1;transform:none}
+}
+.q-icon{font-size:1.35rem;margin-bottom:.5rem;display:block}
+.q-text{font-size:1rem;line-height:2;font-weight:600;color:var(--text);margin:0 0 .6rem}
+.q-who{font-size:.8rem;font-weight:800;color:var(--primary);font-style:normal;display:block}
+.q-work{display:block;font-size:.73rem;font-weight:500;color:var(--text-faint);margin-top:.15rem}
+
+.wait-actions{margin-top:1.4rem}
+
+/* ---- Success, shown briefly before the redirect ---- */
+.wait.done .wait-orb i{animation:none;border-top-color:var(--success);opacity:.35}
+.wait-check{
+  width:70px;height:70px;border-radius:50%;display:grid;place-items:center;
+  background:var(--success-soft);border:2px solid var(--success);
+  font-size:2rem;margin-bottom:1.1rem;animation:pop .45s var(--ease-out,ease)
+}
+@keyframes pop{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+
+@media (prefers-reduced-motion: reduce){
+  .wait-orb i,.wait-orb b{animation:none}
+  .wait-quote.swap,.wait-check{animation:none}
+  .wait-bar i{transition:none}
+}

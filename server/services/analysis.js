@@ -1,16 +1,17 @@
 import { db, audit } from '../db.js';
 import { streamChat } from './llm.js';
 import { parseSections, makeTitle } from './parser.js';
+import { checkCompleteness } from './completeness.js';
 import { activePrompt, getSetting } from './settings.js';
 import { modelsForTier, resolveModel, modelRef } from './providers.js';
 import { checkAllowance } from './tiers.js';
 import { USER_TEMPLATE } from './default-prompt.js';
 
 /**
- * منطق مشترک اجرای تحلیل.
+ * Shared analysis logic.
  *
- * هم مسیر مرورگر (SSE) و هم API عمومی از همین‌جا استفاده می‌کنند، تا
- * سقف‌ها، دسترسی مدل و ذخیره‌سازی در هر دو مسیر دقیقاً یکسان اعمال شود.
+ * Both the browser path (SSE) and the public API run through here, so that
+ * quotas, model access and persistence behave identically on either route.
  */
 
 export class AnalysisError extends Error {
@@ -24,7 +25,7 @@ export class AnalysisError extends Error {
 const MIN_LEN = 20;
 const MAX_LEN = 8000;
 
-/** ورودی را می‌سنجد و به شکل استاندارد درمی‌آورد */
+/** Validate the input and normalise it into a standard shape */
 export function normalizeInput(body = {}) {
   const dilemma = String(body.dilemma || '').trim();
 
@@ -52,7 +53,7 @@ export function normalizeInput(body = {}) {
   };
 }
 
-/** مدل مجاز برای این کاربر را انتخاب می‌کند */
+/** Pick a model this user is allowed to run */
 export function pickModel(user, requested) {
   const tier = user.tier;
 
@@ -85,14 +86,14 @@ function fill(template, vars) {
 }
 
 /**
- * تحلیل را اجرا می‌کند.
+ * Run an analysis.
  *
- * onDelta اختیاری است: اگر داده شود، هر تکه متن حین تولید فرستاده می‌شود
- * (مسیر استریمی). اگر ندهید، تابع تا پایان صبر می‌کند و نتیجه کامل را
- * برمی‌گرداند (مسیر همگام API).
+ * onDelta is optional: when given, each chunk of text is emitted as it is
+ * produced (streaming path). Without it the function waits and returns the
+ * complete result (synchronous API path).
  *
- * onStart هم اختیاری است و به‌محض ساخته‌شدن ردیف پایگاه داده صدا زده
- * می‌شود، تا مسیر استریمی بتواند شناسه را پیش از شروع تولید بفرستد.
+ * onStart is optional too, and fires the moment the database row exists, so
+ * the streaming path can send the id before generation begins.
  */
 export async function runAnalysis({ user, input, onDelta, onStart, signal, source = 'web', ip }) {
   const allowance = checkAllowance(user);
@@ -124,23 +125,42 @@ export async function runAnalysis({ user, input, onDelta, onStart, signal, sourc
   const started = Date.now();
 
   try {
-    const { text, usage } = await streamChat({
+    const { text, usage, finishReason } = await streamChat({
       provider, messages, model: chosen.model_id, signal, onDelta
     });
 
     const sections = parseSections(text);
     const durationMs = Date.now() - started;
 
-    db.prepare(`UPDATE analyses SET raw_output = ?, sections = ?, status = 'done',
-                tokens_in = ?, tokens_out = ?, duration_ms = ? WHERE id = ?`)
-      .run(text, JSON.stringify(sections),
+    // A resolved stream does not mean a complete answer. The response can be
+    // cut off by a token ceiling or the model can drift off the block format,
+    // and both cases arrive here looking like success. Record what is actually
+    // missing so the row never claims to be more finished than it is.
+    const completeness = checkCompleteness(sections);
+
+    // finish_reason tells us *why* an answer is short, which the section scan
+    // alone cannot: 'length' means the ceiling cut it off mid-sentence, and
+    // that is a settings problem the admin can fix, not a flaky model.
+    if (finishReason === 'length') {
+      completeness.truncated = true;
+      completeness.severity = completeness.complete ? 'partial' : completeness.severity;
+      completeness.complete = false;
+    }
+
+    const status = completeness.complete ? 'done' : 'partial';
+
+    db.prepare(`UPDATE analyses SET raw_output = ?, sections = ?, status = ?,
+                completeness = ?, tokens_in = ?, tokens_out = ?, duration_ms = ? WHERE id = ?`)
+      .run(text, JSON.stringify(sections), status, JSON.stringify(completeness),
            usage?.prompt_tokens ?? 0, usage?.completion_tokens ?? 0, durationMs, analysisId);
 
-    audit(user.id, 'analyze', { analysisId, model: modelStr, durationMs, source }, ip);
+    audit(user.id, 'analyze',
+          { analysisId, model: modelStr, durationMs, source, status,
+            missing: completeness.missing.length + completeness.thin.length }, ip);
 
     return {
       analysisId, model: modelStr, modelLabel: chosen.label, provider: chosen.provider_label,
-      text, sections, usage, durationMs
+      text, sections, usage, durationMs, status, completeness
     };
   } catch (err) {
     const aborted = signal?.aborted;

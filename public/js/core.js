@@ -1,8 +1,8 @@
 /* ==========================================================================
-   Ethic Lens — هسته مشترک کلاینت: تم، API، توست، مودال، مارک‌داون، پوسته صفحه
+   Ethic Lens — shared client core: theme, API, toasts, modal, markdown, page shell
    ========================================================================== */
 
-/* ---------------- تم ---------------- */
+/* ---------------- Theme ---------------- */
 (function initTheme() {
   const saved = localStorage.getItem('theme');
   const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -17,7 +17,7 @@ export function toggleTheme() {
   return next;
 }
 
-/* ---------------- ابزار ---------------- */
+/* ---------------- Utilities ---------------- */
 export const $  = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -60,7 +60,7 @@ export function duration(ms) {
   return ms < 1000 ? `${faNum(ms)} م‌ث` : `${faNum((ms / 1000).toFixed(1))} ثانیه`;
 }
 
-/* ---------------- توست ---------------- */
+/* ---------------- Toasts ---------------- */
 export function toast(message, kind = '') {
   let host = $('#toasts');
   if (!host) {
@@ -117,7 +117,7 @@ export const api = {
   raw:  request
 };
 
-/** بارگذاری نشست جاری؛ csrf را در state می‌گذارد */
+/** Load the current session; puts csrf into state */
 export async function loadSession() {
   const data = await request('/api/auth/me');
   state.user = data.user;
@@ -127,7 +127,7 @@ export async function loadSession() {
   return state;
 }
 
-/** اگر کاربر وارد نشده، به صفحه ورود می‌فرستد */
+/** Redirect to the login page when the user is not signed in */
 export function requireUser(adminOnly = false) {
   if (!state.user) {
     location.replace('/login?next=' + encodeURIComponent(location.pathname + location.search));
@@ -140,7 +140,7 @@ export function requireUser(adminOnly = false) {
   return true;
 }
 
-/* ---------------- مارک‌داون سبک ---------------- */
+/* ---------------- Lightweight markdown ---------------- */
 export function md(src) {
   if (!src) return '';
   const lines = String(src).replace(/\r/g, '').split('\n');
@@ -192,7 +192,7 @@ export function md(src) {
   return out.join('');
 }
 
-/* ---------------- مودال ---------------- */
+/* ---------------- Modal ---------------- */
 export function modal({ title, body, actions = [], onOpen }) {
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
@@ -241,7 +241,7 @@ export function confirmDialog(title, message, confirmLabel = 'تأیید') {
   });
 }
 
-/* ---------------- پوسته صفحه (نوار بالا) ---------------- */
+/* ---------------- Page shell (top bar) ---------------- */
 const NAV = [
   { href: '/app',       label: 'تحلیل تازه' },
   { href: '/dashboard', label: 'داشبورد' },
@@ -252,9 +252,9 @@ const NAV = [
 ];
 
 /**
- * ناوبری بازدیدکننده مهمان.
- * صفحه‌های عمومی باید برای خزنده موتور جست‌وجو پیوند داخلی داشته باشند،
- * پس حتی وقتی کسی وارد نشده هم مسیرهای عمومی نمایش داده می‌شوند.
+ * Navigation for a guest visitor.
+ * Public pages need internal links for search-engine crawlers, so the
+ * public routes are shown even when nobody is signed in.
  */
 const PUBLIC_NAV = [
   { href: '/explore', label: 'تحلیل‌های عمومی' },
@@ -263,15 +263,70 @@ const PUBLIC_NAV = [
 ];
 
 /**
- * نوار بالای صفحه — یکی برای همه صفحه‌ها.
+ * The page top bar — one for every page.
  *
- * محتوایش بر اساس وضعیت کاربر تغییر می‌کند:
- *   مهمان        → مسیرهای عمومی + دکمه ورود و ثبت‌نام
- *   منتظر تأیید  → مسیرهای عمومی + نشان «در انتظار تأیید». مسیرهایی که
- *                  هنوز برایش باز نیست نشان داده نمی‌شوند تا به بن‌بست نخورد.
- *   تأییدشده     → همه مسیرها + منوی کاربر
- *   مدیر         → به‌علاوه پیوند پنل مدیریت
+ * Its contents change with the user's state:
+ *   guest     → public routes + sign-in and sign-up buttons
+ *   pending   → public routes + an "awaiting approval" badge. Routes not yet
+ *               open to them are hidden, so they cannot walk into a dead end.
+ *   approved  → every route + the user menu
+ *   admin     → plus a link to the admin panel
  */
+/**
+ * The narrow-screen navigation drawer.
+ *
+ * Below the CSS breakpoint the nav links live in a panel behind the menu
+ * button instead of on the bar. The open state is held in one place — the
+ * button's aria-expanded — so the accessible state and the visual state
+ * cannot disagree.
+ */
+function wireNavDrawer(host) {
+  const btn = $('#navBtn', host);
+  const panel = $('#navPanel', host);
+  if (!btn || !panel) return;
+
+  const drawerMode = matchMedia('(max-width:899px)');
+  const isOpen = () => btn.getAttribute('aria-expanded') === 'true';
+
+  // Only the open/closed state is tracked here. Whether the closed panel is
+  // reachable by keyboard is settled in CSS by `visibility`, tied to the same
+  // media query that creates the drawer — so the two can never disagree.
+  const setOpen = (open) => {
+    btn.setAttribute('aria-expanded', String(open));
+    panel.classList.toggle('open', open);
+  };
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    setOpen(!isOpen());
+  });
+
+  // Following a link navigates anyway, but closing first avoids the drawer
+  // flashing on pages that render without a full reload.
+  panel.addEventListener('click', e => {
+    if (e.target.closest('a')) setOpen(false);
+  });
+
+  document.addEventListener('click', e => {
+    if (isOpen() && !panel.contains(e.target) && !btn.contains(e.target)) setOpen(false);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && isOpen()) {
+      setOpen(false);
+      btn.focus();
+    }
+  });
+
+  // Crossing between layouts must reset the state: otherwise the panel keeps
+  // its `open` class and reappears the next time the window narrows, and the
+  // links would stay inert after switching to the wide bar.
+  // Missing this event is now cosmetic rather than a correctness problem:
+  // the widened bar shows its links either way, and the stale `open` class
+  // only matters if the window narrows again.
+  drawerMode.addEventListener?.('change', () => setOpen(false));
+}
+
 export function renderTopbar(activePath) {
   const host = $('#topbar');
   if (!host) return;
@@ -302,13 +357,17 @@ export function renderTopbar(activePath) {
       <a class="brand" href="${approved ? '/app' : '/'}">
         <span class="brand-mark">EL</span><span class="brand-text">دیدگاه اخلاق</span>
       </a>
-      <nav class="nav-links">${links}${adminLink}</nav>
+      <nav class="nav-links" id="navPanel">${links}${adminLink}</nav>
       <div class="grow"></div>
       <button class="btn btn-icon btn-ghost" id="themeBtn" title="حالت شب / روز" aria-label="تغییر تم">◐</button>
       ${right}
+      <button class="burger" id="navBtn" aria-expanded="false" aria-controls="navPanel" aria-label="فهرست مسیرها">
+        <span></span><span></span><span></span>
+      </button>
     </div>`;
 
   $('#themeBtn', host).onclick = () => toggleTheme();
+  wireNavDrawer(host);
 
   const umBtn = $('#umBtn', host);
   if (umBtn) {
@@ -340,10 +399,10 @@ export function renderTopbar(activePath) {
   }
 }
 
-/* ---------------- نوار وضعیت حساب ---------------- */
+/* ---------------- Account status bar ---------------- */
 /**
- * اگر حساب هنوز تأیید نشده، نواری بالای صفحه نشان می‌دهد.
- * روی هر صفحه‌ای که boot() صدا زده شود خودکار ظاهر می‌شود.
+ * Shows a bar at the top of the page while an account is unapproved.
+ * Appears automatically on any page that calls boot().
  */
 export function mountStatusBanner() {
   if (!state.user || state.user.status === 'active') return;
@@ -361,7 +420,7 @@ export function mountStatusBanner() {
   document.body.insertBefore(bar, document.body.firstChild);
 }
 
-/* ---------------- دکمه بازگشت به بالا ---------------- */
+/* ---------------- Back-to-top button ---------------- */
 export function mountBackToTop() {
   const b = document.createElement('button');
   b.className = 'fab';
@@ -373,7 +432,7 @@ export function mountBackToTop() {
   addEventListener('scroll', () => b.classList.toggle('show', scrollY > 500), { passive: true });
 }
 
-/* ---------------- راه‌انداز صفحه ---------------- */
+/* ---------------- Page bootstrap ---------------- */
 export async function boot({ auth = true, admin = false } = {}) {
   try {
     await loadSession();

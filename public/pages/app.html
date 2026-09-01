@@ -32,6 +32,7 @@
                    background:transparent;color:var(--text-muted);cursor:pointer;font-family:inherit}
   .examples button:hover{border-color:var(--primary);color:var(--primary);border-style:solid}
 </style>
+<script src="/js/analytics.js"></script>
 </head>
 <body>
 <header class="topbar" id="topbar"></header>
@@ -43,7 +44,7 @@
   </div>
 
   <div class="layout">
-    <!-- ستون فرم -->
+    <!-- Form column -->
     <div class="form-col">
       <div class="card">
         <div class="card-body">
@@ -124,7 +125,7 @@
       </div>
     </div>
 
-    <!-- ستون نتیجه -->
+    <!-- Result column -->
     <div id="resultCol">
       <div class="card">
         <div class="card-body">
@@ -142,9 +143,10 @@
 
 <script type="module">
 import { $, api, boot, toast, esc, faNum, state } from '/js/core.js';
-import { buildSkeleton, parseSections, applySections, progressOf, gateSummary } from '/js/result.js';
-import { exportBar, wireExport } from '/js/export.js';
-import { initMotion, revealOnScroll, scrollToEl, reduced } from '/js/motion.js';
+import { parseSections, progressOf } from '/js/result.js';
+import { incompleteSummary } from '/js/publish.js';
+import { quoteDeck, quoteMarkup } from '/js/quotes.js';
+import { initMotion } from '/js/motion.js';
 
 if (!await boot()) throw new Error('unauthenticated');
 
@@ -154,7 +156,7 @@ const EXAMPLES = [
   'شرکتی به من پیشنهاد کار داده که حقوقش دو برابر است، ولی محصولش داده کاربران را بدون اطلاع کامل می‌فروشد.'
 ];
 
-/* ---------- مقداردهی اولیه ---------- */
+/* ---------- Initialisation ---------- */
 const meta = await api.get('/api/analyze/meta');
 const modelSel = $('#model');
 
@@ -164,7 +166,7 @@ if (!meta.models.length) {
   $('#submitBtn').disabled = true;
   $('#quotaLine').innerHTML = '<span style="color:var(--danger)">هیچ مدلی فعال نیست — با مدیر سامانه تماس بگیرید.</span>';
 } else if (meta.providers.length > 1) {
-  // چند ارائه‌دهنده → گروه‌بندی در فهرست
+  // Several providers → group them in the list
   modelSel.innerHTML = meta.providers.map(p => `
     <optgroup label="${esc(p.label)}">
       ${p.models.map(m => `<option value="${esc(m.ref)}" ${m.ref === meta.defaultModel ? 'selected' : ''}
@@ -230,7 +232,12 @@ async function refreshQuota() {
 }
 refreshQuota();
 
-/* ---------- استریم تحلیل ---------- */
+/* ---------- Analysis run ----------
+   The result is no longer assembled in front of the user. Watching sections
+   appear meant reading half-written conclusions that the next block often
+   revised, and a verdict glimpsed mid-stream is worse than no verdict. The
+   work now happens behind a waiting screen and the finished analysis is
+   opened on its own page. */
 let controller = null;
 
 $('#analyzeForm').onsubmit = async e => {
@@ -254,66 +261,58 @@ $('#analyzeForm').onsubmit = async e => {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> در حال تحلیل…';
 
-  const col = $('#resultCol');
-  col.innerHTML = `
-    <div class="streambar" id="streambar">
-      <div class="row-between">
-        <span class="streambar-label">
-          <span class="spinner"></span>
-          <span id="stStatus">در حال اتصال به مدل…</span>
-          <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-        </span>
-        <button class="btn btn-sm btn-ghost" id="cancelBtn">لغو</button>
+  $('#resultCol').innerHTML = `
+    <div class="wait" id="waitBox">
+      <div class="wait-orb"><i></i><i></i><i></i><b>🧭</b></div>
+      <div class="wait-title" id="waitTitle">در حال تحلیل دوراهی شما…</div>
+      <div class="wait-sub" id="waitSub">اتصال به مدل…</div>
+      <div class="wait-bar"><i id="waitFill"></i></div>
+      <div class="wait-pct" id="waitPct">۰٪</div>
+      <div class="wait-quote" id="waitQuote"></div>
+      <div class="wait-actions">
+        <button class="btn btn-sm btn-ghost" id="cancelBtn">لغو تحلیل</button>
       </div>
-      <div class="progress"><div class="progress-fill" id="stFill"></div></div>
-      <div class="stream-steps" id="streamSteps" aria-hidden="true"></div>
-      <div class="raw-peek" id="rawPeek"></div>
-    </div>
-    <div id="resultHost"></div>`;
-  buildSkeleton($('#resultHost'));
-  revealOnScroll('.res-block');
+    </div>`;
 
-  $('#cancelBtn').onclick = () => { controller?.abort(); };
+  const box   = $('#waitBox');
+  const fill  = $('#waitFill');
+  const pct   = $('#waitPct');
+  const sub   = $('#waitSub');
+  const qBox  = $('#waitQuote');
 
+  $('#cancelBtn').onclick = () => controller?.abort();
+
+  /* ---- Rotating quotations ---- */
+  const deck = quoteDeck();
+  let qi = 0;
+  const showQuote = () => {
+    qBox.innerHTML = quoteMarkup(deck[qi % deck.length]);
+    qBox.classList.remove('swap');
+    void qBox.offsetWidth;          // restart the animation
+    qBox.classList.add('swap');
+    qi++;
+  };
+  showQuote();
+  const quoteTimer = setInterval(showQuote, 9000);
+
+  /* ---- Progress ----
+     Driven by how many of the 26 blocks have actually arrived, so the bar
+     reports real work rather than a timer. It is deliberately capped below
+     100 until the server confirms completion. */
   controller = new AbortController();
-  let acc = '';
-  let analysisId = null;
-  const peek = $('#rawPeek');
-  const fill = $('#stFill');
-  const status = $('#stStatus');
-  let rafPending = false;
-  let lastDone = 0;
+  let acc = '', analysisId = null, rafPending = false;
 
-  const stepsHost = $('#streamSteps');
-  stepsHost.innerHTML = gateSummary({}).map(g =>
-    `<span class="stream-step" data-key="${g.key}"><b>${g.n}</b></span>`).join('');
-
-  const rerender = () => {
+  const paint = () => {
     if (rafPending) return;
     rafPending = true;
     requestAnimationFrame(() => {
       rafPending = false;
-      const sections = parseSections(acc);
-      applySections(sections, { streaming: true });
-      const p = progressOf(sections);
+      const p = Math.min(96, progressOf(parseSections(acc)));
       fill.style.width = p + '%';
-      status.textContent = p > 0 ? `در حال نوشتن تحلیل… ${faNum(p)}٪` : 'مدل در حال فکر کردن است…';
-
-      // نشانگر مراحل و اسکرول ملایم به تازه‌ترین مرحله‌ای که نتیجه گرفت
-      const gs = gateSummary(sections);
-      let decided = 0;
-      for (const g of gs) {
-        const chip = stepsHost.querySelector(`[data-key="${g.key}"]`);
-        if (chip) chip.dataset.state = g.state || '';
-        if (g.state) decided++;
-      }
-      if (decided > lastDone) {
-        lastDone = decided;
-        const el = document.getElementById(`stage-${gs[decided - 1].key}`);
-        if (el && !reduced) scrollToEl(el, 130);
-      }
-      peek.textContent = acc.slice(-600);
-      peek.scrollTop = peek.scrollHeight;
+      pct.textContent = faNum(p) + '٪';
+      sub.textContent = p > 0
+        ? `${faNum(p)}٪ از تحلیل نوشته شده است`
+        : 'مدل در حال فکر کردن است…';
     });
   };
 
@@ -322,60 +321,57 @@ $('#analyzeForm').onsubmit = async e => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-csrf-token': state.csrf },
       body: JSON.stringify(payload),
-      signal: controller.signal,
-      credentials: 'same-origin'
+      signal: controller.signal
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `خطای ${res.status}`);
+    if (!res.ok || !res.body) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error(j.error || 'تحلیل شروع نشد.');
     }
 
     const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = '';
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '', event = null;
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      buf += decoder.decode(value, { stream: true });
+      buffer += decoder.decode(value, { stream: true });
 
-      let sep;
-      while ((sep = buf.indexOf('\n\n')) >= 0) {
-        const chunk = buf.slice(0, sep);
-        buf = buf.slice(sep + 2);
-        if (chunk.startsWith(':')) continue;              // heartbeat
+      let idx;
+      while ((idx = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 1);
+        const t = line.trim();
+        if (!t) { event = null; continue; }
+        if (t.startsWith(':')) continue;                 // heartbeat
+        if (t.startsWith('event:')) { event = t.slice(6).trim(); continue; }
+        if (!t.startsWith('data:')) continue;
 
-        let event = 'message', data = '';
-        for (const line of chunk.split('\n')) {
-          if (line.startsWith('event:')) event = line.slice(6).trim();
-          else if (line.startsWith('data:')) data += line.slice(5).trim();
-        }
-        if (!data) continue;
-        let payloadObj;
-        try { payloadObj = JSON.parse(data); } catch { continue; }
+        const data = t.slice(5).trim();
+        let obj; try { obj = JSON.parse(data); } catch { continue; }
 
         if (event === 'start') {
-          analysisId = payloadObj.analysisId;
-          status.textContent = 'مدل شروع کرد…';
+          analysisId = obj.analysisId;
+          sub.textContent = 'مدل شروع کرد…';
         } else if (event === 'delta') {
-          acc += payloadObj.t;
-          rerender();
+          acc += obj.t;
+          paint();
         } else if (event === 'done') {
-          finish(payloadObj);
+          finish(obj);
         } else if (event === 'error') {
-          throw new Error(payloadObj.message);
+          throw new Error(obj.message);
         }
       }
     }
     if (!analysisId) throw new Error('پاسخی از سرور دریافت نشد.');
   } catch (err) {
+    clearInterval(quoteTimer);
     if (err.name === 'AbortError') {
-      $('#streambar')?.remove();
+      $('#resultCol').innerHTML = '';
       toast('تحلیل لغو شد.', '');
     } else {
-      const bar = $('#streambar');
-      if (bar) bar.outerHTML = `<div class="alert alert-danger">${esc(err.message)}</div>`;
+      box.innerHTML = `<div class="alert alert-danger" style="margin:0">${esc(err.message)}</div>`;
       toast(err.message, 'err');
     }
   } finally {
@@ -385,47 +381,45 @@ $('#analyzeForm').onsubmit = async e => {
     refreshQuota();
   }
 
+  /**
+   * Confirm success, then hand the user to the analysis page.
+   *
+   * The pause is short but not zero: a redirect that happens the instant the
+   * last token lands reads as though the click did something unexplained.
+   */
   function finish(info) {
-    const sections = info.sections && Object.keys(info.sections).length ? info.sections : parseSections(acc);
-    applySections(sections, { streaming: false });
-    const secs = info.durationMs ? (info.durationMs / 1000).toFixed(1) : null;
-    const title = payload.dilemma.replace(/\s+/g, ' ').slice(0, 70);
+    clearInterval(quoteTimer);
 
-    const gates = gateSummary(sections)
-      .map(g => `<span class="gate-pill" data-state="${g.state}"><b>${g.n}</b> ${esc(g.title)}: ${esc(g.label)}</span>`)
-      .join('');
+    const c = info.completeness;
+    const incomplete = c && !c.complete;
+    const secs = info.durationMs ? faNum((info.durationMs / 1000).toFixed(0)) : null;
 
-    $('#streambar').outerHTML = `
-      <div class="card no-print" style="margin-bottom:1.1rem" id="doneBar">
-        <div class="card-body" style="padding:1rem 1.2rem">
-          <div class="row-between" style="margin-bottom:.6rem">
-            <span style="font-size:.88rem;font-weight:800;color:var(--success)">
-              ✓ تحلیل کامل شد${secs ? ` — ${faNum(secs)} ثانیه` : ''}
-            </span>
-            <div id="actionBar">
-              ${exportBar({
-                analysisId: info.analysisId,
-                extra: `<a class="btn btn-sm" href="/analysis?id=${info.analysisId}">صفحه اختصاصی</a>`
-              })}
-            </div>
-          </div>
-          <div class="gate-strip" style="margin:0">${gates}</div>
-        </div>
-      </div>`;
+    fill.style.width = '100%';
+    pct.textContent = '۱۰۰٪';
+    box.classList.add('done');
+    box.querySelector('.wait-orb').outerHTML =
+      `<div class="wait-check">${incomplete ? '⚠' : '✓'}</div>`;
 
-    const host = $('#resultHost');
-    if (host && !host.querySelector('.disclaimer')) {
-      host.insertAdjacentHTML('beforeend',
-        '<div class="disclaimer">این تحلیل توسط یک مدل زبانی تولید شده و می‌تواند خطا داشته باشد. تصمیم نهایی و مسئولیت آن با شماست. دیدگاه اخلاق جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</div>');
-    }
+    $('#waitTitle').textContent = incomplete
+      ? 'تحلیل انجام شد، ولی ناقص ماند'
+      : 'تحلیل با موفقیت انجام شد';
 
-    wireExport($('#actionBar'), {
-      analysisId: info.analysisId,
-      sections,
-      meta: { analysisId: info.analysisId, title, createdAt: new Date().toISOString(), model: modelSel.value }
-    });
+    sub.innerHTML = incomplete
+      ? `${esc(incompleteSummary(c))} — در صفحه تحلیل جزئیاتش را می‌بینید.`
+      : `${secs ? `در ${secs} ثانیه · ` : ''}در حال بازکردن صفحه تحلیل…`;
 
-    toast('تحلیل ذخیره شد.', 'ok');
+    qBox.innerHTML = `
+      <span class="q-icon" aria-hidden="true">📄</span>
+      <blockquote class="q-text">تحلیل شما ذخیره شد و همیشه در «تاریخچه» در دسترس است.</blockquote>`;
+
+    $('#cancelBtn')?.remove();
+    toast('تحلیل با موفقیت انجام شد.', 'ok');
+
+    // A cancel between `done` and the redirect would otherwise still navigate.
+    setTimeout(() => {
+      if (!document.getElementById('waitBox')) return;
+      location.href = `/analysis?id=${info.analysisId}`;
+    }, incomplete ? 2600 : 1400);
   }
 };
 

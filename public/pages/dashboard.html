@@ -20,7 +20,7 @@
   .hero-card p{font-size:.9rem;opacity:.92;margin-bottom:1.1rem;max-width:56ch;line-height:1.8}
   .hero-card .btn{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.3);color:#fff;backdrop-filter:blur(8px)}
   .hero-card .btn:hover{background:rgba(255,255,255,.26);border-color:rgba(255,255,255,.45);color:#fff}
-  /* یادآوری بازنگری */
+  /* Reflection reminder */
   .remind{
     background:var(--accent-soft);border:1px solid var(--accent);
     border-radius:var(--r);padding:1.15rem 1.3rem;margin-bottom:1.25rem;
@@ -38,7 +38,7 @@
   .remind-item:hover{border-color:var(--accent);text-decoration:none;transform:translateX(-3px)}
   .remind-item .age{margin-inline-start:auto;font-size:.75rem;color:var(--text-faint);white-space:nowrap}
 
-  /* نوار مصرف */
+  /* Usage bar */
   .usage{margin-top:.5rem}
   .usage-bar{height:6px;background:var(--bg-inset);border-radius:99px;overflow:hidden;margin-top:.35rem}
   .usage-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--primary),var(--accent));
@@ -58,6 +58,7 @@
              display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .rec-meta{font-size:.75rem;color:var(--text-muted);display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
 </style>
+<script src="/js/analytics.js"></script>
 </head>
 <body>
 <header class="topbar" id="topbar"></header>
@@ -102,7 +103,7 @@ const [stats, recent, pending] = await Promise.all([
   api.get('/api/history?reflected=0&perPage=5')
 ]);
 
-/* ---------- یادآوری بازنگری ---------- */
+/* ---------- Reflection reminder ---------- */
 if (pending.total > 0) {
   const shown = pending.items.slice(0, 3);
   $('#remindHost').innerHTML = `
@@ -132,7 +133,7 @@ if (pending.total > 0) {
     </div>`;
 }
 
-/* ---------- کارت‌های آمار ---------- */
+/* ---------- Stat cards ---------- */
 const avgSec = stats.avgMs ? (stats.avgMs / 1000).toFixed(1) : 0;
 
 const al = state.allowance || {
@@ -175,7 +176,7 @@ $('#stats').innerHTML = `
     </div>
   </div>`;
 
-/* ---------- نمودار فعالیت ---------- */
+/* ---------- Activity chart ---------- */
 const byDay = Object.fromEntries((stats.daily || []).map(d => [d.d, d.c]));
 const days = [];
 for (let i = 29; i >= 0; i--) {
@@ -193,7 +194,7 @@ $('#activityNote').textContent = total30
   ? `${faNum(total30)} تحلیل در ۳۰ روز گذشته — پرکارترین روز: ${faNum(max)} تحلیل`
   : 'در ۳۰ روز گذشته تحلیلی ثبت نشده است.';
 
-/* ---------- آخرین تحلیل‌ها ---------- */
+/* ---------- Recent analyses ---------- */
 const host = $('#recentHost');
 if (!recent.items.length) {
   host.style.gridTemplateColumns = '1fr';
@@ -218,7 +219,7 @@ if (!recent.items.length) {
     </a>`).join('');
 }
 
-/* ---------- حرکت ---------- */
+/* ---------- Motion ---------- */
 $('#stats').classList.add('stagger');
 $('#recentHost').classList.add('stagger');
 countUpAll();

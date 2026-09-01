@@ -1,10 +1,10 @@
 /**
- * آزمایش تک‌تک مدل‌ها با یک درخواست کوچک، برای تشخیص اینکه کدام‌ها
- * واقعاً روی این حساب برای chat/completions کار می‌کنند.
+ * Probe each model with a small request, to find which ones actually work
+ * on this account for chat/completions.
  *
- *   node scripts/probe-models.mjs                 مدل‌های ثبت‌شده در پایگاه داده
- *   node scripts/probe-models.mjs --remote        همه مدل‌های چت روی حساب
- *   node scripts/probe-models.mjs --fix           مدل‌های خراب را در پایگاه داده غیرفعال می‌کند
+ *   node scripts/probe-models.mjs                 models registered in the database
+ *   node scripts/probe-models.mjs --remote        every chat model on the account
+ *   node scripts/probe-models.mjs --fix           disables broken models in the database
  */
 import 'dotenv/config';
 import { db } from '../server/db.js';
