@@ -4,7 +4,7 @@ import { DEFAULT_PROMPT, DEFAULT_PROMPT_KEY } from './default-prompt.js';
 const DEFAULTS = {
   site_title: 'دیدگاه اخلاق — Ethic Lens',
   site_tagline: 'دوراهی‌ات را از هشت منظر فلسفه اخلاق ببین',
-  site_url: '',                      // برای canonical و نقشه سایت — مثلاً https:// for canonical links and the sitemap — e.g. https://ethiclens.ir
+  site_url: '',                      // for canonical links and the sitemap — e.g. https://ethiclens.ir
   default_model: '',                 // in the form "providerKey:modelId"
   temperature: '0.6',
   top_p: '0.95',

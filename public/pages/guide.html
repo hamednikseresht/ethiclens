@@ -15,7 +15,7 @@
   .g-hero h1{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:900;line-height:1.5;margin-bottom:.7rem}
   .g-hero .lead{font-size:1rem;color:var(--text-muted);line-height:2;max-width:70ch}
 
-  /* فهرست */
+  /* Table of contents */
   .toc{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);
        padding:1.1rem 1.3rem;margin-bottom:2rem}
   .toc h2{font-size:.85rem;color:var(--text-muted);font-weight:700;margin-bottom:.7rem}
@@ -26,13 +26,13 @@
   .toc a:hover{background:var(--bg-subtle);text-decoration:none}
   .toc a i{font-style:normal;color:var(--text-faint);font-size:.78rem;min-width:1.4rem}
 
-  /* بخش */
+  /* Section */
   .sec{margin:2.5rem 0}
   .sec-title{font-size:1.35rem;font-weight:900;margin-bottom:.4rem;
              display:flex;align-items:center;gap:.6rem;scroll-margin-top:5rem}
   .sec-lead{font-size:.92rem;color:var(--text-muted);line-height:2;margin-bottom:1.4rem;max-width:72ch}
 
-  /* فاز */
+  /* Phase */
   .phases{display:grid;grid-template-columns:1fr;gap:.85rem;counter-reset:ph}
   @media (min-width:900px){.phases{grid-template-columns:1fr 1fr}}
   .phase-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-sm);
@@ -45,7 +45,7 @@
   .phase-card li::before{content:"";position:absolute;inset-inline-start:.2rem;top:.72em;
                          width:5px;height:5px;border-radius:50%;background:var(--accent)}
 
-  /* لنز */
+  /* Lens */
   .lens{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);
         margin-bottom:1.1rem;overflow:hidden;border-top:3px solid var(--lc)}
   .lens-head{padding:1.2rem 1.4rem .9rem;display:flex;gap:.9rem;align-items:flex-start;flex-wrap:wrap}
@@ -75,7 +75,7 @@
   .srcs b{color:var(--text);font-size:.78rem;display:block;margin-bottom:.3rem}
   .srcs cite{font-style:italic}
 
-  /* دروازه */
+  /* Gate */
   .gates{display:flex;flex-direction:column;gap:.5rem}
   .gate{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-sm);
         padding:1rem 1.15rem;display:grid;grid-template-columns:auto 1fr;gap:.9rem;align-items:start;
@@ -89,19 +89,19 @@
   .gate p{font-size:.87rem;line-height:1.95;color:var(--text-muted)}
   .gate-link{height:16px;width:2px;background:var(--border-strong);margin-inline-start:calc(1.15rem + 16px)}
 
-  /* جدول تطبیقی */
+  /* Comparison table */
   .cmp{font-size:.83rem}
   .cmp th{font-size:.76rem}
   .cmp td:first-child{font-weight:800;white-space:nowrap}
 
-  /* آزمایش فکری */
+  /* Thought experiment */
   .exp{background:var(--accent-soft);border:1px dashed var(--accent);border-radius:var(--r-sm);
        padding:1rem 1.15rem;margin-bottom:.85rem}
   .exp h3{font-size:.95rem;font-weight:800;margin-bottom:.4rem;color:var(--text)}
   .exp p{font-size:.87rem;line-height:1.95;margin-bottom:.5rem}
   .exp .ref{font-size:.76rem;color:var(--text-muted);direction:ltr;text-align:right}
 
-  /* کتاب‌شناسی */
+  /* Bibliography */
   .bib{font-size:.86rem;line-height:2.1}
   .bib h3{font-size:.95rem;font-weight:800;margin:1.3rem 0 .5rem}
   .bib ol{list-style:none;counter-reset:b}

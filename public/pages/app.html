@@ -43,7 +43,7 @@
   </div>
 
   <div class="layout">
-    <!-- ستون فرم -->
+    <!-- Form column -->
     <div class="form-col">
       <div class="card">
         <div class="card-body">
@@ -124,7 +124,7 @@
       </div>
     </div>
 
-    <!-- ستون نتیجه -->
+    <!-- Result column -->
     <div id="resultCol">
       <div class="card">
         <div class="card-body">
@@ -155,7 +155,7 @@ const EXAMPLES = [
   'شرکتی به من پیشنهاد کار داده که حقوقش دو برابر است، ولی محصولش داده کاربران را بدون اطلاع کامل می‌فروشد.'
 ];
 
-/* ---------- مقداردهی اولیه ---------- */
+/* ---------- Initialisation ---------- */
 const meta = await api.get('/api/analyze/meta');
 const modelSel = $('#model');
 
@@ -165,7 +165,7 @@ if (!meta.models.length) {
   $('#submitBtn').disabled = true;
   $('#quotaLine').innerHTML = '<span style="color:var(--danger)">هیچ مدلی فعال نیست — با مدیر سامانه تماس بگیرید.</span>';
 } else if (meta.providers.length > 1) {
-  // چند ارائه‌دهنده → گروه‌بندی در فهرست
+  // Several providers → group them in the list
   modelSel.innerHTML = meta.providers.map(p => `
     <optgroup label="${esc(p.label)}">
       ${p.models.map(m => `<option value="${esc(m.ref)}" ${m.ref === meta.defaultModel ? 'selected' : ''}
@@ -231,7 +231,7 @@ async function refreshQuota() {
 }
 refreshQuota();
 
-/* ---------- استریم تحلیل ---------- */
+/* ---------- Analysis stream ---------- */
 let controller = null;
 
 $('#analyzeForm').onsubmit = async e => {
@@ -300,7 +300,7 @@ $('#analyzeForm').onsubmit = async e => {
       fill.style.width = p + '%';
       status.textContent = p > 0 ? `در حال نوشتن تحلیل… ${faNum(p)}٪` : 'مدل در حال فکر کردن است…';
 
-      // نشانگر مراحل و اسکرول ملایم به تازه‌ترین مرحله‌ای که نتیجه گرفت
+      // Stage indicator, and a gentle scroll to the newest stage with a verdict
       const gs = gateSummary(sections);
       let decided = 0;
       for (const g of gs) {

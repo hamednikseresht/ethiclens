@@ -93,7 +93,7 @@ if (a.status === 'error') {
   buildSkeleton($('#resultHost'));
   applySections(sections, { streaming: false });
 
-  // فاز پنجم: ثبت تصمیم واقعی و بازنگری بعدی
+      // Phase five: record the actual decision and the later reflection
   $('#resultHost').insertAdjacentHTML('beforeend', `
     <section class="res-block reflect" id="reflectBlock">
       <h3 class="res-h"><span class="res-ic">📔</span> دفترچه بازنگری</h3>
@@ -142,7 +142,7 @@ renderPubState();
 
 $('#pubBtn')?.addEventListener('click', () => openPublishDialog(a, renderPubState));
 
-/* ---------------- دفترچه بازنگری ---------------- */
+/* ---------------- Reflection notebook ---------------- */
 function renderReflection(rec) {
   const host = $('#reflectBody');
   if (!host) return;

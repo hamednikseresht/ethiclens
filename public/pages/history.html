@@ -127,7 +127,7 @@ function renderPager(cur, pages) {
   return parts.join('');
 }
 
-/* ---------- رویدادها ---------- */
+/* ---------- Events ---------- */
 $('#pager').onclick = e => {
   const b = e.target.closest('button[data-page]');
   if (!b || b.disabled) return;

@@ -60,7 +60,7 @@ if (!token) {
   });
 } else {
   try {
-    // این درخواست به توکن CSRF نیاز دارد؛ اول نشست را بگیر
+    // This request needs a CSRF token; fetch the session first
     await loadSession();
     renderTopbar();
     const r = await api.post('/api/auth/verify', { token });
