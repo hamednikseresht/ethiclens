@@ -1,13 +1,13 @@
 /**
- * محتوای کارخانه دانشنامه.
+ * Factory content for the encyclopedia.
  *
- * این متن‌ها فقط «نقطه شروع» هستند: هنگام راه‌اندازی در جدول
- * guide_sections ریخته می‌شوند و از آن پس مدیر از پنل ویرایششان می‌کند.
- * تغییر این فایل، محتوای ویرایش‌شده مدیر را بازنویسی نمی‌کند.
+ * This text is only a starting point: it is seeded into guide_sections on
+ * startup, and from then on admins edit it from the panel.
+ * Changing this file does not overwrite content an admin has edited.
  */
 
 export const GUIDE_SEED = [
-  /* ─────────── مقدمه ─────────── */
+/* ─────────── Introduction ─────────── */
   {
     key: 'intro:hero', kind: 'prose', sort: 10,
     title: 'دانشنامه لنزهای اخلاقی',
@@ -90,7 +90,7 @@ export const GUIDE_SEED = [
     extra: { style: 'note' }
   },
 
-  /* ─────────── فازها ─────────── */
+/* ─────────── Phases ─────────── */
   {
     key: 'phase:1', kind: 'phase', sort: 10,
     title: 'تشخیص مسئله اخلاقی', subtitle: 'فاز ۱', lead: '',
@@ -152,7 +152,7 @@ export const GUIDE_SEED = [
   }
 ];
 
-/* ─────────── لنزها ─────────── */
+/* ─────────── Lenses ─────────── */
 const LENSES = [
   {
     key: 'virtue', sort: 10, color: '#7c3aed', icon: '🏛️', n: '۱',
@@ -424,7 +424,7 @@ for (const l of LENSES) {
   });
 }
 
-/* ─────────── دروازه‌ها ─────────── */
+/* ─────────── Gates ─────────── */
 const GATES = [
   { key: 'dignity', n: '۱', sort: 10, color: '#2563eb', kind: 'وتوکننده',
     title: 'دروازه کرامت', who: 'لنز وظیفه‌گرایی · کانت',
@@ -461,7 +461,7 @@ for (const g of GATES) {
   });
 }
 
-/* ─────────── آزمایش‌های فکری ─────────── */
+/* ─────────── Thought experiments ─────────── */
 const EXPERIMENTS = [
   { key: 'gyges', sort: 10, title: 'انگشتر گیگس',
     body: 'چوپانی انگشتری می‌یابد که او را نامرئی می‌کند. اگر مطمئن باشید هرگز مچتان را ' +
@@ -509,7 +509,7 @@ for (const e of EXPERIMENTS) {
   });
 }
 
-/* ─────────── کتاب‌شناسی ─────────── */
+/* ─────────── Bibliography ─────────── */
 GUIDE_SEED.push({
   key: 'intro:bibliography', kind: 'prose', sort: 70,
   title: 'کتاب‌شناسی', subtitle: '📚', lead: '',

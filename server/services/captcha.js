@@ -1,16 +1,16 @@
 import crypto from 'node:crypto';
 
 /**
- * کپچای خودمیزبان.
+ * Self-hosted CAPTCHA.
  *
- * عمداً از reCAPTCHA و hCaptcha استفاده نشده: هم وابستگی به سرویس بیرونی
- * می‌آورد که ممکن است برای بخشی از کاربران در دسترس نباشد، هم داده کاربر
- * را به شخص ثالث می‌فرستد. این نسخه یک SVG سمت سرور می‌سازد و پاسخ را
- * در نشست نگه می‌دارد؛ هیچ چیزی از سامانه بیرون نمی‌رود.
+ * reCAPTCHA and hCaptcha were avoided deliberately: both add a dependency
+ * on an outside service that may be unreachable for some users, and both
+ * send user data to a third party. This builds an SVG server-side and keeps
+ * the answer in the session; nothing leaves the system.
  *
- * هدف اینجا متوقف‌کردن اسکریپت‌های ساده ثبت‌نام انبوه است، نه مقاومت در
- * برابر حمله‌کننده‌ای که OCR اجرا می‌کند. برای آن سطح، محدودیت نرخ و
- * تأیید دستی مدیر — که هر دو را داریم — سد مؤثرتری‌اند.
+ * The goal is to stop simple bulk-signup scripts, not an attacker running
+ * OCR. For that level, rate limiting and manual admin approval — both of
+ * which exist here — are the more effective barrier.
  */
 
 const TTL_MS = 10 * 60 * 1000;      // ۱۰ دقیقه
@@ -21,7 +21,7 @@ const toFa = n => String(n).replace(/[0-9]/g, d => FA_DIGITS[+d]);
 
 const rand = (min, max) => min + crypto.randomInt(max - min + 1);
 
-/** مسئله ساده حسابی — برای کاربر فارسی‌زبان خواناتر از حروف درهم است */
+/** A simple arithmetic problem — easier to read for a Persian speaker than jumbled letters */
 function makeChallenge() {
   const ops = [
     () => { const a = rand(3, 19), b = rand(2, 9); return { q: `${toFa(a)} + ${toFa(b)}`, a: a + b }; },
@@ -31,7 +31,7 @@ function makeChallenge() {
   return ops[crypto.randomInt(ops.length)]();
 }
 
-/** SVG با اعوجاج سبک: خطوط مزاحم، چرخش و جابه‌جایی هر نویسه */
+/** SVG with light distortion: noise lines, plus per-character rotation and offset */
 function renderSvg(text) {
   const W = 190, H = 62;
   const chars = [...text];
@@ -65,8 +65,8 @@ function renderSvg(text) {
 }
 
 /**
- * چالش تازه می‌سازد و در نشست می‌گذارد.
- * پاسخ به شکل چکیده ذخیره می‌شود تا اگر محتوای نشست جایی لاگ شد، لو نرود.
+ * Build a fresh challenge and store it in the session.
+ * The answer is stored hashed, so it does not leak if session contents are logged.
  */
 export function issueCaptcha(session) {
   const { q, a } = makeChallenge();
@@ -79,8 +79,8 @@ export function issueCaptcha(session) {
 }
 
 /**
- * پاسخ کاربر را می‌سنجد. چالش پس از هر بررسی — درست یا غلط — مصرف
- * می‌شود، تا نشود با یک چالش چند بار حدس زد.
+ * Check the user's answer. The challenge is consumed on every check — right
+ * or wrong — so one challenge cannot be guessed at repeatedly.
  */
 export function verifyCaptcha(session, answer) {
   const c = session?.captcha;
@@ -97,7 +97,7 @@ export function verifyCaptcha(session, answer) {
     return { ok: false, reason: 'attempts', error: 'تلاش‌های زیاد. تصویر تازه بگیرید.' };
   }
 
-  // ارقام فارسی و عربی را هم می‌پذیریم
+  // Persian and Arabic digits are accepted too
   const normalized = String(answer ?? '')
     .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
     .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))

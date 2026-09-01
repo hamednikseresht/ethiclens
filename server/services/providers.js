@@ -2,10 +2,10 @@ import { db } from '../db.js';
 import { tierRank } from './tiers.js';
 
 /**
- * ارائه‌دهندگان سرویس هوش مصنوعی.
- * هر ارائه‌دهنده یک API سازگار با OpenAI است: آدرس پایه + کلید Bearer.
- * بنابراین انویدیا، اوپن‌ای‌آی، OpenRouter، Groq، Together و هر سرویس
- * سازگار دیگری با همین ساختار پشتیبانی می‌شود.
+ * AI service providers.
+ * Every provider is an OpenAI-compatible API: a base URL plus a Bearer key.
+ * That is why NVIDIA, OpenAI, OpenRouter, Groq, Together and any other
+ * compatible service all fit the same shape.
  */
 
 export const PRESETS = [
@@ -34,14 +34,14 @@ export function getProviderByKey(key) {
   return db.prepare('SELECT * FROM providers WHERE key = ?').get(key);
 }
 
-/** ارائه‌دهنده‌ای که یک مدل به آن تعلق دارد */
+/** The provider a given model belongs to */
 export function providerForModel(modelRowId) {
   return db.prepare(
     'SELECT p.* FROM providers p JOIN models m ON m.provider_id = p.id WHERE m.id = ?'
   ).get(modelRowId);
 }
 
-/** مدل‌های فعالِ ارائه‌دهندگان فعال، همراه اطلاعات ارائه‌دهنده */
+/** Enabled models of enabled providers, joined with their provider details */
 export function enabledModels() {
   return db.prepare(`
     SELECT m.id, m.model_id, m.label, m.note, m.sort_order, m.min_tier,
@@ -53,15 +53,15 @@ export function enabledModels() {
     ORDER BY p.sort_order, m.sort_order, m.id`).all();
 }
 
-/** مدل‌هایی که یک گروه کاربری به آن‌ها دسترسی دارد */
+/** Models a given user tier is allowed to reach */
 export function modelsForTier(tierKey) {
   const rank = tierRank(tierKey);
   return enabledModels().filter(m => tierRank(m.min_tier) <= rank);
 }
 
 /**
- * یافتن یک مدل بر اساس شناسه ردیف یا رشته "providerKey:modelId".
- * اگر tierKey داده شود، فقط میان مدل‌های مجاز آن گروه می‌گردد.
+ * Resolve a model from a row id or a "providerKey:modelId" string.
+ * When tierKey is given, only models that tier may use are searched.
  */
 export function resolveModel(ref, tierKey = null) {
   if (ref === null || ref === undefined || ref === '') return null;
@@ -80,11 +80,11 @@ export function resolveModel(ref, tierKey = null) {
     const hit = models.find(m => m.provider_key === pk && m.model_id === mid);
     if (hit) return hit;
   }
-  // سازگاری با نسخه قبلی که فقط شناسه مدل را می‌فرستاد
+  // Backwards compatibility with the older client that sent only the model id
   return models.find(m => m.model_id === s) || null;
 }
 
-/** شناسه پایدار برای ارسال از کلاینت */
+/** Stable identifier the client sends back */
 export function modelRef(m) {
   return `${m.provider_key}:${m.model_id}`;
 }

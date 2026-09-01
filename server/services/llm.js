@@ -1,8 +1,8 @@
 import { num } from './settings.js';
 
 /**
- * کلاینت عمومی برای هر API سازگار با OpenAI (انویدیا، اوپن‌ای‌آی، OpenRouter، …).
- * ارائه‌دهنده به شکل { label, base_url, api_key } داده می‌شود.
+ * Generic client for any OpenAI-compatible API (NVIDIA, OpenAI, OpenRouter, …).
+ * The provider arrives as { label, base_url, api_key }.
  */
 
 function endpoint(provider, path) {
@@ -35,10 +35,10 @@ function requireKey(provider) {
      ۲. تطبیق خودکار پس از خطای ۴۰۰ (تا مدل‌های آینده هم کار کنند)
    ========================================================================== */
 
-/** مدل‌هایی که max_completion_tokens می‌خواهند */
+/** Models that require max_completion_tokens instead of max_tokens */
 const NEW_PARAM_STYLE = /(^|\/)(o[1-9](-|$|\d)|gpt-5|gpt-4\.5)/i;
 
-/** مدل‌هایی که فقط temperature پیش‌فرض را می‌پذیرند */
+/** Models that accept only the default temperature */
 const FIXED_SAMPLING = /(^|\/)(o[1-9](-|$|\d)|gpt-5)/i;
 
 function buildBody({ model, messages, overrides, stream, quirks = {} }) {
@@ -58,7 +58,7 @@ function buildBody({ model, messages, overrides, stream, quirks = {} }) {
   return body;
 }
 
-/** از متن خطای سرویس می‌فهمد کدام پارامتر مشکل‌ساز بوده است */
+/** Work out from the service's error text which parameter it objected to */
 function quirksFromError(detail, current = {}) {
   const text = String(detail || '').toLowerCase();
   const next = { ...current };
@@ -78,8 +78,8 @@ function quirksFromError(detail, current = {}) {
 }
 
 /**
- * درخواست را می‌فرستد و اگر سرویس از پارامتری شکایت کرد،
- * یک بار با پارامترهای اصلاح‌شده دوباره تلاش می‌کند.
+ * Send the request; if the service complains about a parameter, retry once
+ * with corrected parameters.
  */
 async function postChat({ provider, key, model, messages, overrides, stream, signal, timeoutMs }) {
   let quirks = {};
@@ -100,7 +100,7 @@ async function postChat({ provider, key, model, messages, overrides, stream, sig
 
     const detail = await res.text().catch(() => '');
 
-    // آیا می‌توان با تنظیم پارامترها دوباره تلاش کرد؟
+    // Is this something a parameter change could fix?
     if (res.status === 400 && attempt === 0) {
       const adjusted = quirksFromError(detail, quirks);
       if (adjusted) {
@@ -119,9 +119,9 @@ async function postChat({ provider, key, model, messages, overrides, stream, sig
 }
 
 /**
- * فراخوانی استریمی chat/completions.
- * onDelta(text) برای هر تکه متن صدا زده می‌شود.
- * بازگشت: { text, usage, finishReason }
+ * Streaming chat/completions call.
+ * onDelta(text) fires for each chunk of text.
+ * Returns { text, usage, finishReason }.
  */
 export async function streamChat({ provider, messages, model, signal, onDelta, overrides = {} }) {
   const key = requireKey(provider);
@@ -148,7 +148,7 @@ export async function streamChat({ provider, messages, model, signal, onDelta, o
       try { json = JSON.parse(payload); } catch { continue; }
 
       const choice = json.choices?.[0];
-      // بعضی مدل‌های استدلالی متن را در reasoning_content می‌فرستند
+          // Some reasoning models put the text in reasoning_content instead
       const delta = choice?.delta?.content ?? choice?.text ?? '';
       if (delta) { text += delta; onDelta?.(delta); }
       if (choice?.finish_reason) finishReason = choice.finish_reason;
@@ -159,7 +159,7 @@ export async function streamChat({ provider, messages, model, signal, onDelta, o
   return { text, usage, finishReason };
 }
 
-/** فهرست مدل‌های در دسترس روی حساب یک ارائه‌دهنده */
+/** Models available on a given provider account */
 export async function listRemoteModels(provider) {
   const key = requireKey(provider);
   const res = await fetch(endpoint(provider, '/models'), {
@@ -170,7 +170,7 @@ export async function listRemoteModels(provider) {
   return (json.data || []).map(m => m.id).filter(Boolean).sort();
 }
 
-/** آزمایش سریع یک مدل با یک درخواست کوچک بدون استریم */
+/** Quick probe of one model with a small non-streaming request */
 export async function pingModel(provider, model, timeoutMs = 45000) {
   const key = requireKey(provider);
   const started = Date.now();
@@ -178,7 +178,7 @@ export async function pingModel(provider, model, timeoutMs = 45000) {
   const res = await postChat({
     provider, key, model,
     messages: [{ role: 'user', content: 'به فارسی فقط یک کلمه بنویس: سالم' }],
-    // مدل‌های استدلالی بخشی از بودجه را صرف فکر می‌کنند، پس سقف را دست‌ودل‌بازتر می‌گیریم
+  // Reasoning models spend part of the budget thinking, so allow more headroom
     overrides: { max_tokens: 256, temperature: 0 },
     stream: false, timeoutMs
   });

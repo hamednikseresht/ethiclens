@@ -1,12 +1,12 @@
 /**
- * منبع مشترک مکاتب و مراحل فلوچارت (سرور و کلاینت).
+ * Shared source of the schools and flowchart stages (server and client).
  *
- * ترکیبی از دو سنت:
- *  - هفت مکتب دانشنامه فارسی پروژه (فضیلت، وظیفه، فایده، قرارداد، مراقبت، اگزیستانس، نیچه)
- *  - به‌علاوه «خیر مشترک» که در ادامه توضیح داده شده — مجموعاً هشت مکتب
- *  - منظر «خیر مشترک» از چارچوب مرکز Markkula دانشگاه سانتا کلارا،
- *    که در آن سنت جدا از عدالت رالزی شمرده می‌شود: عدالت درباره انصافِ توزیع است،
- *    خیر مشترک درباره شرایط و نهادهای مشترکی که همه از آن بهره می‌برند.
+ * Two traditions combined: seven schools from the project's Persian
+ * encyclopedia (virtue, duty, utility, contract, care, existentialism,
+ * Nietzsche), plus "common good" for eight in total. That last lens comes
+ * from the Markkula Center framework at Santa Clara University, which counts
+ * it separately from Rawlsian justice: justice is about fairness of
+ * distribution, common good about shared conditions everyone draws on.
  */
 export const SCHOOLS = [
   { key: 'virtue',         name: 'فضیلت‌گرایی',     thinker: 'ارسطو، مک‌اینتایر', question: 'انسان بافضیلت در این موقعیت چه می‌کرد؟',            icon: '🏛️', color: '#7c3aed' },
@@ -20,8 +20,8 @@ export const SCHOOLS = [
 ];
 
 /**
- * پنج مرحله فلوچارت پالایش تصمیم.
- * هر مرحله یک دروازه است به‌علاوه مکتب یا مکاتبی که آن را تغذیه می‌کنند.
+ * The five stages of the decision-refinement flowchart.
+ * Each stage is one gate plus the school or schools that feed it.
  */
 export const STAGES = [
   { key: 'dignity',      n: '۱', kind: 'veto',     title: 'دروازه کرامت',        thinker: 'ایمانوئل کانت',
@@ -52,7 +52,7 @@ export const STAGES = [
 
 export const GATES = STAGES.map(s => ({ key: s.key, title: s.title, sub: s.thinker, type: s.kind, hint: s.rule }));
 
-/** ستون‌های ماتریس مقایسه گزینه‌ها — ترتیب باید با دستور مدل یکی باشد */
+/** Columns of the option-comparison matrix — order must match the model prompt */
 export const MATRIX_COLUMNS = [
   { key: 'dignity',    label: 'کرامت' },
   { key: 'justice',    label: 'عدالت' },
@@ -63,7 +63,7 @@ export const MATRIX_COLUMNS = [
   { key: 'authenticity', label: 'اصالت' }
 ];
 
-/** همه کلیدهای بخش‌های خروجی مدل، به ترتیب روایت */
+/** Every section key the model emits, in narrative order */
 export const SECTION_KEYS = [
   'issue', 'reframe', 'facts', 'stakeholders', 'options', 'matrix',
   ...STAGES.flatMap(s => [`gate:${s.key}`, ...s.schools.map(k => `school:${k}`)]),

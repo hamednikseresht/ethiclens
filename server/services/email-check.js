@@ -2,21 +2,21 @@ import dns from 'node:dns/promises';
 import { db } from '../db.js';
 
 /**
- * سنجش اعتبار نشانی ایمیل — بدون ارسال هیچ پیامی.
+ * Email address plausibility check — without sending anything.
  *
- * سه لایه بررسی می‌شود:
- *   ۱. ساختار نشانی
- *   ۲. دامنه‌های یک‌بارمصرف (فهرست کوتاه و پرکاربرد)
- *   ۳. رکورد MX دامنه — یعنی آن دامنه اصلاً ایمیل می‌پذیرد یا نه
+ * Three layers are inspected:
+ *   1. address syntax
+ *   2. disposable domains (a short list of common ones)
+ *   3. the domain's MX record — whether it accepts mail at all
  *
- * نتیجه یک «پرچم» است نه حکم قطعی: هیچ روشی جز ارسال واقعی نمی‌تواند
- * ثابت کند صندوقی وجود دارد. پرچم فقط به مدیر کمک می‌کند هنگام تأیید
- * حساب، ثبت‌نام‌های آشکارا جعلی را زودتر تشخیص دهد.
+ * The result is a flag, not a verdict: nothing short of actually sending can
+ * prove a mailbox exists. The flag only helps an admin spot obviously fake
+ * signups sooner when approving accounts.
  */
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/** دامنه‌های یک‌بارمصرف پرکاربرد */
+/** Common disposable-mail domains */
 const DISPOSABLE = new Set([
   'mailinator.com', 'guerrillamail.com', 'guerrillamail.net', '10minutemail.com',
   'tempmail.com', 'temp-mail.org', 'throwawaymail.com', 'yopmail.com', 'trashmail.com',
@@ -25,7 +25,7 @@ const DISPOSABLE = new Set([
   'discard.email', 'mailnesia.com', 'tempr.email', 'moakt.com', 'inboxkitten.com'
 ]);
 
-/** دامنه‌های بسیار رایج — برای تشخیص غلط تایپی */
+/** Very common domains — used to catch typos */
 const COMMON = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'proton.me'];
 
 function levenshtein(a, b) {
@@ -38,7 +38,7 @@ function levenshtein(a, b) {
   return m[a.length][b.length];
 }
 
-/** دامنه‌ای که احتمالاً غلط تایپیِ یک دامنه رایج است */
+/** A domain that looks like a typo of a common one */
 function typoOf(domain) {
   for (const c of COMMON) {
     const d = levenshtein(domain, c);
@@ -48,9 +48,9 @@ function typoOf(domain) {
 }
 
 /**
- * ایمیل را می‌سنجد.
- * بازگشت: { valid: 1|0, note, checks }
- * valid=1 یعنی هیچ نشانه بدی پیدا نشد؛ valid=0 یعنی دست‌کم یک نشانه هست.
+ * Check an email address.
+ * Returns { valid: 1|0, note, checks }.
+ * valid=1 means nothing bad was found; valid=0 means at least one signal was.
  */
 export async function checkEmail(email, { timeoutMs = 5000 } = {}) {
   const addr = String(email || '').trim().toLowerCase();
@@ -74,7 +74,7 @@ export async function checkEmail(email, { timeoutMs = 5000 } = {}) {
     return { valid: 0, note: `شاید غلط تایپی «${typo}» باشد.`, checks };
   }
 
-  // بررسی MX: آیا این دامنه اصلاً ایمیل می‌پذیرد؟
+  // MX check: does this domain accept mail at all?
   try {
     const mx = await Promise.race([
       dns.resolveMx(domain),
@@ -84,7 +84,7 @@ export async function checkEmail(email, { timeoutMs = 5000 } = {}) {
     if (!checks.mx) return { valid: 0, note: `دامنه ${domain} رکورد MX ندارد.`, checks };
   } catch (e) {
     if (e.message === 'timeout') {
-      // نتوانستیم بررسی کنیم — این «بد» نیست، فقط «نامعلوم» است
+    // We could not check — that is not "bad", only "unknown"
       return { valid: null, note: 'بررسی MX به نتیجه نرسید (مهلت تمام شد).', checks };
     }
     checks.mx = false;
@@ -94,7 +94,7 @@ export async function checkEmail(email, { timeoutMs = 5000 } = {}) {
   return { valid: 1, note: 'ساختار، دامنه و رکورد MX سالم است.', checks };
 }
 
-/** بررسی می‌کند و نتیجه را روی کاربر ثبت می‌کند */
+/** Run the check and record the result on the user */
 export async function checkAndStore(userId, email) {
   let result;
   try {

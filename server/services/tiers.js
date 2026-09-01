@@ -1,19 +1,19 @@
 import { db } from '../db.js';
 
 /**
- * گروه‌های کاربری.
+ * User tiers.
  *
- * هر گروه دو سقف دارد: تعداد تحلیل روزانه و مجموع توکن ماهانه.
- * کاربر می‌تواند استثنای فردی داشته باشد (quota_override / token_override)؛
- * NULL یعنی «از گروه ارث ببر». اینطور تغییر سقف یک گروه بلافاصله روی
- * همه اعضایش اثر می‌گذارد، مگر آنکه برای کسی صریحاً استثنا گذاشته باشیم.
- *
- * دسترسی مدل هم گروهی است: مدل با min_tier='premium' فقط برای کاربران ویژه.
+ * Each tier carries two ceilings: analyses per day, tokens per month.
+ * A user may hold an individual exception (quota_override / token_override);
+ * NULL means "inherit from the tier". That way raising a tier's ceiling takes
+ * effect for every member at once, except where an exception was set
+ * explicitly for someone.
+ * Model access is per tier too: min_tier='premium' hides a model from basic users.
  */
 
 export const TIER_ORDER = ['basic', 'premium'];
 
-/** رتبه گروه — برای مقایسه دسترسی */
+/** Tier rank — used to compare access levels */
 export function tierRank(key) {
   const i = TIER_ORDER.indexOf(String(key || 'basic'));
   return i < 0 ? 0 : i;
@@ -29,7 +29,7 @@ export function getTier(key) {
       || { key: 'basic', label: 'عادی', daily_quota: 10, monthly_tokens: 0 };
 }
 
-/** سقف‌های مؤثر یک کاربر: استثنای فردی، وگرنه سقف گروه */
+/** A user's effective ceilings: individual exception, otherwise the tier's */
 export function limitsFor(user) {
   const tier = getTier(user?.tier);
   const dailyQuota = user?.quota_override ?? tier.daily_quota;
@@ -43,7 +43,7 @@ export function limitsFor(user) {
   };
 }
 
-/** مصرف امروز و این ماه */
+/** Usage so far today and this month */
 export function usageFor(userId) {
   const today = db.prepare(
     `SELECT COUNT(*) c FROM analyses
@@ -70,7 +70,7 @@ export function usageFor(userId) {
   };
 }
 
-/** آیا کاربر اجازه یک تحلیل تازه دارد؟ */
+/** Is the user allowed to start another analysis? */
 export function checkAllowance(user) {
   const limits = limitsFor(user);
   const usage = usageFor(user.id);
@@ -94,7 +94,7 @@ export function checkAllowance(user) {
   return { ok: true, limits, usage };
 }
 
-/** خلاصه‌ای که به کلاینت می‌رود */
+/** Summary shipped to the client */
 export function allowanceSummary(user) {
   const limits = limitsFor(user);
   const usage = usageFor(user.id);
@@ -118,7 +118,7 @@ export function allowanceSummary(user) {
   };
 }
 
-/** آمار مصرف همه کاربران — برای پنل مدیریت */
+/** Usage across all users — for the admin panel */
 export function usageByUser() {
   return db.prepare(`
     SELECT u.id,

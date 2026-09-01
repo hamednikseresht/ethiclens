@@ -4,11 +4,11 @@ import { getSetting } from './settings.js';
 import { escapeHtml as esc } from './seo.js';
 
 /**
- * ارسال ایمیل تراکنشی.
+ * Transactional email.
  *
- * دو ارائه‌دهنده پشتیبانی می‌شوند و هر دو از راه API HTTP کار می‌کنند،
- * نه SMTP — یک fetch ساده است و وابستگی تازه‌ای به پروژه اضافه نمی‌کند.
- * افزودن ارائه‌دهنده تازه یعنی یک ورودی در جدول PROVIDERS پایین.
+ * Two providers are supported and both work over their HTTP API rather than
+ * SMTP — it is a plain fetch and adds no new dependency to the project.
+ * Adding a provider means one more entry in the PROVIDERS table below.
  */
 
 export const MAIL_PROVIDERS = [
@@ -51,7 +51,7 @@ export function mailConfig() {
 export function mailConfigured() {
   const c = mailConfig();
   if (!c.apiKey) return false;
-  // برِوو دامنه لازم ندارد؛ فقط نشانی فرستنده باید در حسابش تأیید شده باشد
+  // Brevo needs no domain; only the sender address must be verified on the account
   if (c.provider === 'brevo') return !!c.fromEmail;
   return !!c.domain;
 }
@@ -72,7 +72,7 @@ export async function sendMail({ to, subject, html, text, tag }) {
   return c.provider === 'brevo' ? sendViaBrevo(c, body) : sendViaMailgun(c, body);
 }
 
-/* ---------------- برِوو ---------------- */
+/* ---------------- Brevo ---------------- */
 async function sendViaBrevo(c, { to, subject, html, text, tag }) {
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
@@ -93,7 +93,7 @@ async function sendViaBrevo(c, { to, subject, html, text, tag }) {
   });
 
   const raw = await res.text().catch(() => '');
-  // برِوو در موفقیت ۲۰۱ برمی‌گرداند، نه ۲۰۰
+  // Brevo returns 201 on success, not 200
   if (!res.ok) {
     const e = new Error(brevoMessage(res.status, raw, c));
     e.status = res.status;
@@ -122,7 +122,7 @@ function brevoMessage(status, raw, c) {
   return msg ? `برِوو: ${msg}` : `خطای سرویس ایمیل (کد ${status}).`;
 }
 
-/* ---------------- میل‌گان ---------------- */
+/* ---------------- Mailgun ---------------- */
 async function sendViaMailgun(c, { to, subject, html, text, tag }) {
   const from = c.fromEmail || `no-reply@${c.domain}`;
   const form = new URLSearchParams({
@@ -188,14 +188,14 @@ const TOKEN_TTL_HOURS = 24;
 const hash = t => crypto.createHash('sha256').update(String(t)).digest('hex');
 
 /**
- * توکن تازه می‌سازد و فقط چکیده‌اش را ذخیره می‌کند.
- * خود توکن تنها یک بار — در ایمیل — از سامانه بیرون می‌رود؛ اگر پایگاه
- * داده لو برود، با محتوای جدول نمی‌شود حسابی را تأیید یا تصاحب کرد.
+ * Create a fresh token and store only its hash.
+ * The token itself leaves the system exactly once — in the email. If the
+ * database leaks, the table contents cannot verify or take over an account.
  */
 export function createToken(userId, purpose = 'verify', ip = null) {
   const token = crypto.randomBytes(32).toString('base64url');
 
-  // توکن‌های استفاده‌نشده قبلی همان کاربر باطل می‌شوند
+  // Any earlier unused tokens for the same user are invalidated
   db.prepare(`UPDATE email_tokens SET used_at = datetime('now')
               WHERE user_id = ? AND purpose = ? AND used_at IS NULL`).run(userId, purpose);
 
@@ -206,7 +206,7 @@ export function createToken(userId, purpose = 'verify', ip = null) {
   return token;
 }
 
-/** توکن را مصرف می‌کند؛ در صورت اعتبار، کاربر را برمی‌گرداند */
+/** Consume a token; returns the user when it is still valid */
 export function consumeToken(token, purpose = 'verify') {
   if (!token) return { ok: false, reason: 'missing' };
 
@@ -227,7 +227,7 @@ export function consumeToken(token, purpose = 'verify') {
   return { ok: true, user };
 }
 
-/** آخرین باری که برای این کاربر توکن ساخته شده — برای محدودکردن ارسال دوباره */
+/** When a token was last issued for this user — used to throttle resends */
 export function lastTokenAt(userId, purpose = 'verify') {
   return db.prepare(
     `SELECT created_at FROM email_tokens WHERE user_id = ? AND purpose = ?

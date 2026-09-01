@@ -8,10 +8,10 @@ import { checkAllowance } from './tiers.js';
 import { USER_TEMPLATE } from './default-prompt.js';
 
 /**
- * منطق مشترک اجرای تحلیل.
+ * Shared analysis logic.
  *
- * هم مسیر مرورگر (SSE) و هم API عمومی از همین‌جا استفاده می‌کنند، تا
- * سقف‌ها، دسترسی مدل و ذخیره‌سازی در هر دو مسیر دقیقاً یکسان اعمال شود.
+ * Both the browser path (SSE) and the public API run through here, so that
+ * quotas, model access and persistence behave identically on either route.
  */
 
 export class AnalysisError extends Error {
@@ -25,7 +25,7 @@ export class AnalysisError extends Error {
 const MIN_LEN = 20;
 const MAX_LEN = 8000;
 
-/** ورودی را می‌سنجد و به شکل استاندارد درمی‌آورد */
+/** Validate the input and normalise it into a standard shape */
 export function normalizeInput(body = {}) {
   const dilemma = String(body.dilemma || '').trim();
 
@@ -53,7 +53,7 @@ export function normalizeInput(body = {}) {
   };
 }
 
-/** مدل مجاز برای این کاربر را انتخاب می‌کند */
+/** Pick a model this user is allowed to run */
 export function pickModel(user, requested) {
   const tier = user.tier;
 
@@ -86,14 +86,14 @@ function fill(template, vars) {
 }
 
 /**
- * تحلیل را اجرا می‌کند.
+ * Run an analysis.
  *
- * onDelta اختیاری است: اگر داده شود، هر تکه متن حین تولید فرستاده می‌شود
- * (مسیر استریمی). اگر ندهید، تابع تا پایان صبر می‌کند و نتیجه کامل را
- * برمی‌گرداند (مسیر همگام API).
+ * onDelta is optional: when given, each chunk of text is emitted as it is
+ * produced (streaming path). Without it the function waits and returns the
+ * complete result (synchronous API path).
  *
- * onStart هم اختیاری است و به‌محض ساخته‌شدن ردیف پایگاه داده صدا زده
- * می‌شود، تا مسیر استریمی بتواند شناسه را پیش از شروع تولید بفرستد.
+ * onStart is optional too, and fires the moment the database row exists, so
+ * the streaming path can send the id before generation begins.
  */
 export async function runAnalysis({ user, input, onDelta, onStart, signal, source = 'web', ip }) {
   const allowance = checkAllowance(user);

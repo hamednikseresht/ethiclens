@@ -3,11 +3,11 @@ import { db } from '../db.js';
 import { getSetting } from './settings.js';
 
 /**
- * ابزارهای انتشار عمومی و بهینه‌سازی موتور جست‌وجو.
+ * Public-page and search-engine helpers.
  *
- * نشانی‌های فارسی برای گوگل مشکلی ندارند و در نتایج جست‌وجو رمزگشایی‌شده
- * نمایش داده می‌شوند، پس عمداً حروف فارسی را در slug نگه می‌داریم تا
- * نشانی برای کاربر فارسی‌زبان خوانا و بامعنا بماند.
+ * Persian URLs are fine for Google and are shown decoded in results, so
+ * Persian characters are kept in the slug on purpose — the address stays
+ * readable and meaningful to a Persian-speaking reader.
  */
 
 const ZERO_WIDTH = /[​-‏‪-‮﻿]/g;
@@ -26,7 +26,7 @@ export function slugify(text, { maxLen = 70 } = {}) {
   return base || 'تحلیل';
 }
 
-/** slug یکتا؛ در صورت برخورد، پسوند کوتاه تصادفی می‌گیرد */
+/** Unique slug; on collision it gains a short random suffix */
 export function uniqueSlug(text, excludeId = null) {
   const base = slugify(text);
   const taken = s => {
@@ -42,7 +42,7 @@ export function uniqueSlug(text, excludeId = null) {
   return `${base}-${Date.now().toString(36)}`;
 }
 
-/** نشانی پایه سایت — برای canonical و نقشه سایت لازم است */
+/** Site base URL — required for canonical links and the sitemap */
 export function siteUrl(req = null) {
   const configured = (getSetting('site_url') || '').trim().replace(/\/+$/, '');
   if (configured) return configured;
@@ -59,7 +59,7 @@ export function absoluteUrl(req, path) {
   return base ? `${base}${path}` : path;
 }
 
-/** خلاصه تمیز برای توضیح متا — بدون نشانه‌گذاری و در طول مناسب گوگل */
+/** Clean summary for the meta description — no markup, sized for Google */
 export function metaDescription(text, { max = 158 } = {}) {
   const clean = String(text || '')
     .replace(ZERO_WIDTH, '')
@@ -79,14 +79,14 @@ export function escapeHtml(s) {
     .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 }
 
-/** رشته امن برای درج داخل JSON-LD */
+/** String safe to embed inside JSON-LD */
 export function jsonLd(obj) {
   return JSON.stringify(obj).replace(/</g, '\\u003c');
 }
 
 /**
- * بلوک کامل متای صفحه: عنوان، توضیح، canonical، OpenGraph و کارت توییتر.
- * همه صفحه‌های عمومی از همین یک تابع استفاده می‌کنند تا چیزی جا نیفتد.
+ * The full page meta block: title, description, canonical, OpenGraph and
+ * Twitter card. Every public page uses this one function so nothing is missed.
  */
 export function metaTags({
   req, title, description, path = '/', type = 'website',
@@ -124,7 +124,7 @@ export function metaTags({
   return bits.filter(Boolean).join('\n');
 }
 
-/** تاریخ SQLite را به ISO تبدیل می‌کند */
+/** Convert a SQLite datetime to ISO */
 export function isoDate(sqliteDate) {
   if (!sqliteDate) return '';
   const d = new Date(String(sqliteDate).includes('T')
@@ -132,7 +132,7 @@ export function isoDate(sqliteDate) {
   return isNaN(d) ? '' : d.toISOString();
 }
 
-/** تاریخ خوانا برای نمایش */
+/** Human-readable date for display */
 export function faDate(sqliteDate) {
   const iso = isoDate(sqliteDate);
   if (!iso) return '';
@@ -143,7 +143,7 @@ export function faDate(sqliteDate) {
   } catch { return iso.slice(0, 10); }
 }
 
-/** فهرست تحلیل‌های منتشرشده */
+/** List of published analyses */
 export function publishedAnalyses({ limit = 50, offset = 0 } = {}) {
   return db.prepare(`
     SELECT id, slug, title, public_title, public_summary, public_author,
