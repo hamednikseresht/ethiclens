@@ -125,7 +125,7 @@ export async function runAnalysis({ user, input, onDelta, onStart, signal, sourc
   const started = Date.now();
 
   try {
-    const { text, usage } = await streamChat({
+    const { text, usage, finishReason } = await streamChat({
       provider, messages, model: chosen.model_id, signal, onDelta
     });
 
@@ -137,6 +137,16 @@ export async function runAnalysis({ user, input, onDelta, onStart, signal, sourc
     // and both cases arrive here looking like success. Record what is actually
     // missing so the row never claims to be more finished than it is.
     const completeness = checkCompleteness(sections);
+
+    // finish_reason tells us *why* an answer is short, which the section scan
+    // alone cannot: 'length' means the ceiling cut it off mid-sentence, and
+    // that is a settings problem the admin can fix, not a flaky model.
+    if (finishReason === 'length') {
+      completeness.truncated = true;
+      completeness.severity = completeness.complete ? 'partial' : completeness.severity;
+      completeness.complete = false;
+    }
+
     const status = completeness.complete ? 'done' : 'partial';
 
     db.prepare(`UPDATE analyses SET raw_output = ?, sections = ?, status = ?,

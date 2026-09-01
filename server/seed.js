@@ -23,15 +23,20 @@ const CATALOG = {
     ['minimaxai/minimax-m3',                           'MiniMax M3',             'گزینه جایگزین چندزبانه — کندتر', 1, 80],
     ['openai/gpt-oss-20b',                             'GPT-OSS 20B',            'نسخه کوچک — سریع ولی سطحی‌تر', 0, 90]
   ],
+  // Ordered by measured fit for this task rather than by raw capability.
+  // scripts/compare-models.mjs ran the same layered dilemma through each of
+  // these three times: all returned 26/26 blocks with a verdict line for all
+  // eight schools, so the deciding factors became how much of the output
+  // stayed in Persian, how long it took, and what it cost in tokens.
   openai: [
-    ['gpt-4o',          'GPT-4o',          'چندزبانه قوی — فارسی بسیار روان', 1, 10],
-    ['gpt-4o-mini',     'GPT-4o mini',     'ارزان و سریع — برای حجم بالا', 1, 20],
-    ['gpt-4.1',         'GPT-4.1',         'پیروی دقیق‌تر از دستور و قالب', 1, 30],
-    ['gpt-4.1-mini',    'GPT-4.1 mini',    'نسخه سبک ۴٫۱', 1, 40],
-    ['o4-mini',         'o4-mini',         'مدل استدلالی — برای دوراهی‌های پیچیده', 1, 50],
-    ['gpt-5',           'GPT-5',           'در صورت دسترسی روی حساب شما', 0, 60],
-    ['gpt-5-mini',      'GPT-5 mini',      'در صورت دسترسی روی حساب شما', 0, 70],
-    ['o3',              'o3',              'استدلال عمیق — پرهزینه', 0, 80]
+    ['gpt-5.4-nano',    'GPT-5.4 nano',    'پیشنهادی — ۹۵٪ فارسی، ارزان‌ترین رده با کیفیت کامل', 1, 10],
+    ['gpt-5.4-mini',    'GPT-5.4 mini',    'کیفیت یکسان با nano و کمی سریع‌تر — رده گران‌تر', 1, 20],
+    ['gpt-4.1-mini',    'GPT-4.1 mini',    'کم‌مصرف‌ترین در توکن (~۲۲۰۰) ولی کندتر و ۹۳٪ فارسی', 1, 30],
+    ['gpt-4o-mini',     'GPT-4o mini',     'سریع‌ترین (۱۸ ثانیه) ولی بیشترین نشت انگلیسی — ۹۱٪', 1, 40],
+    ['gpt-4.1',         'GPT-4.1',         'پیروی دقیق از قالب، رده کامل', 1, 50],
+    ['gpt-5-mini',      'GPT-5 mini',      'استدلالی — سه برابر کندتر بدون کیفیت بیشتر', 0, 60],
+    ['gpt-5',           'GPT-5',           'رده کامل — برای دوراهی‌های بسیار پیچیده', 0, 70],
+    ['o4-mini',         'o4-mini',         'استدلالی سبک', 0, 80]
   ]
 };
 

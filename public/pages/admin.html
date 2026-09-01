@@ -330,6 +330,15 @@ loaders.ai = async () => {
             <span class="hint">تحلیل کامل حدود ۴۰۰۰ توکن می‌گیرد؛ کمتر از ۶۰۰۰ خروجی بریده می‌شود.</span>
           </div>
           <div class="field">
+            <label for="rh">بودجه استدلال</label>
+            <input class="input" id="rh" type="number" min="0" max="32768" step="500" value="${esc(settings.reasoning_headroom)}">
+            <span class="hint">
+              مدل‌های خانواده GPT-5 و سری o، توکن‌های «فکرکردن» را از همان سقف بالا کم می‌کنند.
+              این عدد <em>افزون بر</em> سقف بالا به آن‌ها داده می‌شود تا تحلیل کوتاه نشود.
+              برای مدل‌های دیگر بی‌اثر است.
+            </span>
+          </div>
+          <div class="field">
             <label for="tp">دما (temperature)</label>
             <input class="input" id="tp" type="number" min="0" max="2" step="0.05" value="${esc(settings.temperature)}">
             <span class="hint">پایین‌تر = محافظه‌کارتر و یکنواخت‌تر. پیشنهاد: ۰٫۵ تا ۰٫۷</span>
@@ -379,7 +388,7 @@ loaders.ai = async () => {
   $('#saveGen').onclick = async () => {
     try {
       await api.post('/api/admin/settings', {
-        default_model: $('#dm').value, max_tokens: $('#mt').value,
+        default_model: $('#dm').value, max_tokens: $('#mt').value, reasoning_headroom: $('#rh').value,
         temperature: $('#tp').value, top_p: $('#pp').value
       });
       toast('پارامترها ذخیره شد.', 'ok');

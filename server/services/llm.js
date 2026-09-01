@@ -44,11 +44,29 @@ const FIXED_SAMPLING = /(^|\/)(o[1-9](-|$|\d)|gpt-5)/i;
 function buildBody({ model, messages, overrides, stream, quirks = {} }) {
   const maxTokens = overrides.max_tokens ?? num('max_tokens', 4096);
   const body = { model, messages };
-  if (stream) body.stream = true;
+
+  if (stream) {
+    body.stream = true;
+    // OpenAI reports no usage at all on a stream unless this is asked for,
+    // which meant every OpenAI analysis was stored with zero tokens — and a
+    // user on OpenAI never consumed their monthly tier allowance. NVIDIA
+    // sends usage either way and accepts the option, so it is sent to
+    // everyone; a provider that rejects it is handled by the retry below.
+    if (!quirks.noStreamOptions) body.stream_options = { include_usage: true };
+  }
 
   const useCompletionTokens = quirks.completionTokens ?? NEW_PARAM_STYLE.test(model);
-  if (useCompletionTokens) body.max_completion_tokens = maxTokens;
-  else body.max_tokens = maxTokens;
+  if (useCompletionTokens) {
+    // These models bill their reasoning against the very same ceiling as the
+    // visible answer. Measured on this account, o4-mini spent 192 reasoning
+    // tokens to produce a single word. Sending the raw ceiling would quietly
+    // shrink the analysis — or empty it — on the models that think hardest,
+    // so the reasoning allowance is added on top rather than taken out of it.
+    body.max_completion_tokens = maxTokens + (overrides.reasoning_headroom
+      ?? num('reasoning_headroom', 4000));
+  } else {
+    body.max_tokens = maxTokens;
+  }
 
   const fixedSampling = quirks.fixedSampling ?? FIXED_SAMPLING.test(model);
   if (!fixedSampling) {
@@ -72,6 +90,10 @@ function quirksFromError(detail, current = {}) {
   if (/(temperature|top_p).*(not supported|unsupported|does not support)/.test(text)
       && !current.fixedSampling) {
     next.fixedSampling = true;
+    changed = true;
+  }
+  if (/stream_options/.test(text) && !current.noStreamOptions) {
+    next.noStreamOptions = true;
     changed = true;
   }
   return changed ? next : null;
@@ -178,14 +200,30 @@ export async function pingModel(provider, model, timeoutMs = 45000) {
   const res = await postChat({
     provider, key, model,
     messages: [{ role: 'user', content: 'به فارسی فقط یک کلمه بنویس: سالم' }],
-  // Reasoning models spend part of the budget thinking, so allow more headroom
-    overrides: { max_tokens: 256, temperature: 0 },
+    // The old ceiling here was 256, which reasoning models can exhaust before
+    // writing anything: o4-mini was measured spending 192 tokens of reasoning
+    // on this very prompt. An empty reply then looks like a broken model, so
+    // a healthy one would be reported as failing — and `--fix` would disable
+    // it. The allowance is generous because nothing is billed for headroom
+    // that goes unused.
+    overrides: { max_tokens: 256, reasoning_headroom: 2000, temperature: 0 },
     stream: false, timeoutMs
   });
 
   const latencyMs = Date.now() - started;
   const j = await res.json();
-  return { latencyMs, reply: (j.choices?.[0]?.message?.content || '').trim().slice(0, 120) };
+  const reply = (j.choices?.[0]?.message?.content || '').trim();
+  const reasoning = j.usage?.completion_tokens_details?.reasoning_tokens ?? 0;
+
+  // An empty reply is worth distinguishing from a refusal or an error: it
+  // usually means the budget went entirely to reasoning.
+  if (!reply && reasoning) {
+    const e = new Error(`مدل «${model}» کل بودجه را صرف استدلال کرد (${reasoning} توکن) و متنی برنگرداند.`);
+    e.code = 'REASONING_BUDGET';
+    throw e;
+  }
+
+  return { latencyMs, reply: reply.slice(0, 120), reasoning };
 }
 
 function upstreamMessage(status, detail, provider) {

@@ -8,7 +8,11 @@ const DEFAULTS = {
   default_model: '',                 // in the form "providerKey:modelId"
   temperature: '0.6',
   top_p: '0.95',
-  max_tokens: '4096',
+  max_tokens: '4096',           // budget for the visible answer
+  // Extra budget for models that bill their reasoning to the same counter
+  // (GPT-5 family, o-series). Added on top of max_tokens rather than taken
+  // out of it, so switching model does not shrink the analysis.
+  reasoning_headroom: '4000',
   active_prompt_key: DEFAULT_PROMPT_KEY,
   allow_registration: '1',
   require_verification: '1',        // is email verification required?

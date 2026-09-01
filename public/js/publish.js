@@ -31,7 +31,9 @@ export function gapsMarkup(c, { retry = false } = {}) {
     <div class="gaps" data-sev="${esc(c.severity)}">
       <b>${critical ? '⚠ بخش‌های کلیدی جا مانده‌اند' : 'برخی بخش‌ها کامل نشدند'}</b>
       مدل ${faNum(c.present)} بخش از ${faNum(c.total)} بخش را برگرداند.
-      این معمولاً یعنی پاسخ وسط کار بریده شده است.
+      ${c.truncated
+        ? 'پاسخ به سقف توکن خورد و بریده شد — مدیر می‌تواند سقف را در تنظیمات بالا ببرد.'
+        : 'این معمولاً یعنی پاسخ وسط کار بریده شده است.'}
       <ul>${names.slice(0, 8).map(n => `<li>${esc(n)}</li>`).join('')}
           ${names.length > 8 ? `<li>و ${faNum(names.length - 8)} بخش دیگر</li>` : ''}</ul>
       ${retry ? '<div class="gaps-act"><button class="btn btn-sm btn-primary" id="retryGaps">دوباره تحلیل کن</button></div>' : ''}
