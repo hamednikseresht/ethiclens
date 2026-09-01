@@ -1175,6 +1175,7 @@ loaders.analyses = async () => {
         <td><small class="mono" style="color:var(--text-muted)">${esc(a.email)}</small></td>
         <td class="mono" style="font-size:.75rem">${esc(a.model)}</td>
         <td>${a.status === 'done' ? '<span class="badge badge-success">کامل</span>'
+               : a.status === 'partial' ? '<span class="badge badge-warn" title="مدل همه بخش‌ها را برنگرداند">ناقص</span>'
              : a.status === 'error' ? '<span class="badge badge-danger">خطا</span>'
              : '<span class="badge badge-warn">ناتمام</span>'}</td>
         <td>${duration(a.duration_ms)}</td>

@@ -142,8 +142,9 @@
 
 <script type="module">
 import { $, api, boot, toast, esc, faNum, state } from '/js/core.js';
-import { buildSkeleton, parseSections, applySections, progressOf, gateSummary } from '/js/result.js';
+import { buildSkeleton, parseSections, applySections, progressOf, gateSummary, SECTION_LABELS } from '/js/result.js';
 import { exportBar, wireExport } from '/js/export.js';
+import { openPublishDialog, pubStateMarkup, wirePubState, gapsMarkup } from '/js/publish.js';
 import { initMotion, revealOnScroll, scrollToEl, reduced } from '/js/motion.js';
 
 if (!await boot()) throw new Error('unauthenticated');
@@ -395,23 +396,54 @@ $('#analyzeForm').onsubmit = async e => {
       .map(g => `<span class="gate-pill" data-state="${g.state}"><b>${g.n}</b> ${esc(g.title)}: ${esc(g.label)}</span>`)
       .join('');
 
+    // The header must not claim completeness the result does not have.
+    const c = info.completeness;
+    const incomplete = c && !c.complete;
+
     $('#streambar').outerHTML = `
       <div class="card no-print" style="margin-bottom:1.1rem" id="doneBar">
         <div class="card-body" style="padding:1rem 1.2rem">
           <div class="row-between" style="margin-bottom:.6rem">
-            <span style="font-size:.88rem;font-weight:800;color:var(--success)">
-              ✓ تحلیل کامل شد${secs ? ` — ${faNum(secs)} ثانیه` : ''}
+            <span style="font-size:.88rem;font-weight:800;color:var(--${incomplete ? 'warn' : 'success'})">
+              ${incomplete ? '⚠ تحلیل ناقص ماند' : '✓ تحلیل کامل شد'}${secs ? ` — ${faNum(secs)} ثانیه` : ''}
             </span>
             <div id="actionBar">
               ${exportBar({
                 analysisId: info.analysisId,
-                extra: `<a class="btn btn-sm" href="/analysis?id=${info.analysisId}">صفحه اختصاصی</a>`
+                extra: `<button class="btn btn-sm" id="pubNow">🌐 انتشار عمومی</button>
+                        <a class="btn btn-sm" href="/analysis?id=${info.analysisId}">صفحه اختصاصی</a>`
               })}
             </div>
           </div>
+          ${gapsMarkup(c, { retry: true })}
           <div class="gate-strip" style="margin:0">${gates}</div>
+          <div id="pubHost"></div>
         </div>
       </div>`;
+
+    // Kept in sync with the server by the publish dialog, so re-publishing
+    // from this bar does not lose the title the user already wrote.
+    const record = {
+      id: info.analysisId, title,
+      is_public: 0, slug: null,
+      public_title: '', public_summary: '', public_author: '',
+      completeness: c
+    };
+
+    const renderPub = () => {
+      const host = $('#pubHost');
+      host.innerHTML = pubStateMarkup(record);
+      wirePubState(host, record);
+      $('#pubNow').textContent = record.is_public ? '🌐 منتشرشده' : '🌐 انتشار عمومی';
+    };
+
+    $('#pubNow').addEventListener('click', () => openPublishDialog(record, renderPub));
+    $('#retryGaps')?.addEventListener('click', () => {
+      // Re-running uses the same inputs, so the form is left untouched and
+      // the user only has to confirm.
+      scrollToEl($('#dilemma'));
+      toast('ورودی‌ها دست‌نخورده است — دوباره تحلیل را بزنید.', '');
+    });
 
     const host = $('#resultHost');
     if (host && !host.querySelector('.disclaimer')) {

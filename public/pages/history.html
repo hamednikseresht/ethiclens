@@ -99,9 +99,10 @@ async function load() {
         <span>${duration(it.duration_ms)}</span>
         ${it.status === 'error' ? '<span class="badge badge-danger">ناموفق</span>' : ''}
         ${it.status === 'pending' ? '<span class="badge badge-warn">ناتمام</span>' : ''}
+        ${it.status === 'partial' ? '<span class="badge badge-warn" title="مدل همه بخش‌ها را برنگرداند">ناقص</span>' : ''}
         ${it.reflected_at
           ? `<span class="badge badge-reflect" title="${esc(it.decision || '')}">📔 بازنگری شد</span>`
-          : it.status === 'done' ? '<span class="badge">منتظر بازنگری</span>' : ''}
+          : (it.status === 'done' || it.status === 'partial') ? '<span class="badge">منتظر بازنگری</span>' : ''}
         <span class="grow"></span>
         <button class="btn btn-sm btn-ghost" data-act="rename">تغییر نام</button>
         <a class="btn btn-sm btn-ghost" href="/api/history/${it.id}/export">دانلود</a>

@@ -90,6 +90,24 @@ export const TEXT_BLOCKS = [...PHASE1, ...PHASE2, ...PHASE4, ...PHASE5,
   { key: 'revisit',        title: 'بازنگری',       icon: '🔁' }
 ];
 
+/**
+ * Section key to display name, covering all 26 blocks the model emits.
+ *
+ * Built from the arrays above rather than written out again, so a renamed
+ * block cannot end up with one title in the result view and another in the
+ * completeness warning.
+ */
+export const SECTION_LABELS = Object.fromEntries([
+  ...TEXT_BLOCKS.map(b => [b.key, b.title]),
+  ['matrix', 'ماتریس سنجش'],
+  ...STAGES.map(s => [`gate:${s.key}`, s.title]),
+  ...SCHOOLS.map(s => [`school:${s.key}`, s.name])
+]);
+
+export function sectionLabel(key) {
+  return SECTION_LABELS[key] || key;
+}
+
 /* ------- حکم‌ها و رنگ آن‌ها ------- */
 function verdictClass(v) {
   if (!v) return '';

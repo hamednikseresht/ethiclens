@@ -80,14 +80,3 @@
 .pub-footer a{color:var(--text-muted)}
 .pub-footer a:hover{color:var(--primary)}
 
-/* ---------- وضعیت انتشار در صفحه خصوصی تحلیل ---------- */
-.pub-state{
-  display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;
-  background:var(--success-soft);border:1px solid var(--success);
-  border-radius:var(--r-sm);padding:.7rem .9rem;margin-top:.8rem;font-size:.85rem;
-}
-.pub-state code{
-  background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;
-  padding:.15rem .45rem;font-size:.8rem;direction:ltr;display:inline-block;
-}
-.pub-state .grow{min-width:0;overflow:hidden;text-overflow:ellipsis}
