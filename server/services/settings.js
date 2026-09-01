@@ -2,7 +2,7 @@ import { db } from '../db.js';
 import { DEFAULT_PROMPT, DEFAULT_PROMPT_KEY } from './default-prompt.js';
 
 const DEFAULTS = {
-  site_title: 'EthicLens — لنزهای اخلاقی',
+  site_title: 'دیدگاه اخلاق — Ethic Lens',
   site_tagline: 'دوراهی‌ات را از هشت منظر فلسفه اخلاق ببین',
   site_url: '',                      // برای canonical و نقشه سایت — مثلاً https://ethiclens.ir
   default_model: '',                 // به شکل "providerKey:modelId"
@@ -18,7 +18,7 @@ const DEFAULTS = {
   mailgun_api_key: '',
   mailgun_domain: '',
   mailgun_base_url: 'https://api.mailgun.net',
-  mail_from_name: 'EthicLens',
+  mail_from_name: 'Ethic Lens',
   mail_from_email: '',
   default_daily_quota: '30'
 };

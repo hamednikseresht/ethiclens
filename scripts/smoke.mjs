@@ -64,7 +64,7 @@ async function solveCaptcha() {
 
 console.log('\n── صفحات ──');
 for (const [path, needle] of [
-  ['/', 'EthicLens'],
+  ['/', 'Ethic Lens'],
   ['/login', 'ورود'],
   ['/guide', 'دانشنامه'],
   ['/about', 'علی مهبودی'],

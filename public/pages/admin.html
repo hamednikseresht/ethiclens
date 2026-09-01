@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>پنل مدیریت — EthicLens</title>
+<title>پنل مدیریت — دیدگاه اخلاق</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -40,6 +40,31 @@
   .plist button{text-align:start;padding:.6rem .8rem;border-radius:9px;border:1px solid var(--border);
                 background:var(--bg-surface);font-family:inherit;font-size:.85rem;cursor:pointer;color:var(--text)}
   .plist button.active{border-color:var(--primary);background:var(--primary-soft);color:var(--primary);font-weight:700}
+  /* ویرایشگر دانشنامه */
+  .gd{display:grid;grid-template-columns:1fr;gap:1rem}
+  @media (min-width:1000px){.gd{grid-template-columns:290px 1fr}}
+  .gd-list{display:flex;flex-direction:column;gap:.25rem;max-height:70vh;overflow:auto;padding-inline-end:.3rem}
+  .gd-group{font-size:.72rem;font-weight:800;color:var(--text-faint);
+            padding:.6rem .5rem .25rem;text-transform:uppercase;letter-spacing:.04em}
+  .gd-item{display:flex;align-items:center;gap:.5rem;width:100%;text-align:start;
+           background:var(--bg-surface);border:1px solid var(--border);border-radius:9px;
+           padding:.55rem .7rem;font-family:inherit;font-size:.84rem;cursor:pointer;color:var(--text)}
+  .gd-item:hover{background:var(--bg-subtle)}
+  .gd-item.active{border-color:var(--primary);background:var(--primary-soft);color:var(--primary);font-weight:700}
+  .gd-item .dot{width:7px;height:7px;border-radius:50%;background:var(--warn);flex-shrink:0}
+  .gd-item .dot.clean{background:transparent}
+  .gd-item .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gd-item .off{font-size:.68rem;color:var(--text-faint)}
+  .gd-form .field{margin-bottom:.85rem}
+  .gd-body{min-height:220px;font-family:inherit;line-height:2}
+  .gd-meta{font-size:.75rem;color:var(--text-muted);margin-bottom:.9rem;
+           display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+  .cx{background:var(--bg-subtle);border-radius:var(--r-xs);padding:.7rem .8rem;margin-bottom:.6rem}
+  .cx .row-between{margin-bottom:.5rem}
+  .cx-n{font-size:.75rem;font-weight:800;color:var(--text-muted)}
+  .pt-row{display:flex;gap:.4rem;margin-bottom:.4rem}
+  .pt-row .input{flex:1}
+
   .seg{display:inline-flex;background:var(--bg-subtle);border:1px solid var(--border);
        border-radius:10px;padding:.2rem;gap:.15rem;flex-wrap:wrap}
   .seg button{border:none;background:none;font-family:inherit;font-size:.82rem;font-weight:700;
@@ -107,6 +132,7 @@
       <button data-tab="tiers">🎟️ گروه‌ها</button>
       <button data-tab="analyses">🗂️ تحلیل‌ها</button>
       <button data-tab="mail">✉️ ایمیل و تأیید</button>
+      <button data-tab="guide">📖 دانشنامه</button>
       <button data-tab="site">⚙️ تنظیمات سایت</button>
       <button data-tab="audit">🔒 گزارش رخدادها</button>
     </nav>
@@ -119,6 +145,7 @@
       <section class="panel" id="p-tiers"></section>
       <section class="panel" id="p-analyses"></section>
       <section class="panel" id="p-mail"></section>
+      <section class="panel" id="p-guide"></section>
       <section class="panel" id="p-site"></section>
       <section class="panel" id="p-audit"></section>
     </div>
@@ -270,7 +297,7 @@ loaders.ai = async () => {
   host.innerHTML = `
     <h2 class="sec-h">ارائه‌دهندگان و مدل‌ها</h2>
     <p class="sec-p">
-      EthicLens با هر سرویسی که API سازگار با OpenAI داشته باشد کار می‌کند — انویدیا، اوپن‌ای‌آی،
+      دیدگاه اخلاق با هر سرویسی که API سازگار با OpenAI داشته باشد کار می‌کند — انویدیا، اوپن‌ای‌آی،
       OpenRouter، Groq و مانند اینها. برای هر ارائه‌دهنده آدرس پایه و کلید جداگانه ثبت می‌شود.
       کلیدها فقط روی سرور می‌مانند و هرگز به مرورگر کاربران فرستاده نمی‌شوند.
     </p>
@@ -1206,7 +1233,7 @@ loaders.mail = async () => {
           </div>
           <div class="field">
             <label for="mg-fname">نام فرستنده</label>
-            <input class="input" id="mg-fname" value="${esc(s.mail_from_name || '')}" placeholder="EthicLens">
+            <input class="input" id="mg-fname" value="${esc(s.mail_from_name || '')}" placeholder="Ethic Lens">
           </div>
           <div class="field">
             <label for="mg-femail">ایمیل فرستنده</label>
@@ -1284,6 +1311,320 @@ loaders.mail = async () => {
       out.innerHTML = `<div class="alert alert-danger">✗ ${esc(err.message)}${err.data?.detail ? `<br><small class="mono">${esc(err.data.detail)}</small>` : ''}</div>`;
     } finally { e.target.disabled = false; }
   };
+};
+
+/* ---------------- محتوای دانشنامه ---------------- */
+loaders.guide = async () => {
+  const host = $('#p-guide');
+  host.innerHTML = '<div class="skeleton" style="height:8rem"></div>';
+
+  const KIND_LABEL = {
+    prose: 'متن آزاد', phase: 'فاز فرایند', lens: 'لنز اخلاقی',
+    gate: 'دروازه پالایش', experiment: 'آزمایش فکری'
+  };
+  const ORDER = ['prose', 'phase', 'lens', 'gate', 'experiment'];
+
+  let data, current = null;
+
+  async function reload(keepId) {
+    data = await api.get('/api/admin/guide');
+    if (keepId) current = data.items.find(x => x.id === keepId) || null;
+    renderList();
+    renderEditor();
+  }
+
+  function renderList() {
+    const parts = [];
+    for (const kind of ORDER) {
+      const items = (data.byKind[kind] || []);
+      if (!items.length) continue;
+      parts.push('<div class="gd-group">' + esc(KIND_LABEL[kind] || kind) +
+                 ' · ' + faNum(items.length) + '</div>');
+      for (const it of items) {
+        parts.push(
+          '<button class="gd-item ' + (current && current.id === it.id ? 'active' : '') + '" data-id="' + it.id + '">' +
+            '<span class="dot ' + (it.modified ? '' : 'clean') + '" title="' +
+              (it.modified ? 'ویرایش‌شده' : 'متن کارخانه') + '"></span>' +
+            '<span class="nm">' + esc(it.title) + '</span>' +
+            (it.enabled ? '' : '<span class="off">خاموش</span>') +
+          '</button>');
+      }
+    }
+    $('#gdList').innerHTML = parts.join('');
+  }
+
+  function conceptRows(list) {
+    return (list || []).map((c, i) =>
+      '<div class="cx" data-ci="' + i + '">' +
+        '<div class="row-between"><span class="cx-n">مفهوم ' + faNum(i + 1) + '</span>' +
+          '<button class="btn btn-sm btn-ghost" data-act="cx-del" style="color:var(--danger)">حذف</button></div>' +
+        '<div class="grid-2">' +
+          '<div class="field"><label>نام</label><input class="input" data-cf="name" value="' + esc(c.name || '') + '"></div>' +
+          '<div class="field"><label>اصطلاح اصلی</label><input class="input mono" data-cf="term" value="' + esc(c.term || '') + '"></div>' +
+        '</div>' +
+        '<div class="field" style="margin-bottom:0"><label>توضیح</label>' +
+          '<textarea class="textarea" data-cf="desc" rows="2">' + esc(c.desc || '') + '</textarea></div>' +
+      '</div>').join('');
+  }
+
+  function pointRows(list) {
+    return (list || []).map((p, i) =>
+      '<div class="pt-row" data-pi="' + i + '">' +
+        '<input class="input" data-pf="text" value="' + esc(p) + '">' +
+        '<button class="btn btn-sm btn-ghost" data-act="pt-del" style="color:var(--danger)">×</button>' +
+      '</div>').join('');
+  }
+
+  function renderEditor() {
+    const box = $('#gdEditor');
+    if (!current) {
+      box.innerHTML = '<div class="empty"><div class="empty-icon">📖</div>' +
+        '<h3>بخشی را از فهرست انتخاب کنید</h3>' +
+        '<p>متن‌های دانشنامه اینجا ویرایش می‌شوند. تغییرات بلافاصله در صفحه /guide دیده می‌شود.</p></div>';
+      return;
+    }
+
+    const c = current, x = c.extra || {};
+    const isLens = c.kind === 'lens';
+    const isGate = c.kind === 'gate';
+    const isPhase = c.kind === 'phase';
+    const isExp = c.kind === 'experiment';
+
+    box.innerHTML =
+      '<div class="gd-meta">' +
+        '<span class="badge">' + esc(KIND_LABEL[c.kind] || c.kind) + '</span>' +
+        '<span class="mono" style="font-size:.72rem">' + esc(c.key) + '</span>' +
+        (c.modified ? '<span class="badge badge-warn">ویرایش‌شده</span>'
+                    : '<span class="badge">متن کارخانه</span>') +
+        '<span>آخرین تغییر: ' + relTime(c.updated_at) + '</span>' +
+      '</div>' +
+
+      '<div class="gd-form">' +
+        '<div class="grid-2">' +
+          '<div class="field"><label for="gd-title">عنوان</label>' +
+            '<input class="input" id="gd-title" value="' + esc(c.title) + '"></div>' +
+          '<div class="field"><label for="gd-sub">' +
+            (isLens ? 'اصطلاح لاتین' : isGate ? 'متفکر/لنز' : isPhase ? 'شماره فاز' : 'زیرعنوان') +
+            '</label><input class="input" id="gd-sub" value="' + esc(c.subtitle || '') + '"></div>' +
+        '</div>' +
+
+        (isLens || isGate ?
+          '<div class="field"><label for="gd-lead">' +
+            (isLens ? 'پرسش بنیادین' : 'نوع دروازه (وتوکننده / بهینه‌ساز / پالایش‌کننده)') +
+            '</label><input class="input" id="gd-lead" value="' + esc(c.lead || '') + '"></div>' : '') +
+
+        '<div class="field"><label for="gd-body">متن اصلی</label>' +
+          '<textarea class="textarea gd-body" id="gd-body">' + esc(c.body || '') + '</textarea>' +
+          '<span class="hint">مارک‌داون سبک: **پررنگ** ، *مورب* ، خط خالی = پاراگراف تازه</span></div>' +
+
+        (isLens ?
+          '<div class="field"><label>مفاهیم کلیدی</label>' +
+            '<div id="gdConcepts">' + conceptRows(x.concepts) + '</div>' +
+            '<button class="btn btn-sm" id="gdAddConcept">＋ افزودن مفهوم</button></div>' +
+          '<div class="field"><label for="gd-critique">نقطه کور</label>' +
+            '<textarea class="textarea" id="gd-critique" rows="3">' + esc(x.critique || '') + '</textarea></div>' +
+          '<div class="field"><label for="gd-sources">منابع اصلی</label>' +
+            '<textarea class="textarea" id="gd-sources" rows="3">' + esc(x.sources || '') + '</textarea></div>' +
+          '<div class="grid-2">' +
+            '<div class="field"><label for="gd-thinkers">چهره‌های شاخص</label>' +
+              '<input class="input" id="gd-thinkers" value="' + esc(x.thinkers || '') + '"></div>' +
+            '<div class="field"><label for="gd-icon">آیکون و رنگ</label>' +
+              '<div class="row" style="gap:.4rem">' +
+                '<input class="input" id="gd-icon" style="width:4.5rem" value="' + esc(x.icon || '') + '">' +
+                '<input class="input mono" id="gd-color" value="' + esc(x.color || '') + '">' +
+              '</div></div>' +
+          '</div>' : '') +
+
+        (isPhase ?
+          '<div class="field"><label>پرسش‌های این فاز</label>' +
+            '<div id="gdPoints">' + pointRows(x.points) + '</div>' +
+            '<button class="btn btn-sm" id="gdAddPoint">＋ افزودن پرسش</button></div>' : '') +
+
+        (isGate ?
+          '<div class="grid-2">' +
+            '<div class="field"><label for="gd-n">شماره</label>' +
+              '<input class="input" id="gd-n" value="' + esc(x.n || '') + '"></div>' +
+            '<div class="field"><label for="gd-color">رنگ</label>' +
+              '<input class="input mono" id="gd-color" value="' + esc(x.color || '') + '"></div>' +
+          '</div>' : '') +
+
+        (isExp ?
+          '<div class="field"><label for="gd-ref">ارجاع</label>' +
+            '<input class="input" id="gd-ref" value="' + esc(x.ref || '') + '"></div>' : '') +
+
+        '<div class="row-between" style="border-top:1px solid var(--border);padding-top:.9rem;margin-top:.4rem">' +
+          '<label class="switch"><input type="checkbox" id="gd-enabled" ' +
+            (c.enabled ? 'checked' : '') + '> در صفحه نمایش داده شود</label>' +
+          '<div class="row" style="gap:.4rem">' +
+            '<input class="input" id="gd-sort" type="number" style="width:5.5rem" value="' + c.sort_order + '" title="ترتیب">' +
+            '<button class="btn btn-sm" id="gdReset">بازگرداندن متن کارخانه</button>' +
+            '<button class="btn btn-sm btn-primary" id="gdSave">ذخیره</button>' +
+          '</div>' +
+        '</div>' +
+        '<div style="margin-top:.7rem"><button class="btn btn-sm btn-ghost" id="gdDelete" style="color:var(--danger)">حذف این بخش</button></div>' +
+      '</div>';
+
+    wireEditor();
+  }
+
+  function collect() {
+    const c = current, x = { ...(c.extra || {}) };
+    const g = id => $('#' + id);
+
+    if (c.kind === 'lens') {
+      x.concepts = [...document.querySelectorAll('#gdConcepts .cx')].map(row => ({
+        name: row.querySelector('[data-cf="name"]').value.trim(),
+        term: row.querySelector('[data-cf="term"]').value.trim(),
+        desc: row.querySelector('[data-cf="desc"]').value.trim()
+      })).filter(o => o.name || o.desc);
+      x.critique = g('gd-critique').value.trim();
+      x.sources = g('gd-sources').value.trim();
+      x.thinkers = g('gd-thinkers').value.trim();
+      x.icon = g('gd-icon').value.trim();
+      x.color = g('gd-color').value.trim();
+    }
+    if (c.kind === 'phase') {
+      x.points = [...document.querySelectorAll('#gdPoints .pt-row')]
+        .map(r => r.querySelector('[data-pf="text"]').value.trim()).filter(Boolean);
+    }
+    if (c.kind === 'gate') {
+      x.n = g('gd-n').value.trim();
+      x.color = g('gd-color').value.trim();
+    }
+    if (c.kind === 'experiment') x.ref = g('gd-ref').value.trim();
+
+    return {
+      title: g('gd-title').value.trim(),
+      subtitle: g('gd-sub').value.trim(),
+      lead: g('gd-lead') ? g('gd-lead').value.trim() : (c.lead || ''),
+      body: g('gd-body').value,
+      extra: x,
+      sort_order: Number(g('gd-sort').value) || c.sort_order,
+      enabled: g('gd-enabled').checked
+    };
+  }
+
+  function wireEditor() {
+    $('#gdSave').onclick = async e => {
+      e.target.disabled = true;
+      try {
+        const r = await api.put('/api/admin/guide/' + current.id, collect());
+        toast('ذخیره شد. صفحه دانشنامه به‌روز شد.', 'ok');
+        await reload(r.section.id);
+      } catch (err) { toast(err.message, 'err'); }
+      finally { e.target.disabled = false; }
+    };
+
+    $('#gdReset').onclick = async () => {
+      if (!await confirmDialog('بازگرداندن متن کارخانه',
+        'متن این بخش به نسخه اولیه برمی‌گردد و ویرایش‌های شما از بین می‌رود.', 'بازگردان')) return;
+      try {
+        const r = await api.post('/api/admin/guide/' + current.id + '/reset');
+        toast('به متن کارخانه بازگشت.', 'ok');
+        await reload(r.section.id);
+      } catch (err) { toast(err.message, 'err'); }
+    };
+
+    $('#gdDelete').onclick = async () => {
+      if (!await confirmDialog('حذف بخش',
+        '«' + current.title + '» از دانشنامه حذف می‌شود. اگر بخش کارخانه‌ای باشد، با راه‌اندازی بعدی دوباره ساخته می‌شود.', 'حذف')) return;
+      try {
+        await api.del('/api/admin/guide/' + current.id);
+        toast('حذف شد.', 'ok');
+        current = null;
+        await reload();
+      } catch (err) { toast(err.message, 'err'); }
+    };
+
+    const cc = $('#gdConcepts');
+    if (cc) {
+      $('#gdAddConcept').onclick = () => {
+        const x = collect().extra;
+        x.concepts = [...(x.concepts || []), { name: '', term: '', desc: '' }];
+        current = { ...current, ...collect(), extra: x };
+        renderEditor();
+      };
+      cc.onclick = e => {
+        if (e.target.dataset.act !== 'cx-del') return;
+        const i = Number(e.target.closest('.cx').dataset.ci);
+        const x = collect().extra;
+        x.concepts.splice(i, 1);
+        current = { ...current, ...collect(), extra: x };
+        renderEditor();
+      };
+    }
+
+    const pp = $('#gdPoints');
+    if (pp) {
+      $('#gdAddPoint').onclick = () => {
+        const x = collect().extra;
+        x.points = [...(x.points || []), ''];
+        current = { ...current, ...collect(), extra: x };
+        renderEditor();
+      };
+      pp.onclick = e => {
+        if (e.target.dataset.act !== 'pt-del') return;
+        const i = Number(e.target.closest('.pt-row').dataset.pi);
+        const x = collect().extra;
+        x.points.splice(i, 1);
+        current = { ...current, ...collect(), extra: x };
+        renderEditor();
+      };
+    }
+  }
+
+  host.innerHTML =
+    '<h2 class="sec-h">محتوای دانشنامه</h2>' +
+    '<p class="sec-p">' +
+      'متن‌های صفحه <a href="/guide" target="_blank">دانشنامه</a> اینجا ویرایش می‌شوند. ' +
+      'نقطه نارنجی کنار هر بخش یعنی از متن کارخانه فاصله گرفته است. ' +
+      'ساختار و چیدمان صفحه ثابت می‌ماند — فقط محتوا عوض می‌شود، پس ویرایش نمی‌تواند صفحه را بشکند.' +
+    '</p>' +
+    '<div class="row" style="margin-bottom:1rem">' +
+      '<button class="btn btn-sm btn-primary" id="gdNew">＋ بخش تازه</button>' +
+      '<a class="btn btn-sm" href="/guide" target="_blank">دیدن صفحه</a>' +
+    '</div>' +
+    '<div class="gd">' +
+      '<div class="card"><div class="card-body" style="padding:.6rem">' +
+        '<div class="gd-list" id="gdList"></div></div></div>' +
+      '<div class="card"><div class="card-body" id="gdEditor"></div></div>' +
+    '</div>';
+
+  $('#gdList').onclick = e => {
+    const b = e.target.closest('.gd-item');
+    if (!b) return;
+    current = data.items.find(x => x.id === Number(b.dataset.id));
+    renderList();
+    renderEditor();
+  };
+
+  $('#gdNew').onclick = () => {
+    modal({
+      title: 'بخش تازه دانشنامه',
+      body:
+        '<div class="field"><label for="ng-kind">نوع</label>' +
+          '<select class="select" id="ng-kind">' +
+            ORDER.map(k => '<option value="' + k + '">' + KIND_LABEL[k] + '</option>').join('') +
+          '</select></div>' +
+        '<div class="field"><label for="ng-title">عنوان</label>' +
+          '<input class="input" id="ng-title" placeholder="مثلاً: اخلاق گفتمانی"></div>',
+      actions: [
+        { label: 'ساختن', className: 'btn-primary', onClick: async root => {
+            try {
+              const r = await api.post('/api/admin/guide', {
+                kind: root.querySelector('#ng-kind').value,
+                title: root.querySelector('#ng-title').value.trim() || 'بخش تازه'
+              });
+              toast('ساخته شد.', 'ok');
+              await reload(r.section.id);
+            } catch (e) { toast(e.message, 'err'); return 'keep'; }
+          } },
+        { label: 'انصراف' }
+      ]
+    });
+  };
+
+  await reload();
 };
 
 /* ---------------- تنظیمات سایت ---------------- */

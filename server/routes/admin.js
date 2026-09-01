@@ -8,6 +8,11 @@ import { PRESETS, listProviders, getProvider, enabledModels, resolveModel, model
 import { listTiers, TIER_ORDER, usageByUser, limitsFor, usageFor } from '../services/tiers.js';
 import { mailConfigured, sendMail, mailProvider, MAIL_PROVIDERS } from '../services/mail.js';
 import { checkAndStore } from '../services/email-check.js';
+import {
+  listSections, getSection as getGuideSection, updateSection as updateGuideSection,
+  createSection as createGuideSection, deleteSection as deleteGuideSection,
+  resetSection as resetGuideSection, isModified
+} from '../services/guide.js';
 import { DEFAULT_PROMPT } from '../services/default-prompt.js';
 
 export const router = express.Router();
@@ -254,10 +259,10 @@ router.post('/test-mail', async (req, res) => {
   try {
     const r = await sendMail({
       to,
-      subject: 'EthicLens — ایمیل آزمایشی',
+      subject: 'Ethic Lens — ایمیل آزمایشی',
       html: `<div style="font-family:Tahoma,sans-serif;direction:rtl;padding:20px">
                <h2 style="color:#2563eb">اتصال ایمیل سالم است ✅</h2>
-               <p>این پیام آزمایشی از پنل مدیریت EthicLens فرستاده شده است.
+               <p>این پیام آزمایشی از پنل مدیریت Ethic Lens فرستاده شده است.
                   اگر آن را می‌بینید، تنظیمات میل‌گان درست است و ایمیل‌های تأیید حساب ارسال می‌شوند.</p>
              </div>`,
       tag: 'test'
@@ -559,8 +564,8 @@ router.post('/users/:id/review', async (req, res) => {
       await sendMail({
         to: u.email,
         subject: decision === 'approve'
-          ? `${getSetting('site_title') || 'EthicLens'} — حساب شما تأیید شد`
-          : `${getSetting('site_title') || 'EthicLens'} — نتیجه بررسی درخواست عضویت`,
+          ? `${getSetting('site_title') || 'Ethic Lens'} — حساب شما تأیید شد`
+          : `${getSetting('site_title') || 'Ethic Lens'} — نتیجه بررسی درخواست عضویت`,
         html: decision === 'approve'
           ? `<div style="font-family:Tahoma,sans-serif;direction:rtl;padding:20px;line-height:2">
                <h2 style="color:#16a34a">حساب شما تأیید شد ✅</h2>
@@ -654,4 +659,63 @@ router.get('/audit', (req, res) => {
     `SELECT l.*, u.email FROM audit_log l LEFT JOIN users u ON u.id = l.user_id
      ORDER BY l.created_at DESC LIMIT 200`).all();
   res.json({ items });
+});
+
+/* ==========================================================================
+   محتوای دانشنامه
+   ========================================================================== */
+router.get('/guide', (req, res) => {
+  const items = listSections().map(s => ({ ...s, modified: isModified(s) }));
+  const byKind = {};
+  for (const s of items) (byKind[s.kind] ||= []).push(s);
+
+  res.json({
+    items, byKind,
+    counts: Object.fromEntries(Object.entries(byKind).map(([k, v]) => [k, v.length])),
+    kinds: [
+      { key: 'prose',      label: 'متن آزاد' },
+      { key: 'phase',      label: 'فاز فرایند' },
+      { key: 'lens',       label: 'لنز اخلاقی' },
+      { key: 'gate',       label: 'دروازه پالایش' },
+      { key: 'experiment', label: 'آزمایش فکری' }
+    ]
+  });
+});
+
+router.get('/guide/:id', (req, res) => {
+  const s = getGuideSection(req.params.id);
+  if (!s) return res.status(404).json({ error: 'بخش یافت نشد.' });
+  res.json({ ...s, modified: isModified(s) });
+});
+
+router.put('/guide/:id', (req, res) => {
+  const s = updateGuideSection(req.params.id, req.body || {}, req.user.id);
+  if (!s) return res.status(404).json({ error: 'بخش یافت نشد.' });
+  audit(req.user.id, 'guide_update', { key: s.key }, req.ip);
+  res.json({ ok: true, section: { ...s, modified: isModified(s) } });
+});
+
+router.post('/guide', (req, res) => {
+  const s = createGuideSection(req.body || {}, req.user.id);
+  audit(req.user.id, 'guide_create', { key: s.key, kind: s.kind }, req.ip);
+  res.json({ ok: true, section: s });
+});
+
+router.delete('/guide/:id', (req, res) => {
+  const s = getGuideSection(req.params.id);
+  if (!s) return res.status(404).json({ error: 'بخش یافت نشد.' });
+  deleteGuideSection(s.id);
+  audit(req.user.id, 'guide_delete', { key: s.key }, req.ip);
+  res.json({ ok: true });
+});
+
+/** بازگرداندن یک بخش به متن کارخانه */
+router.post('/guide/:id/reset', (req, res) => {
+  const r = resetGuideSection(req.params.id, req.user.id);
+  if (!r) return res.status(404).json({ error: 'بخش یافت نشد.' });
+  if (r.notFactory) {
+    return res.status(400).json({ error: 'این بخش را خودتان ساخته‌اید و متن کارخانه‌ای ندارد.' });
+  }
+  audit(req.user.id, 'guide_reset', { key: r.key }, req.ip);
+  res.json({ ok: true, section: { ...r, modified: false } });
 });
