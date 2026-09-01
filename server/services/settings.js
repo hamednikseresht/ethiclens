@@ -5,6 +5,9 @@ const DEFAULTS = {
   site_title: 'دیدگاه اخلاق — Ethic Lens',
   site_tagline: 'دوراهی‌ات را از هشت منظر فلسفه اخلاق ببین',
   site_url: '',                      // for canonical links and the sitemap — e.g. https://ethiclens.ir
+  // Social preview image, 1200x630. Empty means the card degrades to a plain
+  // text summary rather than promising a picture the site cannot supply.
+  og_image: '',
   default_model: '',                 // in the form "providerKey:modelId"
   temperature: '0.6',
   top_p: '0.95',

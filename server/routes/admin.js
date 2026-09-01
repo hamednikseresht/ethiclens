@@ -207,7 +207,7 @@ router.put('/tiers/:id', (req, res) => {
  * sensitive leftover row (an old-version API key, say) cannot leak.
  */
 const PUBLIC_SETTINGS = [
-  'site_title', 'site_tagline', 'site_url', 'default_model',
+  'site_title', 'site_tagline', 'site_url', 'og_image', 'default_model',
   'temperature', 'top_p', 'max_tokens', 'reasoning_headroom', 'active_prompt_key',
   'allow_registration', 'default_daily_quota',
   'require_verification', 'verification_gate',
@@ -233,7 +233,7 @@ router.get('/settings', (req, res) => {
 });
 
 const ALLOWED_SETTINGS = new Set([
-  'site_title', 'site_tagline', 'site_url', 'default_model',
+  'site_title', 'site_tagline', 'site_url', 'og_image', 'default_model',
   'temperature', 'top_p', 'max_tokens', 'reasoning_headroom', 'active_prompt_key',
   'allow_registration', 'default_daily_quota',
   'require_verification', 'verification_gate',
