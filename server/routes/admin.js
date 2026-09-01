@@ -20,7 +20,7 @@ router.use(requireAdmin);
 
 const MASK = '••••••••••••';
 
-/* ---------------- داشبورد ---------------- */
+/* ---------------- Dashboard ---------------- */
 router.get('/overview', (req, res) => {
   const users = db.prepare(`SELECT COUNT(*) total,
       SUM(role = 'admin') admins,
@@ -60,7 +60,7 @@ router.get('/overview', (req, res) => {
              mailConfigured: mailConfigured() });
 });
 
-/* ---------------- ارائه‌دهندگان ---------------- */
+/* ---------------- Providers ---------------- */
 router.get('/providers', (req, res) => {
   res.json({
     presets: PRESETS,
@@ -103,7 +103,7 @@ router.put('/providers/:id', (req, res) => {
     return res.status(400).json({ error: 'آدرس پایه باید با http:// یا https:// شروع شود.' });
   }
 
-  // کلید ماسک‌شده یعنی «دست نزن»
+  // A masked key means "leave it alone"
   const rawKey = req.body?.api_key;
   const api_key = (rawKey === undefined || rawKey === MASK || rawKey === '') ? p.api_key : String(rawKey).trim();
 
@@ -129,12 +129,12 @@ router.delete('/providers/:id', (req, res) => {
     });
   }
 
-  db.prepare('DELETE FROM providers WHERE id = ?').run(p.id);   // مدل‌ها با CASCADE می‌روند
+  db.prepare('DELETE FROM providers WHERE id = ?').run(p.id);   // models follow via CASCADE
   audit(req.user.id, 'provider_delete', { key: p.key, models: count }, req.ip);
   res.json({ ok: true });
 });
 
-/** آزمایش اتصال — با مدل داده‌شده یا اولین مدل فعال آن ارائه‌دهنده */
+/** Connection test — with a given model, or the provider's first enabled one */
 router.post('/providers/:id/test', async (req, res) => {
   const p = getProvider(req.params.id);
   if (!p) return res.status(404).json({ error: 'ارائه‌دهنده یافت نشد.' });
@@ -152,7 +152,7 @@ router.post('/providers/:id/test', async (req, res) => {
   }
 });
 
-/** فهرست مدل‌های در دسترس روی حساب یک ارائه‌دهنده */
+/** Models available on a provider account */
 router.get('/providers/:id/remote-models', async (req, res) => {
   const p = getProvider(req.params.id);
   if (!p) return res.status(404).json({ error: 'ارائه‌دهنده یافت نشد.' });
@@ -165,7 +165,7 @@ router.get('/providers/:id/remote-models', async (req, res) => {
   }
 });
 
-/* ---------------- گروه‌های کاربری ---------------- */
+/* ---------------- User tiers ---------------- */
 router.get('/tiers', (req, res) => {
   const counts = Object.fromEntries(
     db.prepare('SELECT tier, COUNT(*) c FROM users GROUP BY tier').all().map(r => [r.tier, r.c]));
@@ -200,11 +200,11 @@ router.put('/tiers/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-/* ---------------- تنظیمات ---------------- */
+/* ---------------- Settings ---------------- */
 
 /**
- * فقط همین کلیدها به کلاینت می‌روند. فهرست سفید است تا اگر روزی ردیف حساسی
- * (مثلاً کلید API نسخه‌های قدیمی) در جدول settings مانده باشد، نشت نکند.
+ * Only these keys reach the client. The list is an allowlist so that a
+ * sensitive leftover row (an old-version API key, say) cannot leak.
  */
 const PUBLIC_SETTINGS = [
   'site_title', 'site_tagline', 'site_url', 'default_model',
@@ -253,7 +253,7 @@ router.post('/settings', (req, res) => {
   res.json({ ok: true, changed });
 });
 
-/** ارسال ایمیل آزمایشی به خود مدیر */
+/** Send a test email to the admin themselves */
 router.post('/test-mail', async (req, res) => {
   const to = String(req.body?.to || req.user.email).trim();
   try {
@@ -274,7 +274,7 @@ router.post('/test-mail', async (req, res) => {
   }
 });
 
-/** تأیید دستی ایمیل یک کاربر */
+/** Manually mark a user's email as verified */
 router.post('/users/:id/verify-email', (req, res) => {
   const u = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
   if (!u) return res.status(404).json({ error: 'کاربر یافت نشد.' });
@@ -287,7 +287,7 @@ router.post('/users/:id/verify-email', (req, res) => {
   res.json({ ok: true, verified: verify });
 });
 
-/* ---------------- مدل‌ها ---------------- */
+/* ---------------- Models ---------------- */
 router.get('/models', (req, res) => {
   res.json(db.prepare(`
     SELECT m.*, p.key AS provider_key, p.label AS provider_label, p.enabled AS provider_enabled
@@ -300,7 +300,7 @@ router.post('/models', (req, res) => {
   const p = getProvider(provider_id);
   if (!p) return res.status(400).json({ error: 'ارائه‌دهنده معتبر انتخاب نشده است.' });
 
-  // پذیرش هم یک مدل، هم فهرستی از مدل‌ها
+  // Accepts either one model or a list of them
   const items = Array.isArray(req.body?.models) ? req.body.models
     : [{ model_id: req.body?.model_id, label: req.body?.label, note: req.body?.note }];
 
@@ -349,7 +349,7 @@ router.delete('/models/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-/** آزمایش دسته‌جمعی همه مدل‌ها — مدل‌های خراب را نشان می‌دهد */
+/** Bulk-test every model — surfaces the broken ones */
 router.post('/models/probe', async (req, res) => {
   const rows = db.prepare(`
     SELECT m.id, m.model_id, m.label, m.enabled,
@@ -384,7 +384,7 @@ router.post('/models/probe', async (req, res) => {
   res.json({ results, total: results.length, ok: results.length - broken, broken });
 });
 
-/* ---------------- دستورهای مدل ---------------- */
+/* ---------------- Model prompts ---------------- */
 router.get('/prompts', (req, res) => {
   res.json({
     items: db.prepare('SELECT * FROM prompts ORDER BY id').all(),
@@ -436,7 +436,7 @@ router.delete('/prompts/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-/* ---------------- کاربران ---------------- */
+/* ---------------- Users ---------------- */
 router.get('/users', (req, res) => {
   const q = String(req.query.q || '').trim();
   const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -504,7 +504,7 @@ router.put('/users/:id', (req, res) => {
 
   const tier = TIER_ORDER.includes(req.body?.tier) ? req.body.tier : u.tier;
 
-  // رشته خالی یعنی «استثنا را بردار و از گروه ارث ببر»
+    // An empty string means "drop the exception and inherit from the tier"
   const asOverride = v => {
     if (v === undefined) return undefined;
     if (v === null || String(v).trim() === '') return null;
@@ -528,11 +528,11 @@ router.put('/users/:id', (req, res) => {
 });
 
 /**
- * تأیید یا رد درخواست عضویت.
+ * Approve or reject a membership request.
  *
- * تأیید: وضعیت active می‌شود و اگر سرویس ایمیل تنظیم باشد، به کاربر
- * خبر داده می‌شود. رد: وضعیت rejected با یادداشت اختیاری مدیر، که
- * هنگام تلاش برای ورود به کاربر نشان داده می‌شود.
+ * Approve: status becomes active and, when mail is configured, the user is
+ * notified. Reject: status becomes rejected with an optional admin note,
+ * which is shown to them if they try to sign in.
  */
 router.post('/users/:id/review', async (req, res) => {
   const u = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
@@ -557,7 +557,7 @@ router.post('/users/:id/review', async (req, res) => {
   audit(req.user.id, decision === 'approve' ? 'user_approve' : 'user_reject',
         { targetId: u.id, email: u.email, note }, req.ip);
 
-  // خبردادن به کاربر اختیاری است و نباید تصمیم مدیر را معلق کند
+  // Notifying the user is optional and must not hold up the admin's decision
   let notified = false;
   if (mailConfigured()) {
     try {
@@ -587,7 +587,7 @@ router.post('/users/:id/review', async (req, res) => {
   res.json({ ok: true, status, notified });
 });
 
-/** بررسی دوباره اعتبار ایمیل یک کاربر */
+/** Re-run the email plausibility check for a user */
 router.post('/users/:id/check-email', async (req, res) => {
   const u = db.prepare('SELECT id, email FROM users WHERE id = ?').get(req.params.id);
   if (!u) return res.status(404).json({ error: 'کاربر یافت نشد.' });
@@ -596,7 +596,7 @@ router.post('/users/:id/check-email', async (req, res) => {
   res.json({ ok: true, ...r });
 });
 
-/** گزارش فعالیت یک کاربر — برای تصمیم‌گیری هنگام بررسی */
+/** Activity report for one user — to inform the approval decision */
 router.get('/users/:id/activity', (req, res) => {
   const u = db.prepare(`SELECT id, email, name, first_name, last_name, status, tier, role,
                                email_valid, email_check_note, email_checked_at,
@@ -642,7 +642,7 @@ router.delete('/users/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-/* ---------------- تحلیل‌ها و گزارش ---------------- */
+/* ---------------- Analyses and reporting ---------------- */
 router.get('/analyses', (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const perPage = 20;
@@ -709,7 +709,7 @@ router.delete('/guide/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-/** بازگرداندن یک بخش به متن کارخانه */
+/** Restore one section to its factory text */
 router.post('/guide/:id/reset', (req, res) => {
   const r = resetGuideSection(req.params.id, req.user.id);
   if (!r) return res.status(404).json({ error: 'بخش یافت نشد.' });

@@ -29,11 +29,11 @@ export function requireAdmin(req, res, next) {
 }
 
 /**
- * دروازه تأیید مدیر.
+ * The admin approval gate.
  *
- * حساب تازه با وضعیت pending ساخته می‌شود. کاربر می‌تواند وارد شود و
- * وضعیتش را ببیند، ولی تا وقتی مدیر تأییدش نکرده هیچ کار پرهزینه‌ای
- * انجام نمی‌دهد. این جلوی سوزاندن اعتبار API با ثبت‌نام انبوه را می‌گیرد.
+ * A new account is created pending. The user may sign in and see their
+ * status, but does nothing expensive until an admin approves them. This is
+ * what stops bulk signups from burning API credit.
  */
 export function requireApproved(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'ابتدا وارد شوید.' });
@@ -46,7 +46,7 @@ export function requireApproved(req, res, next) {
   });
 }
 
-/** CSRF با الگوی double-submit: توکن در نشست، ارسال در هدر */
+/** CSRF via the double-submit pattern: token in the session, sent as a header */
 export function csrfToken(req) {
   if (!req.session.csrf) req.session.csrf = crypto.randomBytes(24).toString('hex');
   return req.session.csrf;

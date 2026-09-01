@@ -78,9 +78,9 @@ router.post('/:id/favorite', (req, res) => {
 });
 
 /**
- * فاز پنجم چارچوب: «اجرا و بازنگری».
- * کاربر ثبت می‌کند چه تصمیمی گرفت و بعداً چه شد — چیزی که هیچ مدلی
- * نمی‌تواند جایش را پر کند و تنها بخشِ واقعاً یادگیرنده فرایند است.
+ * Phase five of the framework: "act and reflect".
+ * The user records what they decided and what happened afterwards — which
+ * no model can supply, and is the only genuinely learning part of the process.
  */
 router.post('/:id/reflection', (req, res) => {
   const own = db.prepare('SELECT id FROM analyses WHERE id = ? AND user_id = ?')
@@ -104,11 +104,11 @@ router.post('/:id/reflection', (req, res) => {
 });
 
 /**
- * انتشار عمومی یک تحلیل.
+ * Publishing an analysis.
  *
- * انتشار همیشه انتخاب صریح صاحب تحلیل است و هرگز خودکار نیست:
- * متن دوراهی‌ها شخصی است و ممکن است اطلاعات قابل‌شناسایی داشته باشد.
- * کاربر می‌تواند عنوان و خلاصه عمومی جداگانه بگذارد و نامش را پنهان کند.
+ * Publishing is always an explicit choice by the analysis owner and never
+ * automatic: dilemma text is personal and may carry identifying detail.
+ * The user can set a separate public title and summary, and stay anonymous.
  */
 router.post('/:id/publish', (req, res) => {
   const row = db.prepare('SELECT * FROM analyses WHERE id = ? AND user_id = ?')
@@ -130,8 +130,8 @@ router.post('/:id/publish', (req, res) => {
     return res.json({ ok: true, isPublic: false, slug: row.slug });
   }
 
-  // اگر فیلدی فرستاده نشده، مقدار قبلی حفظ می‌شود — انتشار دوباره نباید
-  // عنوان و خلاصه‌ای را که کاربر قبلاً نوشته پاک کند.
+  // Fields that were not sent keep their previous value — re-publishing must
+  // not wipe a title or summary the user already wrote.
   const pick = (sent, previous, fallback = '') => {
     const v = String(sent ?? '').trim();
     if (v) return v;
@@ -142,7 +142,7 @@ router.post('/:id/publish', (req, res) => {
   const publicSummary = pick(req.body?.public_summary, row.public_summary).slice(0, 300);
   const publicAuthor  = pick(req.body?.public_author, row.public_author).slice(0, 60);
 
-  // slug فقط بار اول ساخته می‌شود تا نشانی منتشرشده نشکند
+  // The slug is minted once only, so a published address never breaks
   const slug = row.slug || uniqueSlug(publicTitle, row.id);
 
   let sections = {};

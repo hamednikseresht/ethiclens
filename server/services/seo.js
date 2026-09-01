@@ -15,8 +15,8 @@ const ZERO_WIDTH = /[​-‏‪-‮﻿]/g;
 export function slugify(text, { maxLen = 70 } = {}) {
   const base = String(text || '')
     .replace(ZERO_WIDTH, '')
-    .replace(/[ً-ْ]/g, '')          // اعراب
-    .replace(/[^\p{L}\p{N}\s-]/gu, ' ')       // فقط حرف، رقم، فاصله و خط تیره
+    .replace(/[ً-ْ]/g, '')          // diacritics
+    .replace(/[^\p{L}\p{N}\s-]/gu, ' ')       // letters, digits, spaces and hyphens only
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')

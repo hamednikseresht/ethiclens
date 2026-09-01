@@ -194,7 +194,7 @@ function upstreamMessage(status, detail, provider) {
   try {
     const j = JSON.parse(detail);
     apiMsg = j?.detail || j?.error?.message || j?.message || '';
-  } catch { /* پاسخ متن خام */ }
+    } catch { /* plain-text response */ }
 
   if (status === 401 || status === 403) return `کلید API «${who}» نامعتبر یا فاقد دسترسی است.`;
   if (status === 404) return `این مدل روی «${who}» در دسترس نیست؛ شناسه مدل را بررسی کنید.`;

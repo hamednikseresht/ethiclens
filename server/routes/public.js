@@ -10,7 +10,7 @@ import { guideContent } from '../services/guide.js';
 
 export const router = express.Router();
 
-/** محتوای دانشنامه — عمومی و بدون احراز هویت، تا صفحه راهنما بخواندش */
+/** Encyclopedia content — public and unauthenticated, so the guide page can read it */
 router.get('/api/guide', (_req, res) => {
   res.set('Cache-Control', 'public, max-age=120');
   res.json(guideContent());
@@ -67,7 +67,7 @@ router.get('/a/:slug', (req, res, next) => {
   if (!row) return next();
 
   let sections = {};
-  try { sections = JSON.parse(row.sections) || {}; } catch { /* بدون بخش */ }
+  try { sections = JSON.parse(row.sections) || {}; } catch { /* no sections */ }
 
   const title = row.public_title?.trim() || row.title;
   const description = row.public_summary?.trim()
@@ -80,7 +80,7 @@ router.get('/a/:slug', (req, res, next) => {
 
   const ctx = (() => { try { return JSON.parse(row.context) || {}; } catch { return {}; } })();
 
-  /* ---- داده ساختاریافته برای گوگل ---- */
+  /* ---- Structured data for Google ---- */
   const structured = {
     '@context': 'https://schema.org',
     '@type': 'Article',

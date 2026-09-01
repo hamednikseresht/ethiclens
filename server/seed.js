@@ -7,9 +7,9 @@ import { setSetting, getSetting } from './services/settings.js';
 import { seedGuide } from './services/guide.js';
 
 /**
- * مدل‌های پیش‌فرض هر ارائه‌دهنده.
- * این‌ها فقط نقطه شروع‌اند؛ مدیر از پنل می‌تواند مدل اضافه/کم کند
- * یا با «دریافت فهرست مدل‌های حساب» فهرست واقعی را ببیند.
+ * Default models per provider.
+ * These are only a starting point; an admin can add or remove models from
+ * the panel, or pull the real list with "fetch account models".
  */
 const CATALOG = {
   nvidia: [
@@ -50,16 +50,16 @@ const TIER_SEED = [
 ];
 
 export function seed() {
-  /* ---- محتوای دانشنامه ---- */
+  /* ---- Encyclopedia content ---- */
   seedGuide();
 
-  /* ---- گروه‌های کاربری ---- */
+  /* ---- User tiers ---- */
   const insTier = db.prepare(
     `INSERT INTO tiers (key, label, daily_quota, monthly_tokens, sort_order)
      VALUES (?,?,?,?,?) ON CONFLICT(key) DO NOTHING`);
   for (const t of TIER_SEED) insTier.run(t.key, t.label, t.daily_quota, t.monthly_tokens, t.sort);
 
-  /* ---- ارائه‌دهندگان ---- */
+  /* ---- Providers ---- */
   const insProvider = db.prepare(
     `INSERT INTO providers (key, label, base_url, api_key, enabled, sort_order)
      VALUES (?,?,?,?,?,?) ON CONFLICT(key) DO NOTHING`);
@@ -67,10 +67,10 @@ export function seed() {
   for (const p of PROVIDER_SEED) {
     const envKeyValue = process.env[p.envKey] || '';
     const baseUrl = process.env[p.envUrl] || p.base_url;
-    // ارائه‌دهنده‌ای که کلیدش را نداریم، ساخته ولی خاموش می‌ماند
+    // A provider whose key we do not have is created but left disabled
     insProvider.run(p.key, p.label, baseUrl, envKeyValue, envKeyValue ? 1 : 0, p.sort);
 
-    // اگر ردیف از قبل بود ولی کلید نداشت و حالا در env هست، پرش کن
+    // If the row existed without a key and env now has one, fill it in
     if (envKeyValue) {
       const row = db.prepare('SELECT id, api_key FROM providers WHERE key = ?').get(p.key);
       if (row && !row.api_key) {
@@ -79,7 +79,7 @@ export function seed() {
     }
   }
 
-  /* ---- مدل‌ها ---- */
+  /* ---- Models ---- */
   const insModel = db.prepare(
     `INSERT INTO models (provider_id, model_id, label, note, enabled, sort_order)
      VALUES (?,?,?,?,?,?) ON CONFLICT(provider_id, model_id) DO NOTHING`);
@@ -92,10 +92,10 @@ export function seed() {
     }
   }
 
-  /* ---- دستور پیش‌فرض ----
-     اگر مدیر متن را دست نزده باشد، با نسخه تازه کارخانه به‌روزرسانی می‌شود.
-     اگر ویرایشش کرده باشد، دست نمی‌خورد و فقط هشدار داده می‌شود — تا
-     ارتقای نسخه، کار سفارشی‌شده کسی را از بین نبرد. */
+  /* ---- Default prompt ----
+     If the admin has not touched the text, it is updated to the new factory
+     version. If they have edited it, it is left alone and only a warning is
+     logged — so a version upgrade never destroys someone's customisation. */
   const factoryHash = sha(DEFAULT_PROMPT);
   const existing = db.prepare('SELECT * FROM prompts WHERE key = ?').get(DEFAULT_PROMPT_KEY);
 
@@ -122,7 +122,7 @@ export function seed() {
     setSetting('active_prompt_key', DEFAULT_PROMPT_KEY);
   }
 
-  /* ---- مدل پیش‌فرض: اولین مدل فعالِ یک ارائه‌دهنده فعال ---- */
+  /* ---- Default model: the first enabled model of an enabled provider ---- */
   const current = getSetting('default_model');
   const stillValid = current && db.prepare(`
     SELECT 1 FROM models m JOIN providers p ON p.id = m.provider_id
@@ -140,15 +140,15 @@ export function seed() {
     }
   }
 
-  /* ---- مدیران همیشه در گروه ویژه‌اند ----
-     مدیرانی که پیش از افزودن مفهوم گروه ساخته شده‌اند در گروه پایه می‌افتند
-     و ناخواسته به سقف کمتری می‌خورند. این را جبران می‌کنیم. */
+  /* ---- Admins always sit in the premium tier ----
+     Admins created before tiers existed land in the basic tier and would hit
+     a lower ceiling unintentionally. This corrects that. */
   const promoted = db.prepare(
     "UPDATE users SET tier = 'premium' WHERE role = 'admin' AND tier <> 'premium'").run().changes;
   db.prepare("UPDATE users SET status = 'active' WHERE role = 'admin' AND status = 'pending'").run();
   if (promoted) console.log(`[seed] ${promoted} مدیر به گروه ویژه منتقل شد.`);
 
-  /* ---- مدیر اولیه ---- */
+  /* ---- Initial admin ---- */
   const adminCount = db.prepare("SELECT COUNT(*) c FROM users WHERE role = 'admin'").get().c;
   if (adminCount === 0) {
     const email = (process.env.ADMIN_EMAIL || 'admin@example.com').toLowerCase();

@@ -102,7 +102,7 @@ async function sendViaBrevo(c, { to, subject, html, text, tag }) {
   }
 
   let id = '';
-  try { id = JSON.parse(raw).messageId || ''; } catch { /* پاسخ غیر JSON */ }
+  try { id = JSON.parse(raw).messageId || ''; } catch { /* non-JSON response */ }
   return { ok: true, id, provider: 'brevo' };
 }
 
@@ -151,7 +151,7 @@ async function sendViaMailgun(c, { to, subject, html, text, tag }) {
   }
 
   let id = '';
-  try { id = JSON.parse(raw).id || ''; } catch { /* پاسخ غیر JSON */ }
+  try { id = JSON.parse(raw).id || ''; } catch { /* non-JSON response */ }
   return { ok: true, id, provider: 'mailgun' };
 }
 

@@ -37,7 +37,7 @@ export function limitsFor(user) {
   return {
     tier,
     dailyQuota,
-    monthlyTokens,                                   // ۰ = بی‌نهایت
+    monthlyTokens,                                   // 0 = unlimited
     quotaIsOverride: user?.quota_override != null,
     tokensIsOverride: user?.token_override != null
   };
@@ -108,7 +108,7 @@ export function allowanceSummary(user) {
     },
     tokens: {
       used: usage.monthTokens,
-      limit: limits.monthlyTokens,                   // ۰ = بی‌نهایت
+      limit: limits.monthlyTokens,                   // 0 = unlimited
       remaining: limits.monthlyTokens > 0 ? Math.max(0, limits.monthlyTokens - usage.monthTokens) : null,
       percent: limits.monthlyTokens > 0
         ? Math.min(100, Math.round((usage.monthTokens / limits.monthlyTokens) * 100)) : null,

@@ -70,13 +70,13 @@ app.use('/api/analyze', analyzeRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/admin', adminRouter);
 
-// ---- صفحه‌های عمومی و قابل ایندکس (رندر سمت سرور) ----
-// پیش از ۴۰۴ مسیرهای API می‌آید، چون /api/guide هم میان همین‌هاست
+// ---- Public, indexable pages (server-rendered) ----
+// Mounted before the API 404, because /api/guide lives among these too
 app.use('/', publicRouter);
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'مسیر API یافت نشد.' }));
 
-// ---- فایل‌های ایستا و مسیرهای صفحه ----
+// ---- Static files and page routes ----
 app.use(express.static(PUBLIC, { extensions: ['html'], maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0 }));
 
 const PAGES = {

@@ -19,7 +19,7 @@ router.get('/meta', (req, res) => {
     schools: SCHOOLS,
     gates: GATES,
     defaultModel,
-    // مدل‌ها گروه‌بندی‌شده بر اساس ارائه‌دهنده، برای نمایش در optgroup
+    // Models grouped by provider, for rendering as optgroups
     providers: groupByProvider(models),
     models: models.map(m => ({
       ref: modelRef(m), label: m.label, note: m.note,
@@ -42,7 +42,7 @@ router.get('/quota', requireAuth, (req, res) => {
   res.json(allowanceSummary(req.user));
 });
 
-/** استریم SSE برای مرورگر: رویدادها = start | delta | done | error */
+/** SSE stream for the browser: events = start | delta | done | error */
 router.post('/stream', requireAuth, requireApproved, async (req, res) => {
   let input;
   try {
@@ -51,8 +51,8 @@ router.post('/stream', requireAuth, requireApproved, async (req, res) => {
     return res.status(e.status || 400).json({ error: e.message, code: e.code });
   }
 
-  // قطع اتصال کاربر را از روی پاسخ تشخیص می‌دهیم، نه درخواست:
-  // req رویداد close را به‌محض کامل‌شدن بدنه درخواست هم می‌فرستد.
+  // Client disconnect is detected on the response, not the request:
+  // req emits close as soon as the request body finishes reading.
   const ac = new AbortController();
   let finished = false;
   let headersSent = false;
@@ -70,8 +70,8 @@ router.post('/stream', requireAuth, requireApproved, async (req, res) => {
       source: 'web',
       ip: req.ip,
       onStart: info => {
-        // سربرگ‌ها را تا لحظه‌ای که مطمئن شویم کار شروع شده نگه می‌داریم،
-        // تا خطاهای پیش از شروع بتوانند کد وضعیت درست بدهند.
+        // Headers are held back until we know the work has started, so that
+        // pre-start errors can still set a proper status code.
         res.writeHead(200, {
           'Content-Type': 'text/event-stream; charset=utf-8',
           'Cache-Control': 'no-cache, no-transform',
@@ -94,7 +94,7 @@ router.post('/stream', requireAuth, requireApproved, async (req, res) => {
       completeness: result.completeness
     });
   } catch (err) {
-    if (ac.signal.aborted) { /* کاربر رفته — چیزی نفرست */ }
+    if (ac.signal.aborted) { /* the user is gone — send nothing */ }
     else if (headersSent) send('error', { message: err.message, code: err.code });
     else return res.status(err.status || 500).json({ error: err.message, code: err.code });
   } finally {

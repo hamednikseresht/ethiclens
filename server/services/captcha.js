@@ -13,7 +13,7 @@ import crypto from 'node:crypto';
  * which exist here — are the more effective barrier.
  */
 
-const TTL_MS = 10 * 60 * 1000;      // ۱۰ دقیقه
+const TTL_MS = 10 * 60 * 1000;      // 10 minutes
 const MAX_ATTEMPTS = 5;
 
 const FA_DIGITS = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
@@ -111,7 +111,7 @@ export function verifyCaptcha(session, answer) {
   const expected = crypto.createHash('sha256').update(normalized).digest('hex');
   const ok = crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(c.hash));
 
-  delete session.captcha;     // یک‌بارمصرف
+  delete session.captcha;     // single use
   return ok
     ? { ok: true }
     : { ok: false, reason: 'wrong', error: 'پاسخ تصویر امنیتی درست نیست. دوباره تلاش کنید.' };

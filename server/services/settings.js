@@ -4,15 +4,15 @@ import { DEFAULT_PROMPT, DEFAULT_PROMPT_KEY } from './default-prompt.js';
 const DEFAULTS = {
   site_title: 'دیدگاه اخلاق — Ethic Lens',
   site_tagline: 'دوراهی‌ات را از هشت منظر فلسفه اخلاق ببین',
-  site_url: '',                      // برای canonical و نقشه سایت — مثلاً https://ethiclens.ir
-  default_model: '',                 // به شکل "providerKey:modelId"
+  site_url: '',                      // برای canonical و نقشه سایت — مثلاً https:// for canonical links and the sitemap — e.g. https://ethiclens.ir
+  default_model: '',                 // in the form "providerKey:modelId"
   temperature: '0.6',
   top_p: '0.95',
   max_tokens: '4096',
   active_prompt_key: DEFAULT_PROMPT_KEY,
   allow_registration: '1',
-  require_verification: '1',        // تأیید ایمیل لازم است؟
-  verification_gate: 'analysis',    // analysis = فقط تحلیل بسته | login = ورود بسته
+  require_verification: '1',        // is email verification required?
+  verification_gate: 'analysis',    // analysis = only analysis gated | login = login gated
   mail_provider: 'brevo',           // brevo | mailgun
   brevo_api_key: '',
   mailgun_api_key: '',
