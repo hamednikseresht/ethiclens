@@ -299,6 +299,206 @@ sudo ufw enable
 ۳. **فوراً** از «تنظیمات حساب» رمز را عوض کنید.
 ۴. به `/admin` → «مدل و کلید» بروید و دکمه **آزمایش اتصال** را بزنید.
 
+
+---
+
+## ۹. ارسال ایمیل از سرور خودتان (اختیاری)
+
+این بخش فقط وقتی لازم است که بخواهید ایمیل تأیید و بازیابی رمز را به‌جای
+Brevo از سرور خودتان بفرستید. تا وقتی سرویس ایمیل تنظیم نشده، ثبت‌نام و
+تأیید مدیر مثل همیشه کار می‌کنند؛ فقط کد ثبت‌نام و بازیابی رمز غیرفعال‌اند.
+
+> **پیش از هر کاری این را بخوانید.** کد بخش آسان ماجراست. رساندن ایمیل از
+> یک سرور تازه به جی‌میل و اوت‌لوک به چهار چیز بستگی دارد که هیچ‌کدام در
+> این پروژه نیست: باز بودن پورت ۲۵ خروجی، رکورد معکوس (PTR)، امضای DKIM،
+> و اعتبار IP. اگر IP سرور در فهرست‌های سیاه باشد — که برای بازه‌های
+> ایرانی رایج است — ممکن است هیچ‌کدام از این کارها کافی نباشد.
+>
+> اینها دقیقاً ایمیل‌هایی هستند که **باید** برسند. تا وقتی گام ۹.۷ سبز
+> نشده، کلید «کد تأیید ثبت‌نام» را در پنل مدیریت روشن نکنید.
+
+### ۹.۱ اول از همه: آیا پورت ۲۵ اصلاً باز است؟
+
+بسیاری از ارائه‌دهندگان سرور، پورت ۲۵ خروجی را پیش‌فرض می‌بندند. اگر بسته
+باشد هیچ‌کدام از گام‌های بعدی فایده ندارد:
+
+```bash
+timeout 8 bash -c 'cat < /dev/null > /dev/tcp/gmail-smtp-in.l.google.com/25' && echo "باز است ✅" || echo "بسته است ❌"
+```
+
+اگر بسته بود، از پشتیبانی سرور بخواهید بازش کنند. بعضی ارائه‌دهندگان اصلاً
+باز نمی‌کنند؛ در آن صورت این مسیر برای شما بسته است و باید روی Brevo
+بمانید.
+
+### ۹.۲ نصب Postfix به‌صورت فقط‌ارسال
+
+```bash
+sudo apt update && sudo apt install -y postfix mailutils
+```
+
+در پرسش نصب، **Internet Site** را انتخاب کنید و برای «System mail name»
+مقدار `ethiclens.ir` را بگذارید.
+
+سپس آن را طوری تنظیم کنید که فقط از روی خود سرور قابل استفاده باشد:
+
+```bash
+sudo postconf -e 'inet_interfaces = loopback-only'
+sudo postconf -e 'myhostname = mail.ethiclens.ir'
+sudo postconf -e 'mydestination = localhost'
+sudo postconf -e 'smtp_tls_security_level = may'
+sudo postconf -e 'smtpd_tls_security_level = may'
+sudo systemctl restart postfix
+```
+
+> `inet_interfaces = loopback-only` مهم‌ترین خط اینجاست. بدون آن، Postfix
+> روی اینترنت گوش می‌دهد و اگر تنظیمات رله اشتباه باشد سرور شما تبدیل به
+> رله باز می‌شود — یعنی هرزنامه‌نویس‌ها از آن استفاده می‌کنند و IP شما
+> ظرف چند ساعت در فهرست سیاه می‌رود.
+
+آزمایش محلی:
+
+```bash
+echo "متن آزمایشی" | mail -s "آزمون Postfix" your-address@gmail.com
+sudo tail -f /var/log/mail.log
+```
+
+### ۹.۳ رکورد معکوس (PTR)
+
+نام معکوس IP سرور باید با `myhostname` یکی باشد. این را **فقط ارائه‌دهنده
+سرور** می‌تواند تنظیم کند — در پنل مدیریت سرور دنبال «Reverse DNS» یا
+«PTR» بگردید و مقدار `mail.ethiclens.ir` را بگذارید.
+
+بررسی:
+
+```bash
+dig -x $(curl -fsS https://api.ipify.org) +short
+```
+
+خروجی باید `mail.ethiclens.ir.` باشد. اگر نام ارائه‌دهنده را برگرداند،
+جی‌میل احتمال زیادی دارد پیام را رد کند.
+
+یک رکورد A هم برای همان نام لازم است. **این یکی باید ابر خاکستری باشد**،
+نه نارنجی — اگر از کلادفلر رد شود، IP واقعی سرور پنهان می‌ماند و PTR با
+آنچه گیرنده می‌بیند نمی‌خواند:
+
+| نوع | نام | مقدار | وضعیت |
+|---|---|---|---|
+| A | `mail` | IP سرور | ☁️ خاکستری (DNS only) |
+
+### ۹.۴ رکورد SPF
+
+اعلام می‌کند کدام سرورها حق دارند از طرف دامنه شما ایمیل بفرستند. در
+کلادفلر یک رکورد TXT روی دامنه اصلی بسازید:
+
+```
+v=spf1 ip4:<IP سرور> -all
+```
+
+`-all` یعنی «هیچ سرور دیگری مجاز نیست». اگر همزمان از Brevo هم استفاده
+می‌کنید، بخش آن را اضافه کنید وگرنه ایمیل‌های Brevo رد می‌شوند:
+
+```
+v=spf1 ip4:<IP سرور> include:spf.brevo.com -all
+```
+
+### ۹.۵ امضای DKIM
+
+طولانی‌ترین گام، و همانی که بیشترین اثر را روی نرسیدن به اسپم دارد.
+
+```bash
+sudo apt install -y opendkim opendkim-tools
+sudo mkdir -p /etc/opendkim/keys/ethiclens.ir
+sudo opendkim-genkey -b 2048 -d ethiclens.ir -D /etc/opendkim/keys/ethiclens.ir -s mail -v
+sudo chown -R opendkim:opendkim /etc/opendkim
+sudo chmod 600 /etc/opendkim/keys/ethiclens.ir/mail.private
+```
+
+پیکربندی:
+
+```bash
+sudo tee -a /etc/opendkim.conf > /dev/null <<'CONF'
+Canonicalization   relaxed/simple
+Mode               sv
+SubDomains         no
+Socket             inet:8891@localhost
+KeyTable           /etc/opendkim/key.table
+SigningTable       refile:/etc/opendkim/signing.table
+InternalHosts      127.0.0.1, ::1, localhost
+CONF
+
+echo "mail._domainkey.ethiclens.ir ethiclens.ir:mail:/etc/opendkim/keys/ethiclens.ir/mail.private" \
+  | sudo tee /etc/opendkim/key.table
+echo "*@ethiclens.ir mail._domainkey.ethiclens.ir" \
+  | sudo tee /etc/opendkim/signing.table
+```
+
+وصل‌کردن به Postfix:
+
+```bash
+sudo postconf -e 'milter_protocol = 6'
+sudo postconf -e 'milter_default_action = accept'
+sudo postconf -e 'smtpd_milters = inet:localhost:8891'
+sudo postconf -e 'non_smtpd_milters = inet:localhost:8891'
+sudo systemctl restart opendkim postfix
+```
+
+حالا کلید عمومی را ببینید و در کلادفلر ثبت کنید:
+
+```bash
+sudo cat /etc/opendkim/keys/ethiclens.ir/mail.txt
+```
+
+رکورد TXT با نام `mail._domainkey` و مقداری که در پرانتزها آمده (بدون
+گیومه‌ها و بدون شکستگی خط).
+
+### ۹.۶ رکورد DMARC
+
+رکورد TXT با نام `_dmarc`:
+
+```
+v=DMARC1; p=none; rua=mailto:postmaster@ethiclens.ir
+```
+
+با `p=none` شروع کنید. یعنی «فقط گزارش بده، چیزی را رد نکن» — تا وقتی
+مطمئن شوید SPF و DKIM درست کار می‌کنند. بعداً می‌توانید به `p=quarantine`
+و سپس `p=reject` برسید.
+
+### ۹.۷ آزمون واقعی — این گام را رد نکنید
+
+اول از پنل مدیریت تنظیم کنید:
+
+۱. پنل مدیریت ← **ایمیل و تأیید حساب**
+۲. ارائه‌دهنده: **SMTP — سرور ایمیل خودم**
+۳. نشانی سرور `localhost`، پورت `25`، نام کاربری و رمز خالی
+۴. ایمیل فرستنده: `no-reply@ethiclens.ir`
+۵. **ذخیره**، سپس **ارسال ایمیل آزمایشی**
+
+سپس کیفیت واقعی تحویل را بسنجید:
+
+- به <https://www.mail-tester.com> بروید، نشانی‌ای که می‌دهد را بردارید،
+  و از پنل مدیریت ایمیل آزمایشی به آن بفرستید. نمره زیر ۸ از ۱۰ یعنی
+  هنوز کاری مانده.
+- یک ثبت‌نام واقعی با یک آدرس جی‌میل انجام دهید و **پوشه اسپم را هم
+  ببینید**. رسیدن به اسپم یعنی هنوز آماده نیست.
+- بررسی فهرست سیاه: <https://mxtoolbox.com/blacklists.aspx>
+
+فقط وقتی هر سه سبز شد، در پنل مدیریت کلید **«هنگام ثبت‌نام، کد تأیید به
+ایمیل فرستاده شود»** را روشن کنید.
+
+### ۹.۸ اگر جواب نداد
+
+برگشتن به Brevo یک تغییر تنظیم است: پنل مدیریت ← ایمیل ← ارائه‌دهنده
+**Brevo** و وارد کردن کلید. هیچ چیز دیگری لازم نیست عوض شود.
+
+| نشانه | معنی |
+|---|---|
+| `Connection refused` در آزمایش | Postfix اجرا نیست: `sudo systemctl status postfix` |
+| `Connection timed out` | پورت ۲۵ خروجی بسته است (گام ۹.۱) |
+| ایمیل می‌رود ولی به اسپم | DKIM یا PTR ناقص است؛ mail-tester چه می‌گوید؟ |
+| جی‌میل با `5.7.1` رد می‌کند | IP در فهرست سیاه است یا PTR نمی‌خواند |
+| `Helo command rejected` | `myhostname` با PTR یکی نیست |
+| هیچ لاگی نیست | `sudo tail -100 /var/log/mail.log` |
+
 ---
 
 ## به‌روزرسانی نسخه
@@ -355,3 +555,6 @@ sudo crontab -e
 | حلقه بی‌پایان تغییر مسیر | حالت SSL روی Flexible است؛ باید Full (strict) باشد |
 | همه کاربران با هم قفل می‌شوند | `cloudflare-realip.conf` نصب یا `include` نشده است |
 | نشانی همه کاربران یکی دیده می‌شود | همان مورد بالا — با `tail /var/log/nginx/ethiclens.access.log` بررسی کنید |
+| کد تأیید ثبت‌نام نمی‌رسد | مسیر ارسال ایمیل تنظیم نشده — پنل مدیریت ← ایمیل، و بخش ۹ |
+| «رمزم را فراموش کرده‌ام» دیده نمی‌شود | همان مورد بالا؛ این پیوند فقط وقتی ایمیل تنظیم باشد نمایش داده می‌شود |
+| ایمیل به پوشه اسپم می‌رود | DKIM یا PTR ناقص است — بخش ۹.۵ و ۹.۳ |
