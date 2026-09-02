@@ -340,7 +340,7 @@ export function secondsSinceLastToken(userId, purpose = 'verify') {
 /* ==========================================================================
    Email layout
    ========================================================================== */
-function layout({ title, intro, buttonLabel, buttonUrl, footer, rawUrl }) {
+function layout({ title, intro, buttonLabel, buttonUrl, footer, rawUrl, code }) {
   const brand = getSetting('site_title') || 'Ethic Lens';
   return `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -356,20 +356,29 @@ function layout({ title, intro, buttonLabel, buttonUrl, footer, rawUrl }) {
         <tr><td style="padding:28px;">
           <h1 style="margin:0 0 14px;font-size:19px;color:#0f172a;line-height:1.6;">${esc(title)}</h1>
           <p style="margin:0 0 22px;font-size:14px;color:#475569;line-height:2;">${intro}</p>
-          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">
-            <tr><td style="background:#2563eb;border-radius:10px;">
-              <a href="${esc(buttonUrl)}"
-                 style="display:inline-block;padding:13px 30px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;">
-                ${esc(buttonLabel)}
-              </a>
-            </td></tr>
-          </table>
-          <p style="margin:0 0 8px;font-size:12px;color:#64748b;line-height:1.9;">
-            اگر دکمه کار نکرد، این نشانی را در مرورگر باز کنید:
-          </p>
-          <p style="margin:0 0 22px;font-size:12px;color:#2563eb;direction:ltr;text-align:left;word-break:break-all;">
-            ${esc(rawUrl)}
-          </p>
+${code ? `
+            <!-- Codes use a monospace stack with wide spacing so digits stay
+                 unambiguous, and force LTR so the RTL body cannot reorder them. -->
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px;width:100%;">
+              <tr><td align="center" style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:12px;padding:20px;">
+                <div style="font-family:'Courier New',Consolas,monospace;font-size:34px;font-weight:bold;
+                            letter-spacing:10px;color:#0f172a;direction:ltr;">${esc(code)}</div>
+              </td></tr>
+            </table>` : `
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">
+              <tr><td style="background:#2563eb;border-radius:10px;">
+                <a href="${esc(buttonUrl)}"
+                   style="display:inline-block;padding:13px 30px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;">
+                  ${esc(buttonLabel)}
+                </a>
+              </td></tr>
+            </table>
+            <p style="margin:0 0 8px;font-size:12px;color:#64748b;line-height:1.9;">
+              اگر دکمه کار نکرد، این نشانی را در مرورگر باز کنید:
+            </p>
+            <p style="margin:0 0 22px;font-size:12px;color:#2563eb;direction:ltr;text-align:left;word-break:break-all;">
+              ${esc(rawUrl)}
+            </p>`}
           <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.9;border-top:1px solid #e2e8f0;padding-top:16px;">
             ${footer}
           </p>
@@ -398,5 +407,52 @@ export function verificationEmail({ name, url }) {
 
 export async function sendVerification({ user, url, tag = 'verify' }) {
   const { subject, html } = verificationEmail({ name: user.name, url });
+  return sendMail({ to: user.email, subject, html, tag });
+}
+
+/* ---------------- One-time code emails ---------------- */
+
+/**
+ * The code is repeated in the subject line on purpose. Many mail clients show
+ * the subject in a notification, which lets someone read the code without
+ * opening the message — and on phones that is most of the experience.
+ */
+export function verificationCodeEmail({ name, code, minutes }) {
+  const brand = getSetting('site_title') || 'Ethic Lens';
+  return {
+    subject: `${code} — کد تأیید ${brand}`,
+    html: layout({
+      title: 'کد تأیید نشانی ایمیل',
+      intro: `${esc(name || 'سلام')}، این کد را در صفحه تأیید وارد کنید.
+              کد تا ${minutes} دقیقه معتبر است.`,
+      code,
+      footer: 'اگر شما در دیدگاه اخلاق ثبت‌نام نکرده‌اید، این ایمیل را نادیده بگیرید. ' +
+              'بدون وارد کردن این کد هیچ اتفاقی نمی‌افتد.'
+    })
+  };
+}
+
+export function resetCodeEmail({ name, code, minutes }) {
+  const brand = getSetting('site_title') || 'Ethic Lens';
+  return {
+    subject: `${code} — کد بازیابی رمز ${brand}`,
+    html: layout({
+      title: 'بازیابی رمز عبور',
+      intro: `${esc(name || 'سلام')}، برای تعیین رمز تازه این کد را وارد کنید.
+              کد تا ${minutes} دقیقه معتبر است.`,
+      code,
+      footer: 'اگر شما درخواست بازیابی رمز نداده‌اید، این ایمیل را نادیده بگیرید — ' +
+              'رمز فعلی شما تغییر نکرده و بدون این کد قابل تغییر نیست.'
+    })
+  };
+}
+
+export async function sendVerificationCode({ user, code, minutes, tag = 'verify-code' }) {
+  const { subject, html } = verificationCodeEmail({ name: user.name, code, minutes });
+  return sendMail({ to: user.email, subject, html, tag });
+}
+
+export async function sendResetCode({ user, code, minutes, tag = 'reset-code' }) {
+  const { subject, html } = resetCodeEmail({ name: user.name, code, minutes });
   return sendMail({ to: user.email, subject, html, tag });
 }
