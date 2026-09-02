@@ -32,7 +32,8 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "express-session": "^1.18.1",
-    "helmet": "^8.0.0"
+    "helmet": "^8.0.0",
+    "nodemailer": "^9.1.1"
   },
   "allowScripts": {
     "better-sqlite3": true

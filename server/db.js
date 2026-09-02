@@ -276,6 +276,12 @@ function addMissingColumns() {
     },
     models: {
       min_tier: "TEXT NOT NULL DEFAULT 'basic'"
+    },
+    email_tokens: {
+      // Wrong-guess counter for six-digit codes. Link tokens never need it —
+      // they are unguessable — but a short code has to die after a few misses
+      // or the million-value space can simply be walked through.
+      attempts: 'INTEGER NOT NULL DEFAULT 0'
     }
   };
 
