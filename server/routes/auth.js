@@ -130,8 +130,12 @@ router.post('/register', registerLimiter, async (req, res) => {
   // address while the tab is still open. A failure here is logged and not
   // returned: the account exists either way, and the code can be requested
   // again from the pending screen.
+  //
+  // Off unless an admin turned it on. With it off the flow is exactly what it
+  // was before codes existed, so enabling the feature is a deliberate act
+  // rather than something that changes underneath a running site.
   let codeSent = false;
-  if (mailConfigured()) {
+  if (getSetting('signup_code') === '1' && mailConfigured()) {
     try {
       const code = createOtp(user.id, 'verify-code', req.ip);
       await sendVerificationCode({ user, code, minutes: OTP_TTL_MINUTES });
@@ -201,7 +205,12 @@ router.get('/me', (req, res) => {
     settings: {
       siteTitle: getSetting('site_title'),
       siteTagline: getSetting('site_tagline'),
-      allowRegistration: getSetting('allow_registration') === '1'
+      allowRegistration: getSetting('allow_registration') === '1',
+      // Both depend on mail actually working. The login page uses these to
+      // decide whether to offer password recovery and the code step at all —
+      // a link to a flow that cannot send anything is worse than no link.
+      signupCode: getSetting('signup_code') === '1' && mailConfigured(),
+      passwordReset: mailConfigured()
     }
   });
 });
@@ -320,6 +329,11 @@ const otpLimiter = rateLimit({
 
 /** Issue a verification code for the signed-in account. */
 router.post('/send-code', requireAuth, otpLimiter, async (req, res) => {
+  // Refuse when the feature is off, so a stale tab or a direct call cannot
+  // drive a flow the admin has disabled.
+  if (getSetting('signup_code') !== '1') {
+    return res.status(404).json({ error: 'تأیید ایمیل با کد در این سامانه فعال نیست.' });
+  }
   if (req.user.email_verified) {
     return res.status(400).json({ error: 'ایمیل شما از قبل تأیید شده است.' });
   }
@@ -346,6 +360,11 @@ router.post('/send-code', requireAuth, otpLimiter, async (req, res) => {
 
 /** Check a verification code. Marks the email verified; does not activate the account. */
 router.post('/verify-code', requireAuth, otpLimiter, (req, res) => {
+  // Refuse when the feature is off, so a stale tab or a direct call cannot
+  // drive a flow the admin has disabled.
+  if (getSetting('signup_code') !== '1') {
+    return res.status(404).json({ error: 'تأیید ایمیل با کد در این سامانه فعال نیست.' });
+  }
   if (req.user.email_verified) return res.json({ ok: true, alreadyVerified: true });
 
   const result = verifyOtp(req.user.id, 'verify-code', req.body?.code);

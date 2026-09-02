@@ -210,7 +210,8 @@ const PUBLIC_SETTINGS = [
   'site_title', 'site_tagline', 'site_url', 'og_image', 'default_model',
   'temperature', 'top_p', 'max_tokens', 'reasoning_headroom', 'active_prompt_key',
   'allow_registration', 'default_daily_quota',
-  'require_verification', 'verification_gate',
+  'signup_code', 'require_verification', 'verification_gate',
+  'smtp_host', 'smtp_port', 'smtp_user', 'smtp_secure',
   'mail_provider', 'mailgun_domain', 'mailgun_base_url', 'mail_from_name', 'mail_from_email'
 ];
 
@@ -228,7 +229,11 @@ router.get('/settings', (req, res) => {
     mailProviders: MAIL_PROVIDERS,
     mailProvider: mailProvider(),
     mailKeySet: mailProvider() === 'brevo'
-      ? !!getSetting('brevo_api_key') : !!getSetting('mailgun_api_key')
+      ? !!getSetting('brevo_api_key') : !!getSetting('mailgun_api_key'),
+    // Never send the secrets themselves — only whether each one is present,
+    // so the form can say "leave blank to keep" instead of showing a value.
+    brevoKeySet: !!getSetting('brevo_api_key'),
+    smtpPassSet: !!getSetting('smtp_pass')
   });
 });
 
@@ -236,8 +241,9 @@ const ALLOWED_SETTINGS = new Set([
   'site_title', 'site_tagline', 'site_url', 'og_image', 'default_model',
   'temperature', 'top_p', 'max_tokens', 'reasoning_headroom', 'active_prompt_key',
   'allow_registration', 'default_daily_quota',
-  'require_verification', 'verification_gate',
-  'mail_provider', 'brevo_api_key',
+  'signup_code', 'require_verification', 'verification_gate',
+  'smtp_host', 'smtp_port', 'smtp_user', 'smtp_secure',
+  'mail_provider', 'brevo_api_key', 'smtp_pass',
   'mailgun_api_key', 'mailgun_domain', 'mailgun_base_url', 'mail_from_name', 'mail_from_email'
 ]);
 

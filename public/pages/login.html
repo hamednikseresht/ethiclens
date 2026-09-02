@@ -138,6 +138,10 @@ try {
   if (s.settings && s.settings.allowRegistration === false) {
     $('#tabRegister').classList.add('hidden');
   }
+  // Password recovery only exists if mail can actually be sent. Offering the
+  // link without a working transport sends the user into a flow that will
+  // silently never deliver anything.
+  if (!s.settings?.passwordReset) $('#forgotLink')?.closest('p')?.classList.add('hidden');
 } catch { renderTopbar(); }
 
 if (params.get('mode') === 'register') { showTab('register'); newCaptcha(); }

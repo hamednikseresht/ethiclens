@@ -18,6 +18,11 @@ const DEFAULTS = {
   reasoning_headroom: '4000',
   active_prompt_key: DEFAULT_PROMPT_KEY,
   allow_registration: '1',
+  // Email code at signup. Off by default, which is the original behaviour:
+  // register, land in the pending queue, wait for an admin. Turning it on
+  // adds a code step before that queue — it never replaces the admin gate.
+  signup_code: '0',
+
   require_verification: '1',        // is email verification required?
   verification_gate: 'analysis',    // analysis = only analysis gated | login = login gated
   mail_provider: 'brevo',           // brevo | mailgun

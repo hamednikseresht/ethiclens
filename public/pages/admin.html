@@ -1213,23 +1213,42 @@ loaders.mail = async () => {
   host.innerHTML = `
     <h2 class="sec-h">ایمیل و تأیید حساب</h2>
     <p class="sec-p">
-      ایمیل‌های تأیید از راه API میل‌گان فرستاده می‌شوند. کلید فقط روی سرور می‌ماند
-      و هرگز به مرورگر فرستاده نمی‌شود.
+      انتخاب کنید ایمیل‌ها از کدام مسیر فرستاده شوند. کلیدها و رمزها فقط روی سرور
+      می‌مانند و هرگز به مرورگر فرستاده نمی‌شوند.
     </p>
 
-    ${s.mailConfigured ? '' : '<div class="alert alert-warn">سرویس ایمیل هنوز تنظیم نشده است. تا وقتی کلید و دامنه را وارد نکنید، حساب‌های تازه بدون تأیید ایمیل فعال می‌شوند.</div>'}
+    ${s.mailConfigured ? '' : '<div class="alert alert-warn">سرویس ایمیل هنوز تنظیم نشده است. تا وقتی تنظیم نشود، کد تأیید ثبت‌نام و بازیابی رمز کار نمی‌کنند.</div>'}
 
     <div class="card" style="margin-bottom:1.1rem">
-      <div class="card-head"><h3>📮 اتصال میل‌گان</h3>
-        ${s.mailKeySet ? '<span class="badge badge-success">کلید ثبت شده</span>' : '<span class="badge badge-danger">بدون کلید</span>'}
+      <div class="card-head"><h3>📮 مسیر ارسال ایمیل</h3>
+        ${s.mailConfigured ? '<span class="badge badge-success">آماده</span>' : '<span class="badge badge-danger">تنظیم‌نشده</span>'}
       </div>
       <div class="card-body">
         <div class="field">
-          <label for="mg-key">کلید API میل‌گان</label>
-          <input class="input mono" id="mg-key" type="password" placeholder="${s.mailKeySet ? 'برای حفظ کلید فعلی خالی بگذارید' : 'key-… یا کلید Sending'}">
-          <span class="hint">در پنل میل‌گان: Settings ← API Keys</span>
+          <label for="ml-provider">ارائه‌دهنده</label>
+          <select class="select" id="ml-provider">
+            <option value="brevo"   ${(s.mail_provider || 'brevo') === 'brevo'   ? 'selected' : ''}>Brevo — سرویس ابری</option>
+            <option value="mailgun" ${s.mail_provider === 'mailgun' ? 'selected' : ''}>Mailgun — سرویس ابری</option>
+            <option value="smtp"    ${s.mail_provider === 'smtp'    ? 'selected' : ''}>SMTP — سرور ایمیل خودم</option>
+          </select>
         </div>
-        <div class="grid-2">
+
+        <!-- Only the selected provider's fields are shown. Leaving all three
+             visible made it easy to fill in the wrong set and wonder why
+             nothing sent. -->
+        <div class="grid-2 ml-pane" data-for="brevo">
+          <div class="field" style="grid-column:1/-1">
+            <label for="bv-key">کلید API برِوو</label>
+            <input class="input mono" id="bv-key" type="password" placeholder="${s.brevoKeySet ? 'برای حفظ کلید فعلی خالی بگذارید' : 'xkeysib-…'}">
+            <span class="hint">در پنل برِوو: SMTP &amp; API ← API Keys</span>
+          </div>
+        </div>
+
+        <div class="grid-2 ml-pane" data-for="mailgun">
+          <div class="field" style="grid-column:1/-1">
+            <label for="mg-key">کلید API میل‌گان</label>
+            <input class="input mono" id="mg-key" type="password" placeholder="${s.mailKeySet ? 'برای حفظ کلید فعلی خالی بگذارید' : 'key-… یا کلید Sending'}">
+          </div>
           <div class="field">
             <label for="mg-domain">دامنه ارسال</label>
             <input class="input mono" id="mg-domain" value="${esc(s.mailgun_domain || '')}" placeholder="mg.example.com">
@@ -1240,17 +1259,53 @@ loaders.mail = async () => {
               <option value="https://api.mailgun.net" ${s.mailgun_base_url !== 'https://api.eu.mailgun.net' ? 'selected' : ''}>آمریکا — api.mailgun.net</option>
               <option value="https://api.eu.mailgun.net" ${s.mailgun_base_url === 'https://api.eu.mailgun.net' ? 'selected' : ''}>اروپا — api.eu.mailgun.net</option>
             </select>
-            <span class="hint">اگر حسابتان اروپایی است و این را اشتباه بگذارید، خطای ۴۰۱ می‌گیرید.</span>
           </div>
+        </div>
+
+        <div class="ml-pane" data-for="smtp">
+          <div class="alert alert-warn" style="font-size:.84rem">
+            <strong>پیش از اتکا به این مسیر آزمایش کنید.</strong> تحویل ایمیل از سرور خودتان
+            به جی‌میل و اوت‌لوک به باز بودن پورت ۲۵ خروجی، رکورد معکوس (PTR) منطبق با نام
+            سرور، و رکوردهای SPF و DKIM و DMARC بستگی دارد. سرور تازه اعتبار ارسال ندارد و
+            پیام‌های اولش معمولاً به پوشه اسپم می‌روند.
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="sm-host">نشانی سرور</label>
+              <input class="input mono" id="sm-host" value="${esc(s.smtp_host || '')}" placeholder="localhost">
+              <span class="hint">برای Postfix روی همین سرور: localhost</span>
+            </div>
+            <div class="field">
+              <label for="sm-port">پورت</label>
+              <input class="input mono" id="sm-port" type="number" min="1" max="65535" value="${esc(s.smtp_port || '25')}" placeholder="25">
+              <span class="hint">۲۵ برای رله محلی، ۵۸۷ با TLS، ۴۶۵ با SSL</span>
+            </div>
+            <div class="field">
+              <label for="sm-user">نام کاربری <span class="opt">اختیاری</span></label>
+              <input class="input mono" id="sm-user" value="${esc(s.smtp_user || '')}" placeholder="برای رله محلی خالی بگذارید">
+            </div>
+            <div class="field">
+              <label for="sm-pass">رمز <span class="opt">اختیاری</span></label>
+              <input class="input mono" id="sm-pass" type="password" placeholder="${s.smtpPassSet ? 'برای حفظ رمز فعلی خالی بگذارید' : 'برای رله محلی خالی بگذارید'}">
+            </div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="sm-secure" ${s.smtp_secure === '1' ? 'checked' : ''}>
+            اتصال با SSL از ابتدا (پورت ۴۶۵)
+          </label>
+        </div>
+
+        <div class="grid-2" style="margin-top:1rem">
           <div class="field">
             <label for="mg-fname">نام فرستنده</label>
-            <input class="input" id="mg-fname" value="${esc(s.mail_from_name || '')}" placeholder="Ethic Lens">
+            <input class="input" id="mg-fname" value="${esc(s.mail_from_name || '')}" placeholder="دیدگاه اخلاق">
           </div>
           <div class="field">
             <label for="mg-femail">ایمیل فرستنده</label>
-            <input class="input mono" id="mg-femail" value="${esc(s.mail_from_email || '')}" placeholder="no-reply@mg.example.com">
+            <input class="input mono" id="mg-femail" value="${esc(s.mail_from_email || '')}" placeholder="no-reply@ethiclens.ir">
           </div>
         </div>
+
         <div class="row">
           <button class="btn btn-primary" id="saveMail">ذخیره</button>
           <button class="btn" id="testMail">✉️ ارسال ایمیل آزمایشی</button>
@@ -1262,6 +1317,15 @@ loaders.mail = async () => {
     <div class="card">
       <div class="card-head"><h3>🔒 سیاست تأیید</h3></div>
       <div class="card-body">
+          <label class="switch" style="margin-bottom:.5rem">
+            <input type="checkbox" id="vr-code" ${s.signup_code === '1' ? 'checked' : ''}>
+            هنگام ثبت‌نام، کد تأیید به ایمیل فرستاده شود
+          </label>
+          <p class="hint" style="margin:0 0 1.1rem">
+            خاموش که باشد، ثبت‌نام دقیقاً مثل قبل کار می‌کند: کاربر ثبت‌نام می‌کند و در صف
+            تأیید مدیر می‌ماند. روشن‌کردنش یک مرحله <em>پیش از</em> آن صف اضافه می‌کند و
+            جای تأیید مدیر را نمی‌گیرد. برای کار کردن، مسیر ارسال ایمیل باید تنظیم شده باشد.
+          </p>
         <label class="switch" style="margin-bottom:1.1rem">
           <input type="checkbox" id="vr-req" ${s.require_verification === '1' ? 'checked' : ''}>
           تأیید ایمیل الزامی باشد
@@ -1286,14 +1350,33 @@ loaders.mail = async () => {
     </div>`;
 
   $('#saveMail').onclick = async () => {
+    const provider = $('#ml-provider').value;
     const body = {
-      mailgun_domain: $('#mg-domain').value.trim(),
-      mailgun_base_url: $('#mg-base').value,
+      mail_provider: provider,
       mail_from_name: $('#mg-fname').value.trim(),
       mail_from_email: $('#mg-femail').value.trim()
     };
-    const key = $('#mg-key').value.trim();
-    if (key) body.mailgun_api_key = key;
+
+    // Only the selected provider's fields are sent. Posting all three sets
+    // would overwrite a configured provider with the blank inputs of one the
+    // admin never filled in.
+    if (provider === 'brevo') {
+      const k = $('#bv-key').value.trim();
+      if (k) body.brevo_api_key = k;
+    } else if (provider === 'mailgun') {
+      body.mailgun_domain = $('#mg-domain').value.trim();
+      body.mailgun_base_url = $('#mg-base').value;
+      const k = $('#mg-key').value.trim();
+      if (k) body.mailgun_api_key = k;
+    } else {
+      body.smtp_host = $('#sm-host').value.trim();
+      body.smtp_port = $('#sm-port').value.trim();
+      body.smtp_user = $('#sm-user').value.trim();
+      body.smtp_secure = $('#sm-secure').checked ? '1' : '0';
+      const p = $('#sm-pass').value;
+      if (p) body.smtp_pass = p;
+    }
+
     try {
       await api.post('/api/admin/settings', body);
       toast('ذخیره شد.', 'ok');
@@ -1301,9 +1384,20 @@ loaders.mail = async () => {
     } catch (e) { toast(e.message, 'err'); }
   };
 
+  /* Show only the selected provider fields. */
+  const syncPanes = () => {
+    const v = $('#ml-provider').value;
+    for (const pane of document.querySelectorAll('.ml-pane')) {
+      pane.classList.toggle('hidden', pane.dataset.for !== v);
+    }
+  };
+  $('#ml-provider').onchange = syncPanes;
+  syncPanes();
+
   $('#saveGate').onclick = async () => {
     try {
       await api.post('/api/admin/settings', {
+        signup_code: $('#vr-code').checked ? '1' : '0',
         require_verification: $('#vr-req').checked ? '1' : '0',
         verification_gate: $('#vr-gate').value
       });

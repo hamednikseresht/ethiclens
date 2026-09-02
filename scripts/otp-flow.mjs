@@ -83,7 +83,7 @@ function readCode(userId, purpose) {
  * The previous values are captured and restored in a finally block; leaving
  * a test transport behind would silently break real verification mail.
  */
-const MAIL_KEYS = ['mail_provider', 'smtp_host', 'smtp_port', 'mail_from_email'];
+const MAIL_KEYS = ['mail_provider', 'smtp_host', 'smtp_port', 'mail_from_email', 'signup_code'];
 const savedMail = Object.fromEntries(
   MAIL_KEYS.map(k => [k, db.prepare('SELECT value FROM settings WHERE key = ?').get(k)?.value ?? null])
 );
@@ -106,6 +106,13 @@ setSetting('smtp_port', '9');           // discard port — refuses immediately
 setSetting('mail_from_email', 'test@example.invalid');
 process.on('exit', restoreMail);
 
+/**
+ * The code step is off by default, so the suite has to turn it on. That is
+ * itself worth asserting first: shipping with it on would change how every
+ * existing site's registration behaves.
+ */
+function signupCode(on) { setSetting('signup_code', on ? '1' : '0'); }
+
 const stamp = Date.now();
 const EMAIL = `otp-test-${stamp}@example.com`;
 const PASSWORD = 'first-password-1';
@@ -115,22 +122,53 @@ console.log('══════════════════════�
 console.log('  آزمون کد یک‌بارمصرف');
 console.log('══════════════════════════════════════════════');
 
-/* ================= Signup with code ================= */
+/** Recover the CAPTCHA answer from the newest session row. */
+function solveCaptcha() {
+  const row = db.prepare('SELECT data FROM sessions ORDER BY rowid DESC LIMIT 1').get();
+  try {
+    const target = JSON.parse(row.data).captcha?.hash;
+    for (let n = -50; n < 200; n++) {
+      if (crypto.createHash('sha256').update(String(n)).digest('hex') === target) return String(n);
+    }
+  } catch {}
+  return null;
+}
+
+/* ================= Default: the old flow ================= */
+section('پیش‌فرض — سیستم قبلی با تأیید مدیر');
+
+check('پیش‌فرض signup_code خاموش است', savedMail.signup_code === null || savedMail.signup_code === '0',
+  `مقدار ذخیره‌شده: ${savedMail.signup_code}`);
+
+signupCode(false);
+const plain = makeClient();
+await plain('/api/auth/me');
+const pcap = await plain('/api/auth/captcha');
+const pAnswer = solveCaptcha();
+const pReg = await plain('/api/auth/register', {
+  method: 'POST',
+  body: { email: `plain-${stamp}@example.com`, password: 'plain-password-1', captcha: pAnswer }
+});
+check('ثبت‌نام بدون کد انجام می‌شود', pReg.status === 200, `status ${pReg.status}`);
+check('هیچ کدی فرستاده نمی‌شود', pReg.json?.codeSent === false);
+check('پیام همان انتظار تأیید مدیر است', /تأیید مدیر/.test(pReg.json?.message || ''), pReg.json?.message);
+
+const plainRow = db.prepare('SELECT id FROM users WHERE email = ?').get(`plain-${stamp}@example.com`);
+if (plainRow) {
+  const codes = db.prepare("SELECT COUNT(*) c FROM email_tokens WHERE user_id = ?").get(plainRow.id).c;
+  check('هیچ توکنی در پایگاه داده ساخته نشد', codes === 0, `${codes} توکن`);
+  db.prepare('DELETE FROM users WHERE id = ?').run(plainRow.id);
+}
+
+/* ================= With the code step enabled ================= */
+signupCode(true);
 section('ثبت‌نام و کد تأیید');
 
 const user = makeClient();
 await user('/api/auth/me');
 
 const cap = await user('/api/auth/captcha');
-const capRow = db.prepare("SELECT data FROM sessions ORDER BY rowid DESC LIMIT 1").get();
-let capAnswer = null;
-try {
-  const sess = JSON.parse(capRow.data);
-  const target = sess.captcha?.hash;
-  for (let n = -50; n < 200 && capAnswer === null; n++) {
-    if (crypto.createHash('sha256').update(String(n)).digest('hex') === target) capAnswer = String(n);
-  }
-} catch {}
+const capAnswer = solveCaptcha();
 
 const reg = await user('/api/auth/register', {
   method: 'POST',
