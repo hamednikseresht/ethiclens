@@ -6,9 +6,18 @@ import { escapeHtml as esc } from './seo.js';
 /**
  * Transactional email.
  *
- * Two providers are supported and both work over their HTTP API rather than
- * SMTP — it is a plain fetch and adds no new dependency to the project.
- * Adding a provider means one more entry in the PROVIDERS table below.
+ * Three transports are supported: two hosted services over their HTTP API,
+ * and SMTP for sending from the project's own server.
+ *
+ * A note on the SMTP option, because the code is the easy half. Delivering
+ * mail from your own machine to Gmail or Outlook depends on things outside
+ * this file: outbound port 25 being open at all (many hosts block it), a
+ * reverse DNS record matching the HELO name, and SPF, DKIM and DMARC on the
+ * domain. Even with all of that a fresh IP has no sending reputation and its
+ * first messages commonly land in spam. Verification and password-reset mail
+ * is the worst category to lose that way — a message that does not arrive
+ * means the account cannot be created or recovered. Keeping the hosted
+ * providers configured alongside means switching back is one setting.
  */
 
 export const MAIL_PROVIDERS = [
@@ -25,6 +34,14 @@ export const MAIL_PROVIDERS = [
     keyHint: 'کلید ارسال (Sending API key)',
     needsDomain: true,
     docs: 'https://app.mailgun.com/settings/api_security'
+  },
+  {
+    key: 'smtp',
+    label: 'SMTP سرور خودم',
+    keyHint: 'رمز حساب SMTP — برای Postfix محلی خالی بگذارید',
+    needsDomain: false,
+    selfHosted: true,
+    docs: ''
   }
 ];
 
@@ -44,12 +61,27 @@ export function mailConfig() {
     baseUrl: (getSetting('mailgun_base_url') || process.env.MAILGUN_BASE_URL
               || 'https://api.mailgun.net').replace(/\/+$/, ''),
     fromName: getSetting('mail_from_name') || 'Ethic Lens',
-    fromEmail: getSetting('mail_from_email') || ''
+    fromEmail: getSetting('mail_from_email') || '',
+
+    // SMTP. Defaults suit a Postfix relay listening on localhost, which is the
+    // usual shape of "send from my own server": no credentials, no TLS on the
+    // hop because it never leaves the machine.
+    smtpHost: getSetting('smtp_host') || process.env.SMTP_HOST || 'localhost',
+    smtpPort: Number(getSetting('smtp_port') || process.env.SMTP_PORT || 25),
+    smtpUser: getSetting('smtp_user') || process.env.SMTP_USER || '',
+    smtpPass: getSetting('smtp_pass') || process.env.SMTP_PASS || '',
+    smtpSecure: (getSetting('smtp_secure') || '0') === '1'
   };
 }
 
 export function mailConfigured() {
   const c = mailConfig();
+
+  // SMTP needs no API key — a local relay often needs no credentials at all.
+  // The sender address is the one thing that must be set, since a missing
+  // From is what gets a message rejected outright.
+  if (c.provider === 'smtp') return !!c.smtpHost && !!c.fromEmail;
+
   if (!c.apiKey) return false;
   // Brevo needs no domain; only the sender address must be verified on the account
   if (c.provider === 'brevo') return !!c.fromEmail;
@@ -57,9 +89,12 @@ export function mailConfigured() {
 }
 
 function notConfigured(c) {
-  const e = new Error(c.provider === 'brevo'
-    ? 'سرویس ایمیل تنظیم نشده است. در پنل مدیریت کلید برِوو و نشانی فرستنده را وارد کنید.'
-    : 'سرویس ایمیل تنظیم نشده است. در پنل مدیریت کلید و دامنه میل‌گان را وارد کنید.');
+  const messages = {
+    brevo:   'سرویس ایمیل تنظیم نشده است. در پنل مدیریت کلید برِوو و نشانی فرستنده را وارد کنید.',
+    mailgun: 'سرویس ایمیل تنظیم نشده است. در پنل مدیریت کلید و دامنه میل‌گان را وارد کنید.',
+    smtp:    'ارسال SMTP تنظیم نشده است. در پنل مدیریت نشانی سرور و نشانی فرستنده را وارد کنید.'
+  };
+  const e = new Error(messages[c.provider] || messages.brevo);
   e.code = 'MAIL_NOT_CONFIGURED';
   return e;
 }
@@ -69,7 +104,67 @@ export async function sendMail({ to, subject, html, text, tag }) {
   if (!mailConfigured()) throw notConfigured(c);
 
   const body = { to, subject, html, text: text || stripHtml(html || ''), tag };
-  return c.provider === 'brevo' ? sendViaBrevo(c, body) : sendViaMailgun(c, body);
+  if (c.provider === 'smtp')  return sendViaSmtp(c, body);
+  if (c.provider === 'brevo') return sendViaBrevo(c, body);
+  return sendViaMailgun(c, body);
+}
+
+/* ---------------- SMTP (self-hosted) ---------------- */
+
+/**
+ * Send through an SMTP server, normally a Postfix relay on localhost.
+ *
+ * nodemailer is imported lazily so installations using a hosted provider
+ * never pay for loading it, and so a broken SMTP config cannot stop the
+ * server from booting.
+ *
+ * The connection is deliberately not verified up front on every send: that
+ * costs an extra round trip per message, and a relay on localhost either
+ * works or fails fast anyway.
+ */
+async function sendViaSmtp(c, { to, subject, html, text }) {
+  const { default: nodemailer } = await import('nodemailer');
+
+  const transport = nodemailer.createTransport({
+    host: c.smtpHost,
+    port: c.smtpPort,
+    secure: c.smtpSecure,
+    ...(c.smtpUser ? { auth: { user: c.smtpUser, pass: c.smtpPass } } : {}),
+    // A local relay commonly presents a self-signed certificate. Refusing it
+    // would break the normal case; the hop never leaves the machine.
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 15000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000
+  });
+
+  try {
+    const info = await transport.sendMail({
+      from: `"${c.fromName}" <${c.fromEmail}>`,
+      to, subject, html, text
+    });
+    return { id: info.messageId || '', accepted: info.accepted || [] };
+  } catch (err) {
+    // Turn the common failures into something an admin can act on, rather
+    // than surfacing a raw errno.
+    const raw = String(err?.message || err);
+    let hint = raw;
+    if (/ECONNREFUSED/i.test(raw)) {
+      hint = `اتصال به ${c.smtpHost}:${c.smtpPort} رد شد — سرویس SMTP روی سرور اجرا نیست یا پورت بسته است.`;
+    } else if (/ETIMEDOUT|ESOCKET|timed out/i.test(raw)) {
+      hint = `اتصال به ${c.smtpHost}:${c.smtpPort} به نتیجه نرسید — احتمالاً پورت خروجی توسط ارائه‌دهنده سرور بسته است.`;
+    } else if (/EAUTH|535|authentication/i.test(raw)) {
+      hint = 'نام کاربری یا رمز SMTP پذیرفته نشد.';
+    } else if (/5\.7\.1|blocked|blacklist|spamhaus/i.test(raw)) {
+      hint = 'سرور گیرنده پیام را رد کرد — احتمالاً IP سرور در فهرست سیاه است یا رکوردهای SPF/DKIM تنظیم نشده‌اند.';
+    }
+    const e = new Error(hint);
+    e.code = 'SMTP_SEND_FAILED';
+    e.detail = raw.slice(0, 500);
+    throw e;
+  } finally {
+    transport.close();
+  }
 }
 
 /* ---------------- Brevo ---------------- */
@@ -245,7 +340,7 @@ export function secondsSinceLastToken(userId, purpose = 'verify') {
 /* ==========================================================================
    Email layout
    ========================================================================== */
-function layout({ title, intro, buttonLabel, buttonUrl, footer, rawUrl }) {
+function layout({ title, intro, buttonLabel, buttonUrl, footer, rawUrl, code }) {
   const brand = getSetting('site_title') || 'Ethic Lens';
   return `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -261,20 +356,29 @@ function layout({ title, intro, buttonLabel, buttonUrl, footer, rawUrl }) {
         <tr><td style="padding:28px;">
           <h1 style="margin:0 0 14px;font-size:19px;color:#0f172a;line-height:1.6;">${esc(title)}</h1>
           <p style="margin:0 0 22px;font-size:14px;color:#475569;line-height:2;">${intro}</p>
-          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">
-            <tr><td style="background:#2563eb;border-radius:10px;">
-              <a href="${esc(buttonUrl)}"
-                 style="display:inline-block;padding:13px 30px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;">
-                ${esc(buttonLabel)}
-              </a>
-            </td></tr>
-          </table>
-          <p style="margin:0 0 8px;font-size:12px;color:#64748b;line-height:1.9;">
-            اگر دکمه کار نکرد، این نشانی را در مرورگر باز کنید:
-          </p>
-          <p style="margin:0 0 22px;font-size:12px;color:#2563eb;direction:ltr;text-align:left;word-break:break-all;">
-            ${esc(rawUrl)}
-          </p>
+${code ? `
+            <!-- Codes use a monospace stack with wide spacing so digits stay
+                 unambiguous, and force LTR so the RTL body cannot reorder them. -->
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px;width:100%;">
+              <tr><td align="center" style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:12px;padding:20px;">
+                <div style="font-family:'Courier New',Consolas,monospace;font-size:34px;font-weight:bold;
+                            letter-spacing:10px;color:#0f172a;direction:ltr;">${esc(code)}</div>
+              </td></tr>
+            </table>` : `
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">
+              <tr><td style="background:#2563eb;border-radius:10px;">
+                <a href="${esc(buttonUrl)}"
+                   style="display:inline-block;padding:13px 30px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;">
+                  ${esc(buttonLabel)}
+                </a>
+              </td></tr>
+            </table>
+            <p style="margin:0 0 8px;font-size:12px;color:#64748b;line-height:1.9;">
+              اگر دکمه کار نکرد، این نشانی را در مرورگر باز کنید:
+            </p>
+            <p style="margin:0 0 22px;font-size:12px;color:#2563eb;direction:ltr;text-align:left;word-break:break-all;">
+              ${esc(rawUrl)}
+            </p>`}
           <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.9;border-top:1px solid #e2e8f0;padding-top:16px;">
             ${footer}
           </p>
@@ -303,5 +407,52 @@ export function verificationEmail({ name, url }) {
 
 export async function sendVerification({ user, url, tag = 'verify' }) {
   const { subject, html } = verificationEmail({ name: user.name, url });
+  return sendMail({ to: user.email, subject, html, tag });
+}
+
+/* ---------------- One-time code emails ---------------- */
+
+/**
+ * The code is repeated in the subject line on purpose. Many mail clients show
+ * the subject in a notification, which lets someone read the code without
+ * opening the message — and on phones that is most of the experience.
+ */
+export function verificationCodeEmail({ name, code, minutes }) {
+  const brand = getSetting('site_title') || 'Ethic Lens';
+  return {
+    subject: `${code} — کد تأیید ${brand}`,
+    html: layout({
+      title: 'کد تأیید نشانی ایمیل',
+      intro: `${esc(name || 'سلام')}، این کد را در صفحه تأیید وارد کنید.
+              کد تا ${minutes} دقیقه معتبر است.`,
+      code,
+      footer: 'اگر شما در دیدگاه اخلاق ثبت‌نام نکرده‌اید، این ایمیل را نادیده بگیرید. ' +
+              'بدون وارد کردن این کد هیچ اتفاقی نمی‌افتد.'
+    })
+  };
+}
+
+export function resetCodeEmail({ name, code, minutes }) {
+  const brand = getSetting('site_title') || 'Ethic Lens';
+  return {
+    subject: `${code} — کد بازیابی رمز ${brand}`,
+    html: layout({
+      title: 'بازیابی رمز عبور',
+      intro: `${esc(name || 'سلام')}، برای تعیین رمز تازه این کد را وارد کنید.
+              کد تا ${minutes} دقیقه معتبر است.`,
+      code,
+      footer: 'اگر شما درخواست بازیابی رمز نداده‌اید، این ایمیل را نادیده بگیرید — ' +
+              'رمز فعلی شما تغییر نکرده و بدون این کد قابل تغییر نیست.'
+    })
+  };
+}
+
+export async function sendVerificationCode({ user, code, minutes, tag = 'verify-code' }) {
+  const { subject, html } = verificationCodeEmail({ name: user.name, code, minutes });
+  return sendMail({ to: user.email, subject, html, tag });
+}
+
+export async function sendResetCode({ user, code, minutes, tag = 'reset-code' }) {
+  const { subject, html } = resetCodeEmail({ name: user.name, code, minutes });
   return sendMail({ to: user.email, subject, html, tag });
 }

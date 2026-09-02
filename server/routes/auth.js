@@ -8,8 +8,13 @@ import { absoluteUrl } from '../services/seo.js';
 import { issueCaptcha, verifyCaptcha } from '../services/captcha.js';
 import { checkAndStore, EMAIL_RE as EMAIL_PATTERN } from '../services/email-check.js';
 import {
-  mailConfigured, createToken, consumeToken, sendVerification, secondsSinceLastToken
+  mailConfigured, createToken, consumeToken, sendVerification, secondsSinceLastToken,
+  sendVerificationCode, sendResetCode
 } from '../services/mail.js';
+import {
+  createOtp, verifyOtp, secondsSinceLastOtp, otpError,
+  OTP_TTL_MINUTES, RESEND_COOLDOWN_SECONDS
+} from '../services/otp.js';
 import { requireAuth, csrfToken } from '../middleware/auth.js';
 
 export const router = express.Router();
@@ -121,11 +126,34 @@ router.post('/register', registerLimiter, async (req, res) => {
   // admin approves them no useful route is open.
   req.session.userId = user.id;
 
+  // Send the verification code straight away so the user can confirm the
+  // address while the tab is still open. A failure here is logged and not
+  // returned: the account exists either way, and the code can be requested
+  // again from the pending screen.
+  //
+  // Off unless an admin turned it on. With it off the flow is exactly what it
+  // was before codes existed, so enabling the feature is a deliberate act
+  // rather than something that changes underneath a running site.
+  let codeSent = false;
+  if (getSetting('signup_code') === '1' && mailConfigured()) {
+    try {
+      const code = createOtp(user.id, 'verify-code', req.ip);
+      await sendVerificationCode({ user, code, minutes: OTP_TTL_MINUTES });
+      codeSent = true;
+    } catch (e) {
+      console.error('[otp] ارسال کد هنگام ثبت‌نام ناموفق:', e.message);
+    }
+  }
+
   res.json({
     user: publicUser(user),
     csrf: csrfToken(req),
     pendingApproval: true,
-    message: 'ثبت‌نام شما با موفقیت انجام شد. پس از تأیید مدیر، امکان استفاده از سامانه را خواهید داشت.'
+    codeSent,
+    expiresInMinutes: OTP_TTL_MINUTES,
+    message: codeSent
+      ? `ثبت‌نام انجام شد. کد تأییدی به ${email} فرستادیم؛ آن را وارد کنید. حساب پس از تأیید مدیر فعال می‌شود.`
+      : 'ثبت‌نام شما با موفقیت انجام شد. پس از تأیید مدیر، امکان استفاده از سامانه را خواهید داشت.'
   });
 });
 
@@ -177,7 +205,12 @@ router.get('/me', (req, res) => {
     settings: {
       siteTitle: getSetting('site_title'),
       siteTagline: getSetting('site_tagline'),
-      allowRegistration: getSetting('allow_registration') === '1'
+      allowRegistration: getSetting('allow_registration') === '1',
+      // Both depend on mail actually working. The login page uses these to
+      // decide whether to offer password recovery and the code step at all —
+      // a link to a flow that cannot send anything is worse than no link.
+      signupCode: getSetting('signup_code') === '1' && mailConfigured(),
+      passwordReset: mailConfigured()
     }
   });
 });
@@ -273,5 +306,167 @@ router.post('/verify', (req, res) => {
     if (err) return res.json({ ok: true, signedIn: false });
     req.session.userId = u.id;
     res.json({ ok: true, signedIn: true, user: publicUser({ ...u, email_verified: 1 }) });
+  });
+});
+
+/* ==========================================================================
+   One-time codes: email verification and password reset
+   --------------------------------------------------------------------------
+   Verifying an address and being allowed in are two separate gates here. A
+   code proves the person controls the mailbox; it does not activate the
+   account. Activation stays with the admin, so a verified stranger still
+   waits in the pending queue.
+   ========================================================================== */
+
+/** A stricter limiter for the code endpoints — these send mail and grant access. */
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: Number(process.env.OTP_LIMIT) || (process.env.NODE_ENV === 'production' ? 20 : 200),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'درخواست‌های زیادی از این نشانی آمده. ۱۵ دقیقه دیگر تلاش کنید.' }
+});
+
+/** Issue a verification code for the signed-in account. */
+router.post('/send-code', requireAuth, otpLimiter, async (req, res) => {
+  // Refuse when the feature is off, so a stale tab or a direct call cannot
+  // drive a flow the admin has disabled.
+  if (getSetting('signup_code') !== '1') {
+    return res.status(404).json({ error: 'تأیید ایمیل با کد در این سامانه فعال نیست.' });
+  }
+  if (req.user.email_verified) {
+    return res.status(400).json({ error: 'ایمیل شما از قبل تأیید شده است.' });
+  }
+  if (!mailConfigured()) {
+    return res.status(503).json({ error: 'سرویس ایمیل تنظیم نشده است. با مدیر سامانه تماس بگیرید.' });
+  }
+
+  const since = secondsSinceLastOtp(req.user.id, 'verify-code');
+  if (since < RESEND_COOLDOWN_SECONDS) {
+    const wait = Math.ceil(RESEND_COOLDOWN_SECONDS - since);
+    return res.status(429).json({ error: `کمی صبر کنید. ${wait} ثانیه دیگر می‌توانید کد تازه بخواهید.`, resendInSeconds: wait });
+  }
+
+  try {
+    const code = createOtp(req.user.id, 'verify-code', req.ip);
+    await sendVerificationCode({ user: req.user, code, minutes: OTP_TTL_MINUTES });
+    audit(req.user.id, 'verify_code_sent', null, req.ip);
+    res.json({ ok: true, resendInSeconds: RESEND_COOLDOWN_SECONDS, expiresInMinutes: OTP_TTL_MINUTES });
+  } catch (e) {
+    console.error('[otp] ارسال کد تأیید ناموفق:', e.message);
+    res.status(502).json({ error: e.message });
+  }
+});
+
+/** Check a verification code. Marks the email verified; does not activate the account. */
+router.post('/verify-code', requireAuth, otpLimiter, (req, res) => {
+  // Refuse when the feature is off, so a stale tab or a direct call cannot
+  // drive a flow the admin has disabled.
+  if (getSetting('signup_code') !== '1') {
+    return res.status(404).json({ error: 'تأیید ایمیل با کد در این سامانه فعال نیست.' });
+  }
+  if (req.user.email_verified) return res.json({ ok: true, alreadyVerified: true });
+
+  const result = verifyOtp(req.user.id, 'verify-code', req.body?.code);
+  if (!result.ok) {
+    audit(req.user.id, 'verify_code_failed', { reason: result.reason }, req.ip);
+    return res.status(400).json({ error: otpError(result.reason, result.attemptsLeft), reason: result.reason });
+  }
+
+  db.prepare("UPDATE users SET email_verified = 1, verified_at = datetime('now') WHERE id = ?")
+    .run(req.user.id);
+  audit(req.user.id, 'email_verified', { via: 'code' }, req.ip);
+
+  const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  res.json({
+    ok: true,
+    user: publicUser(fresh),
+    // Said plainly, because a verified user who still cannot do anything will
+    // otherwise assume something is broken.
+    pendingApproval: fresh.status === 'pending',
+    message: fresh.status === 'pending'
+      ? 'ایمیل شما تأیید شد. حساب پس از تأیید مدیر فعال می‌شود.'
+      : 'ایمیل شما تأیید شد.'
+  });
+});
+
+/* ---------------- Password reset ---------------- */
+
+/**
+ * Request a reset code.
+ *
+ * The response is identical whether or not the address exists. Saying "no
+ * such account" would turn this endpoint into a way to test which email
+ * addresses are registered, which is exactly the list an attacker wants
+ * before trying passwords elsewhere.
+ */
+router.post('/forgot', otpLimiter, async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const generic = {
+    ok: true,
+    message: 'اگر حسابی با این نشانی وجود داشته باشد، کد بازیابی برایش فرستاده شد.',
+    expiresInMinutes: OTP_TTL_MINUTES
+  };
+
+  if (!EMAIL_PATTERN.test(email)) return res.json(generic);
+
+  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  if (!user || !mailConfigured()) return res.json(generic);
+
+  // Suspended and rejected accounts are not resettable. Still answered with
+  // the same text, so the state of an account cannot be probed from outside.
+  if (user.status === 'suspended' || user.status === 'rejected') {
+    audit(user.id, 'reset_blocked', { status: user.status }, req.ip);
+    return res.json(generic);
+  }
+
+  if (secondsSinceLastOtp(user.id, 'reset') < RESEND_COOLDOWN_SECONDS) return res.json(generic);
+
+  try {
+    const code = createOtp(user.id, 'reset', req.ip);
+    await sendResetCode({ user, code, minutes: OTP_TTL_MINUTES });
+    audit(user.id, 'reset_code_sent', null, req.ip);
+  } catch (e) {
+    // Logged, not surfaced: a delivery failure must not reveal that the
+    // address exists either.
+    console.error('[otp] ارسال کد بازیابی ناموفق:', e.message);
+  }
+  res.json(generic);
+});
+
+/** Complete a reset: code plus a new password. */
+router.post('/reset', otpLimiter, (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const password = String(req.body?.password || '');
+
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'رمز تازه باید دست‌کم ۸ نویسه باشد.' });
+  }
+
+  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  // Past this point the caller has already proved they hold a live code, so a
+  // precise error is no longer an enumeration risk — and a vague one here
+  // would leave a legitimate user with no idea what went wrong.
+  if (!user) return res.status(400).json({ error: 'کد یا نشانی ایمیل نادرست است.' });
+
+  const result = verifyOtp(user.id, 'reset', req.body?.code);
+  if (!result.ok) {
+    audit(user.id, 'reset_failed', { reason: result.reason }, req.ip);
+    return res.status(400).json({ error: otpError(result.reason, result.attemptsLeft), reason: result.reason });
+  }
+
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+    .run(bcrypt.hashSync(password, 10), user.id);
+
+  // Every existing session is dropped. If the reset happened because someone
+  // else had gained access, leaving their session alive would defeat it.
+  db.prepare("DELETE FROM sessions WHERE data LIKE ?").run(`%"userId":${user.id}%`);
+  audit(user.id, 'password_reset', null, req.ip);
+
+  res.json({
+    ok: true,
+    message: user.status === 'pending'
+      ? 'رمز تازه ثبت شد. حساب شما هنوز در انتظار تأیید مدیر است.'
+      : 'رمز تازه ثبت شد. حالا می‌توانید وارد شوید.'
   });
 });
