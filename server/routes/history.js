@@ -3,6 +3,7 @@ import { db } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { uniqueSlug, metaDescription } from '../services/seo.js';
 import { audit } from '../db.js';
+import { parseTags, readTags, listCategories } from '../services/categories.js';
 
 export const router = express.Router();
 router.use(requireAuth);
@@ -65,7 +66,11 @@ router.get('/:id', (req, res) => {
     ...row,
     context: safeJson(row.context, {}),
     sections: safeJson(row.sections, {}),
-    completeness: safeJson(row.completeness, null)
+    completeness: safeJson(row.completeness, null),
+    tags: readTags(row.tags),
+    // The publish dialog needs the list to build its dropdown. Sent only to
+    // admins, since only they can set a category.
+    categories: req.user.role === 'admin' ? listCategories() : undefined
   });
 });
 
@@ -158,24 +163,59 @@ router.post('/:id/publish', (req, res) => {
     });
   }
 
-  // The slug is minted once only, so a published address never breaks
-  const slug = row.slug || uniqueSlug(publicTitle, row.id);
+  /* ---- Editorial fields, admins only ----
+     A reader-supplied slug or SEO title is an editorial decision about how
+     the site appears in search results, so it stays with the admin. An
+     ordinary user publishing their own dilemma gets the simple form and the
+     slug generated from their title, exactly as before. */
+  const isAdmin = req.user.role === 'admin';
+
+  // Minted once only, so a published address never breaks — but an admin may
+  // set it explicitly the first time.
+  let slug = row.slug;
+  if (!slug) {
+    const wanted = isAdmin ? String(req.body?.slug || '').trim() : '';
+    slug = wanted ? uniqueSlug(wanted, row.id) : uniqueSlug(publicTitle, row.id);
+  }
 
   let sections = {};
   try { sections = JSON.parse(row.sections) || {}; } catch {}
   const summary = publicSummary || metaDescription(sections.reframe || row.dilemma);
 
+  const editorial = isAdmin
+    ? {
+        category_id: req.body?.category_id ? Number(req.body.category_id) || null : (row.category_id ?? null),
+        seo_title: pick(req.body?.seo_title, row.seo_title).slice(0, 70) || null,
+        h1: pick(req.body?.h1, row.h1).slice(0, 120) || null,
+        tags: req.body?.tags !== undefined
+          ? JSON.stringify(parseTags(req.body.tags))
+          : (row.tags ?? null)
+      }
+    : {
+        category_id: row.category_id ?? null,
+        seo_title: row.seo_title ?? null,
+        h1: row.h1 ?? null,
+        tags: row.tags ?? null
+      };
+
   db.prepare(`UPDATE analyses SET is_public = 1, slug = ?,
               published_at = COALESCE(published_at, datetime('now')),
-              public_title = ?, public_summary = ?, public_author = ?
+              public_title = ?, public_summary = ?, public_author = ?,
+              category_id = ?, seo_title = ?, h1 = ?, tags = ?
               WHERE id = ?`)
-    .run(slug, publicTitle, summary, publicAuthor || null, row.id);
+    .run(slug, publicTitle, summary, publicAuthor || null,
+         editorial.category_id, editorial.seo_title, editorial.h1, editorial.tags, row.id);
 
-  audit(req.user.id, 'analysis_publish', { id: row.id, slug }, req.ip);
-  const out = db.prepare(
-    'SELECT is_public, slug, published_at, public_title, public_summary, public_author, views FROM analyses WHERE id = ?'
-  ).get(row.id);
-  res.json({ ok: true, isPublic: true, url: `/a/${encodeURIComponent(slug)}`, ...out });
+  audit(req.user.id, 'analysis_publish',
+        { id: row.id, slug, editorial: isAdmin, category: editorial.category_id }, req.ip);
+
+  const out = db.prepare(`
+    SELECT is_public, slug, published_at, public_title, public_summary, public_author,
+           category_id, seo_title, h1, tags, views
+    FROM analyses WHERE id = ?`).get(row.id);
+
+  res.json({ ok: true, isPublic: true, url: `/a/${encodeURIComponent(slug)}`,
+             ...out, tags: readTags(out.tags) });
 });
 
 router.post('/:id/title', (req, res) => {

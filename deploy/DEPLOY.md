@@ -504,11 +504,27 @@ v=DMARC1; p=none; rua=mailto:postmaster@ethiclens.ir
 ## به‌روزرسانی نسخه
 
 ```bash
-cd /opt/ethiclens
-sudo -u ethiclens git pull origin main
-sudo -u ethiclens npm ci --omit=dev
-sudo systemctl restart ethiclens
+cd /opt/ethiclens && sudo -u ethiclens git pull origin main && sudo -u ethiclens npm ci --omit=dev && sudo systemctl restart ethiclens
 ```
+
+> **چرا با `&&` زنجیر شده:** اگر هر گام را جدا اجرا کنید، شکست `git pull`
+> جلوی بقیه را نمی‌گیرد. `npm ci` با فایل قفل قدیمی اجرا می‌شود و سرویس
+> ری‌استارت می‌شود — خروجی پر از پیام موفقیت است، ولی کد به‌روز نشده.
+> با `&&` اولین شکست همان‌جا متوقف می‌شود.
+
+> **اگر `git pull` نام کاربری و رمز خواست:** گیت‌هاب از اوت ۲۰۲۱ رمز حساب
+> را برای گیت نمی‌پذیرد و همیشه خطای `HTTP 401` می‌دهد. معمولاً یعنی نشانی
+> مخزن، نام کاربری را داخل خودش دارد
+> (`https://user@github.com/...`) که گیت را مجبور به احراز هویت می‌کند.
+> برای مخزن عمومی نیازی به آن نیست:
+>
+> ```bash
+> sudo -u ethiclens git -C /opt/ethiclens remote set-url origin https://github.com/hamednikseresht/ethiclens.git
+> ```
+>
+> اگر مخزن را خصوصی کردید، به‌جای رمز از Personal Access Token استفاده
+> کنید (github.com ← Settings ← Developer settings ← Tokens) یا کلید SSH
+> بگذارید.
 
 > اگر گام ۳ را با کپی از پوشه موقت انجام داده‌اید، `git pull` کار می‌کند
 > چون پوشه `.git` هم کپی شده است. با `git -C /opt/ethiclens remote -v`

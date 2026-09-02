@@ -14,6 +14,10 @@ import {
   resetSection as resetGuideSection, isModified
 } from '../services/guide.js';
 import { DEFAULT_PROMPT } from '../services/default-prompt.js';
+import {
+  listCategories, getCategory, createCategory, updateCategory, deleteCategory,
+  countInCategory
+} from '../services/categories.js';
 
 export const router = express.Router();
 router.use(requireAdmin);
@@ -724,4 +728,51 @@ router.post('/guide/:id/reset', (req, res) => {
   }
   audit(req.user.id, 'guide_reset', { key: r.key }, req.ip);
   res.json({ ok: true, section: { ...r, modified: false } });
+});
+
+/* ==========================================================================
+   Categories for published content
+   ========================================================================== */
+router.get('/categories', (req, res) => {
+  res.json({ items: listCategories() });
+});
+
+router.post('/categories', (req, res) => {
+  try {
+    const c = createCategory(req.body || {});
+    audit(req.user.id, 'category_create', { id: c.id, slug: c.slug }, req.ip);
+    res.json({ ok: true, item: c });
+  } catch (e) {
+    res.status(e.code === 'DUPLICATE' ? 409 : 400).json({ error: e.message });
+  }
+});
+
+router.put('/categories/:id', (req, res) => {
+  try {
+    const c = updateCategory(req.params.id, req.body || {});
+    if (!c) return res.status(404).json({ error: 'دسته‌بندی یافت نشد.' });
+    audit(req.user.id, 'category_update', { id: c.id, slug: c.slug }, req.ip);
+    res.json({ ok: true, item: c });
+  } catch (e) {
+    res.status(e.code === 'DUPLICATE' ? 409 : 400).json({ error: e.message });
+  }
+});
+
+router.delete('/categories/:id', (req, res) => {
+  const c = getCategory(req.params.id);
+  if (!c) return res.status(404).json({ error: 'دسته‌بندی یافت نشد.' });
+
+  const used = countInCategory(c.id);
+  if (used && !req.query.force) {
+    return res.status(400).json({
+      // Said plainly, because "will be deleted" is the assumption people make
+      // and it is wrong here — the articles survive, they just lose the shelf.
+      error: `${used} تحلیل منتشرشده در این دسته‌بندی است. با حذف آن، تحلیل‌ها پاک نمی‌شوند ولی بدون دسته‌بندی می‌مانند.`,
+      needsForce: true, used
+    });
+  }
+
+  deleteCategory(c.id);
+  audit(req.user.id, 'category_delete', { id: c.id, slug: c.slug, used }, req.ip);
+  res.json({ ok: true });
 });
