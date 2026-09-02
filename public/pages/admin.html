@@ -133,7 +133,8 @@
       <button data-tab="tiers">🎟️ گروه‌ها</button>
       <button data-tab="analyses">🗂️ تحلیل‌ها</button>
       <button data-tab="mail">✉️ ایمیل و تأیید</button>
-      <button data-tab="guide">📖 دانشنامه</button>
+      <button data-tab="cats">🗂️ دسته‌بندی‌ها</button>
+        <button data-tab="guide">📖 دانشنامه</button>
       <button data-tab="site">⚙️ تنظیمات سایت</button>
       <button data-tab="audit">🔒 گزارش رخدادها</button>
     </nav>
@@ -146,6 +147,7 @@
       <section class="panel" id="p-tiers"></section>
       <section class="panel" id="p-analyses"></section>
       <section class="panel" id="p-mail"></section>
+      <section class="panel" id="p-cats"></section>
       <section class="panel" id="p-guide"></section>
       <section class="panel" id="p-site"></section>
       <section class="panel" id="p-audit"></section>
@@ -1818,6 +1820,130 @@ refreshHealth();
 show(location.hash.slice(1) || 'overview');
 
 initMotion();
+
+/* ---------------- Categories for published content ---------------- */
+loaders.cats = async () => {
+  const host = $('#p-cats');
+  host.innerHTML = '<div class="skeleton" style="height:8rem"></div>';
+  const d = await api.get('/api/admin/categories');
+
+  host.innerHTML = `
+    <h2 class="sec-h">دسته‌بندی محتوای منتشرشده</h2>
+    <p class="sec-p">
+      هر دسته‌بندی یک عنوان فارسی برای خواننده دارد و یک آدرس انگلیسی که در نشانی
+      صفحه می‌آید. صفحه هر دسته در <span class="mono" dir="ltr">/c/آدرس</span> ساخته
+      می‌شود و در نقشه سایت هم می‌آید — البته فقط وقتی دست‌کم یک تحلیل در آن منتشر شده باشد.
+    </p>
+
+    <div class="card" style="margin-bottom:1.1rem">
+      <div class="card-head"><h3>افزودن دسته‌بندی</h3></div>
+      <div class="card-body">
+        <div class="grid-2">
+          <div class="field">
+            <label for="nc-title">عنوان فارسی</label>
+            <input class="input" id="nc-title" maxlength="120" placeholder="اخلاق حرفه‌ای">
+          </div>
+          <div class="field">
+            <label for="nc-slug">آدرس انگلیسی</label>
+            <input class="input mono" id="nc-slug" dir="ltr" maxlength="60" placeholder="professional-ethics">
+            <span class="hint">فقط حروف لاتین، رقم و خط تیره.</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="nc-desc">توضیح کوتاه <span class="opt">اختیاری</span></label>
+          <input class="input" id="nc-desc" maxlength="300" placeholder="توضیح متای صفحه این دسته">
+        </div>
+        <button class="btn btn-primary" id="ncAdd">افزودن</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>دسته‌بندی‌های موجود</h3>
+        <span class="badge">${faNum(d.items.length)}</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        ${d.items.length ? `
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th>عنوان</th><th>آدرس</th><th>منتشرشده</th><th>ترتیب</th><th></th></tr></thead>
+            <tbody id="cRows">
+              ${d.items.map(c => `
+                <tr data-id="${c.id}">
+                  <td><input class="input" data-f="title" value="${esc(c.title)}" maxlength="120"></td>
+                  <td><input class="input mono" data-f="slug" dir="ltr" value="${esc(c.slug)}" maxlength="60"></td>
+                  <td>${c.published ? `<a href="/c/${esc(c.slug)}" target="_blank" rel="noopener">${faNum(c.published)}</a>` : '۰'}</td>
+                  <td><input class="input" data-f="sort_order" type="number" value="${c.sort_order}" style="width:5rem"></td>
+                  <td class="row" style="gap:.3rem">
+                    <button class="btn btn-sm" data-act="save">ذخیره</button>
+                    <button class="btn btn-sm btn-ghost" data-act="del" style="color:var(--danger)">حذف</button>
+                  </td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>` : '<div class="empty" style="padding:2rem"><div class="empty-icon">🗂️</div><h3>هنوز دسته‌بندی‌ای نساخته‌اید</h3><p>بدون دسته‌بندی هم می‌توانید منتشر کنید؛ دسته‌بندی فقط برای سازمان‌دادن محتواست.</p></div>'}
+      </div>
+    </div>`;
+
+  $('#ncAdd').onclick = async () => {
+    try {
+      await api.post('/api/admin/categories', {
+        title: $('#nc-title').value.trim(),
+        slug: $('#nc-slug').value.trim(),
+        description: $('#nc-desc').value.trim()
+      });
+      toast('دسته‌بندی افزوده شد.', 'ok');
+      loaded.delete('cats'); show('cats');
+    } catch (e) { toast(e.message, 'err'); }
+  };
+
+  // A Persian title cannot produce a Latin slug, so the field is filled only
+  // when the title happens to be Latin. Otherwise the admin types it — which
+  // is the point of having two fields.
+  $('#nc-title').addEventListener('blur', () => {
+    const slug = $('#nc-slug');
+    if (slug.value.trim()) return;
+    const guess = $('#nc-title').value.toLowerCase()
+      .replace(/[^a-z0-9s-]/g, ' ').trim().replace(/s+/g, '-').replace(/-+/g, '-');
+    if (guess) slug.value = guess.slice(0, 60);
+  });
+
+  $('#cRows')?.addEventListener('click', async e => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const tr = btn.closest('tr');
+    const id = tr.dataset.id;
+    const val = f => tr.querySelector(`[data-f="${f}"]`).value.trim();
+
+    if (btn.dataset.act === 'save') {
+      try {
+        await api.put(`/api/admin/categories/${id}`, {
+          title: val('title'), slug: val('slug'), sort_order: val('sort_order')
+        });
+        toast('ذخیره شد.', 'ok');
+        loaded.delete('cats'); show('cats');
+      } catch (err) { toast(err.message, 'err'); }
+      return;
+    }
+
+    try {
+      await api.del(`/api/admin/categories/${id}`);
+      toast('حذف شد.', 'ok');
+      loaded.delete('cats'); show('cats');
+    } catch (err) {
+      // The API refuses the first time when articles are attached, and says
+      // what will happen to them. `needsForce` rides on the response body,
+      // not the Error itself.
+      if (!err.data?.needsForce) return toast(err.message, 'err');
+      if (!await confirmDialog('حذف دسته‌بندی', err.message, 'حذف کن')) return;
+      try {
+        await api.del(`/api/admin/categories/${id}?force=1`);
+        toast('حذف شد.', 'ok');
+        loaded.delete('cats'); show('cats');
+      } catch (e2) { toast(e2.message, 'err'); }
+    }
+  });
+};
+
 </script>
 </body>
 </html>

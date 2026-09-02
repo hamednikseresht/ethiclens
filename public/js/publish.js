@@ -45,6 +45,30 @@ export function publicUrl(slug) {
   return location.origin + '/a/' + encodeURIComponent(slug);
 }
 
+/**
+ * Split pasted tag text the same way the server does.
+ *
+ * Duplicated rather than fetched because it drives a live preview on every
+ * keystroke, and a round trip per character would be absurd. The server still
+ * re-splits what arrives — this copy is for showing, not for trusting. Both
+ * accept the Persian comma as well as the Latin one, since which one appears
+ * depends on the keyboard the text was typed with.
+ */
+export function splitTags(input) {
+  const seen = new Set();
+  const out = [];
+  for (const raw of String(input || '').split(/[,،؛;\n\r]+/)) {
+    const tag = raw.trim().replace(/\s+/g, ' ').slice(0, 40);
+    if (!tag) continue;
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(tag);
+    if (out.length >= 20) break;
+  }
+  return out;
+}
+
 /* --------------------------------------------------------------------------
    Share targets.
 
@@ -133,6 +157,53 @@ export function openPublishDialog(analysis, onChange) {
   const c = analysis.completeness;
   const incomplete = c && !c.complete;
 
+  /* The editorial block appears only when the server sent a category list,
+     which it does only for admins. A normal user keeps the short form: the
+     extra fields are decisions about how the site ranks, not about their own
+     dilemma, and asking them would be noise. */
+  const cats = Array.isArray(analysis.categories) ? analysis.categories : null;
+  const editorial = cats ? `
+    <div class="pub-editorial">
+      <div class="pub-editorial-head">تنظیمات انتشار (مدیر)</div>
+      <div class="field">
+        <label for="pc">دسته‌بندی</label>
+        <select class="select" id="pc">
+          <option value="">— بدون دسته‌بندی —</option>
+          ${cats.map(k => `<option value="${k.id}" ${analysis.category_id === k.id ? 'selected' : ''}>${esc(k.title)}</option>`).join('')}
+        </select>
+        ${cats.length ? '' : '<span class="hint">هنوز دسته‌بندی نساخته‌اید — پنل مدیریت ← دسته‌بندی‌ها.</span>'}
+      </div>
+      <div class="field">
+        <label for="pslug">نشانی صفحه (URL Slug)</label>
+        <input class="input mono" id="pslug" maxlength="70" dir="ltr"
+               value="${esc(analysis.slug || '')}"
+               ${analysis.slug ? 'disabled' : ''}
+               placeholder="اگر خالی بماند از عنوان ساخته می‌شود">
+        <span class="hint">${analysis.slug
+          ? 'نشانی پس از اولین انتشار قفل می‌شود تا پیوندهای موجود نشکنند.'
+          : 'فقط یک بار قابل تعیین است؛ پس از انتشار تغییر نمی‌کند.'}</span>
+      </div>
+      <div class="field">
+        <label for="pseo">عنوان سئو</label>
+        <input class="input" id="pseo" maxlength="70" value="${esc(analysis.seo_title || '')}"
+               placeholder="عنوانی که در نتیجه گوگل دیده می‌شود">
+        <span class="hint">حدود ۶۰ نویسه بهترین است. خالی بماند، از عنوان عمومی استفاده می‌شود.</span>
+      </div>
+      <div class="field">
+        <label for="ph1">تیتر اصلی صفحه (H1)</label>
+        <input class="input" id="ph1" maxlength="120" value="${esc(analysis.h1 || '')}"
+               placeholder="تیتری که بالای صفحه دیده می‌شود">
+        <span class="hint">می‌تواند با عنوان سئو فرق کند — این را خواننده‌ای می‌بیند که همین حالا وارد صفحه شده.</span>
+      </div>
+      <div class="field">
+        <label for="ptags">تگ‌ها</label>
+        <input class="input" id="ptags" value="${esc((analysis.tags || []).join('، '))}"
+               placeholder="اخلاق کار، صداقت، تعارض منافع">
+        <span class="hint">با کاما جدا کنید — چه فارسی «،» چه لاتین «,».</span>
+        <div class="tag-preview" id="tagPreview"></div>
+      </div>
+    </div>` : '';
+
   modal({
     title: 'انتشار عمومی این تحلیل',
     body: `
@@ -158,22 +229,51 @@ export function openPublishDialog(analysis, onChange) {
       <div class="field"><label for="pa">نام نویسنده (اختیاری)</label>
         <input class="input" id="pa" maxlength="60" placeholder="خالی بگذارید تا ناشناس منتشر شود"
                value="${esc(analysis.public_author || '')}">
-        <span class="hint">ایمیل و حساب کاربری شما هرگز نمایش داده نمی‌شود.</span></div>`,
+        <span class="hint">ایمیل و حساب کاربری شما هرگز نمایش داده نمی‌شود.</span></div>
+      ${editorial}`,
+    onOpen: root => {
+      // Live preview of how the pasted text splits, so the editor sees the
+      // separator being honoured instead of guessing and publishing one long
+      // tag by mistake.
+      const input = root.querySelector('#ptags');
+      const out = root.querySelector('#tagPreview');
+      if (!input || !out) return;
+      const draw = () => {
+        const tags = splitTags(input.value);
+        out.innerHTML = tags.length
+          ? tags.map(t => `<span class="tag-chip">${esc(t)}</span>`).join('')
+          : '<span class="hint">هنوز تگی وارد نشده.</span>';
+      };
+      input.addEventListener('input', draw);
+      draw();
+    },
     actions: [
       { label: 'انتشار عمومی', className: 'btn-primary', onClick: async root => {
           const titleField = root.querySelector('#pt');
           try {
-            const r = await api.post(`/api/history/${analysis.id}/publish`, {
+            const body = {
               publish: true,
               public_title:   titleField.value,
               public_summary: root.querySelector('#ps').value,
               public_author:  root.querySelector('#pa').value
-            });
+            };
+            // Present only for admins; a normal user never sends these.
+            if (root.querySelector('#pc')) {
+              body.category_id = root.querySelector('#pc').value || null;
+              body.seo_title   = root.querySelector('#pseo').value;
+              body.h1          = root.querySelector('#ph1').value;
+              body.tags        = root.querySelector('#ptags').value;
+              const sl = root.querySelector('#pslug');
+              if (sl && !sl.disabled) body.slug = sl.value;
+            }
+            const r = await api.post(`/api/history/${analysis.id}/publish`, body);
             Object.assign(analysis, {
               is_public: 1, slug: r.slug,
               public_title: r.public_title,
               public_summary: r.public_summary,
-              public_author: r.public_author
+              public_author: r.public_author,
+              category_id: r.category_id, seo_title: r.seo_title,
+              h1: r.h1, tags: r.tags
             });
             toast('منتشر شد.', 'ok');
             onChange?.(analysis);

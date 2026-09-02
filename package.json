@@ -13,10 +13,11 @@
     "seed": "node server/seed.js",
     "check": "node scripts/check-pages.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "test": "node scripts/check-pages.mjs && node scripts/smoke.mjs && node scripts/signup-flow.mjs && node scripts/guide-flow.mjs && node scripts/otp-flow.mjs",
+    "test": "node scripts/check-pages.mjs && node scripts/smoke.mjs && node scripts/signup-flow.mjs && node scripts/guide-flow.mjs && node scripts/otp-flow.mjs && node scripts/category-flow.mjs",
     "signup": "node scripts/signup-flow.mjs",
     "guide": "node scripts/guide-flow.mjs",
-    "test:otp": "node scripts/otp-flow.mjs"
+    "test:otp": "node scripts/otp-flow.mjs",
+    "test:cats": "node scripts/category-flow.mjs"
   },
   "keywords": [
     "ethics",

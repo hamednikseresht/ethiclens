@@ -101,6 +101,18 @@ CREATE TABLE IF NOT EXISTS analyses (
 );
 CREATE INDEX IF NOT EXISTS idx_analyses_user ON analyses(user_id, created_at DESC);
 
+-- Categories for published content. Only an admin assigns one, so a category
+-- is a curated shelf rather than something every user can invent.
+CREATE TABLE IF NOT EXISTS categories (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  title       TEXT    NOT NULL,             -- Persian, shown to readers
+  slug        TEXT    NOT NULL UNIQUE,      -- ASCII, used in the URL
+  description TEXT,                         -- meta description for the category page
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_categories_sort ON categories(sort_order, id);
+
 CREATE TABLE IF NOT EXISTS settings (
   key        TEXT PRIMARY KEY,
   value      TEXT,
@@ -257,7 +269,16 @@ function addMissingColumns() {
       public_summary: 'TEXT',
       public_author:  'TEXT',
       views:          'INTEGER NOT NULL DEFAULT 0',
-      completeness:   'TEXT'
+      completeness:   'TEXT',
+      // Editorial fields, set by an admin at publish time. Separate columns
+      // rather than reusing public_title, because the browser tab and the
+      // page heading serve different jobs: the <title> competes in a search
+      // result and wants keywords, the <h1> is read by someone already on
+      // the page. Collapsing them forces one to be wrong.
+      category_id:    'INTEGER REFERENCES categories(id) ON DELETE SET NULL',
+      seo_title:      'TEXT',
+      h1:             'TEXT',
+      tags:           'TEXT'    // JSON array
     },
     users: {
       tier:           "TEXT NOT NULL DEFAULT 'basic'",

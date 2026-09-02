@@ -11,6 +11,10 @@ import {
 } from '../services/seo.js';
 import { renderAnalysis, verdictChips, faNum, splitVerdict } from '../services/render-analysis.js';
 import { guideContent } from '../services/guide.js';
+import {
+  getCategory, getCategoryBySlug, listCategories, readTags,
+  analysesInCategory, countInCategory
+} from '../services/categories.js';
 
 export const router = express.Router();
 
@@ -75,6 +79,12 @@ router.get('/a/:slug', (req, res, next) => {
   try { sections = JSON.parse(row.sections) || {}; } catch { /* no sections */ }
 
   const title = row.public_title?.trim() || row.title;
+  // The <title> and the <h1> are allowed to differ. One competes in a search
+  // result, the other is read by someone already on the page.
+  const seoTitle = row.seo_title?.trim() || `${title} — تحلیل اخلاقی | Ethic Lens`;
+  const heading = row.h1?.trim() || title;
+  const tags = readTags(row.tags);
+  const category = row.category_id ? getCategory(row.category_id) : null;
   const description = row.public_summary?.trim()
     || metaDescription(sections.reframe || row.dilemma);
   const author = row.public_author?.trim() || '';
@@ -101,9 +111,10 @@ router.get('/a/:slug', (req, res, next) => {
       ...(siteUrl(req) ? { url: siteUrl(req) } : {})
     },
     ...(url ? { mainEntityOfPage: { '@type': 'WebPage', '@id': url } } : {}),
-    articleSection: ctx.domain || 'فلسفه اخلاق',
-    keywords: ['فلسفه اخلاق', 'تصمیم‌گیری اخلاقی', 'دوراهی اخلاقی',
-               ctx.domain, 'اخلاق کاربردی'].filter(Boolean).join('، ')
+    articleSection: category?.title || ctx.domain || 'فلسفه اخلاق',
+    keywords: (tags.length ? tags
+      : ['فلسفه اخلاق', 'تصمیم‌گیری اخلاقی', 'دوراهی اخلاقی', ctx.domain, 'اخلاق کاربردی'])
+      .filter(Boolean).join('، ')
   };
 
   const breadcrumb = url ? {
@@ -112,13 +123,16 @@ router.get('/a/:slug', (req, res, next) => {
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'خانه', item: siteUrl(req) },
       { '@type': 'ListItem', position: 2, name: 'تحلیل‌های عمومی', item: absoluteUrl(req, '/explore') },
-      { '@type': 'ListItem', position: 3, name: title, item: url }
+      ...(category
+        ? [{ '@type': 'ListItem', position: 3, name: category.title, item: absoluteUrl(req, `/c/${category.slug}`) }]
+        : []),
+      { '@type': 'ListItem', position: category ? 4 : 3, name: title, item: url }
     ]
   } : null;
 
   const head = [
     metaTags({
-      req, title: `${title} — تحلیل اخلاقی | Ethic Lens`, description, path,
+      req, title: seoTitle, description, path,
       type: 'article', publishedAt: row.published_at,
       modifiedAt: row.published_at || row.created_at, author: author || undefined
     }),
@@ -136,9 +150,12 @@ ${publicNav()}
   <article>
     <div class="result-head">
       <nav class="pub-crumbs" aria-label="مسیر">
-        <a href="/">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a> ‹ <span>${esc(title)}</span>
+        <a href="/">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a>
+        ${category ? `‹ <a href="/c/${esc(category.slug)}">${esc(category.title)}</a>` : ''}
+        ‹ <span>${esc(title)}</span>
       </nav>
-      <h1>${esc(title)}</h1>
+      ${category ? `<a class="cat-badge" href="/c/${esc(category.slug)}">${esc(category.title)}</a>` : ''}
+      <h1>${esc(heading)}</h1>
       <div class="meta-row">
         ${row.published_at ? `<span class="badge">منتشرشده در ${esc(faDate(row.published_at))}</span>` : ''}
         ${author ? `<span class="badge">${esc(author)}</span>` : '<span class="badge">ناشناس</span>'}
@@ -150,6 +167,7 @@ ${publicNav()}
         <summary>متن دوراهی که تحلیل شده است</summary>
         <div class="result-dilemma">${esc(row.dilemma)}</div>
       </details>
+      ${tags.length ? `<div class="pub-tags">${tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
     </div>
 
     ${renderAnalysis(sections)}
@@ -296,6 +314,11 @@ router.get('/sitemap.xml', (req, res) => {
     { loc: '/about',   priority: '0.5', freq: 'yearly' }
   ];
 
+    // Category pages are real landing pages and belong in the sitemap; one
+    // with nothing published in it does not, since an empty page is exactly
+    // what crawlers treat as thin content.
+    const cats = listCategories().filter(c => c.published > 0);
+
   const posts = db.prepare(`
     SELECT slug, published_at, created_at FROM analyses
     WHERE is_public = 1 AND slug IS NOT NULL AND status IN ('done','partial')
@@ -311,6 +334,7 @@ router.get('/sitemap.xml', (req, res) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${statics.map(s => url(s.loc, null, s.freq, s.priority)).join('\n')}
+${cats.map(c => url('/c/' + c.slug, null, 'weekly', '0.8')).join('\n')}
 ${posts.map(p => url(`/a/${encodeURIComponent(p.slug)}`,
     isoDate(p.published_at || p.created_at), 'monthly', '0.7')).join('\n')}
 </urlset>`;
@@ -385,3 +409,100 @@ for (const [route, page] of Object.entries(SEO_PAGES)) {
     res.type('html').send(injectHead(html, blocks.join('\n')));
   });
 }
+
+/* ==========================================================================
+   Category listing
+   --------------------------------------------------------------------------
+   A shelf of published analyses under one heading. Worth having as a real
+   page rather than a filter on /explore: it gives each subject a stable
+   address that can be linked to and indexed on its own.
+   ========================================================================== */
+router.get('/c/:slug', (req, res, next) => {
+  const cat = getCategoryBySlug(req.params.slug);
+  if (!cat) return next();
+
+  const perPage = 12;
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const total = countInCategory(cat.id);
+  const pages = Math.max(1, Math.ceil(total / perPage));
+  const items = analysesInCategory(cat.id, { limit: perPage, offset: (page - 1) * perPage });
+
+  const path = page > 1 ? `/c/${cat.slug}?page=${page}` : `/c/${cat.slug}`;
+  const description = cat.description?.trim()
+    || `${total} تحلیل اخلاقی منتشرشده در دسته «${cat.title}» — بررسی‌شده از منظر هشت مکتب فلسفه اخلاق.`;
+
+  const head = [
+    metaTags({
+      req,
+      title: `${cat.title} — تحلیل‌های اخلاقی | ${getSetting('site_title') || 'Ethic Lens'}`,
+      description, path
+    }),
+    `<script type="application/ld+json">${jsonLd(breadcrumbJsonLd(req, [
+      { name: 'خانه', path: '/' },
+      { name: 'تحلیل‌های عمومی', path: '/explore' },
+      { name: cat.title, path: `/c/${cat.slug}` }
+    ]))}</script>`,
+    // An ItemList tells Google this is a collection rather than an article,
+    // which is what keeps a category page out of the "thin content" bucket.
+    `<script type="application/ld+json">${jsonLd({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: cat.title,
+      description,
+      inLanguage: 'fa-IR',
+      ...(siteUrl(req) ? { url: absoluteUrl(req, `/c/${cat.slug}`) } : {}),
+      mainEntity: {
+        '@type': 'ItemList',
+        numberOfItems: total,
+        itemListElement: items.map((a, i) => ({
+          '@type': 'ListItem',
+          position: (page - 1) * perPage + i + 1,
+          name: a.h1?.trim() || a.public_title?.trim() || a.title,
+          url: absoluteUrl(req, `/a/${encodeURIComponent(a.slug)}`)
+        }))
+      }
+    })}</script>`
+  ].join('\n');
+
+  const cards = items.map(a => {
+    const t = a.h1?.trim() || a.public_title?.trim() || a.title;
+    const tags = readTags(a.tags);
+    return `
+      <article class="pub-card">
+        <h2><a href="/a/${encodeURIComponent(a.slug)}">${esc(t)}</a></h2>
+        <p>${esc(a.public_summary || '')}</p>
+        <div class="pub-card-meta">
+          ${a.published_at ? `<span>${esc(faDate(a.published_at))}</span>` : ''}
+          ${a.public_author ? `<span>${esc(a.public_author)}</span>` : '<span>ناشناس</span>'}
+          <span>${faNum(a.views || 0)} بازدید</span>
+        </div>
+        ${tags.length ? `<div class="pub-tags">${tags.slice(0, 5).map(x => `<span>${esc(x)}</span>`).join('')}</div>` : ''}
+      </article>`;
+  }).join('');
+
+  const pager = pages > 1 ? `
+    <nav class="pub-pager" aria-label="صفحه‌بندی">
+      ${page > 1 ? `<a class="btn btn-sm" href="/c/${esc(cat.slug)}?page=${page - 1}">→ قبلی</a>` : ''}
+      <span class="hint">صفحه ${faNum(page)} از ${faNum(pages)}</span>
+      ${page < pages ? `<a class="btn btn-sm" href="/c/${esc(cat.slug)}?page=${page + 1}">بعدی ←</a>` : ''}
+    </nav>` : '';
+
+  const body = `
+${publicNav()}
+<main class="wrap" id="main">
+  <nav class="pub-crumbs" aria-label="مسیر">
+    <a href="/">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a> ‹ <span>${esc(cat.title)}</span>
+  </nav>
+  <div class="pub-head">
+    <h1>${esc(cat.title)}</h1>
+    <p>${esc(description)}</p>
+  </div>
+  ${items.length
+    ? `<div class="pub-grid">${cards}</div>${pager}`
+    : '<div class="empty"><div class="empty-icon">📂</div><h3>هنوز تحلیلی در این دسته منتشر نشده</h3><a class="btn" href="/explore">دیدن همه تحلیل‌ها</a></div>'}
+</main>
+${siteFooter()}`;
+
+  res.set('Cache-Control', 'public, max-age=300');
+  res.send(shell({ head, body }));
+});
