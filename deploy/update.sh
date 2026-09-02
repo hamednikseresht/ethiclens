@@ -73,8 +73,31 @@ BEFORE="$(sudo -u "$APP_USER" git rev-parse --short HEAD)"
 # GIT_TERMINAL_PROMPT=0 turns a credential prompt into an immediate failure.
 # Without it an unattended run hangs forever waiting for a username nobody
 # will type.
-sudo -u "$APP_USER" env GIT_TERMINAL_PROMPT=0 git pull --ff-only origin "$BRANCH" \
-  || die "دریافت کد ناموفق بود. بالا را بخوانید — اگر ۴۰۱ است، مخزن خصوصی است و توکن لازم دارد."
+pull() { sudo -u "$APP_USER" env GIT_TERMINAL_PROMPT=0 git pull --ff-only origin "$BRANCH"; }
+
+if ! pull; then
+  # Some networks break git's HTTP/2 POST. The ref advertisement (a GET on a
+  # fresh connection) succeeds, then the upload-pack POST goes out on the same
+  # multiplexed connection, arrives damaged, and GitHub answers 401. Git reads
+  # that as "needs a password" and asks for one — so the symptom points at
+  # credentials while the cause is the transport.
+  #
+  # Retried on HTTP/1.1, and the setting is persisted system-wide when that is
+  # what fixed it, so the next run and every other repository on the machine
+  # work too.
+  if [ -z "$(git config --system --get http.version || true)" ]; then
+    warn "دریافت ناموفق بود — با HTTP/1.1 دوباره امتحان می‌کنم…"
+    if sudo -u "$APP_USER" env GIT_TERMINAL_PROMPT=0 \
+         git -c http.version=HTTP/1.1 pull --ff-only origin "$BRANCH"; then
+      git config --system http.version HTTP/1.1
+      ok "HTTP/1.1 مشکل را حل کرد — به‌صورت دائمی تنظیم شد"
+    else
+      die "دریافت کد ناموفق بود. اگر خطا ۴۰۱ است و مخزن عمومی است، شبکه سرور مشکل دارد؛ اگر خصوصی است توکن لازم است."
+    fi
+  else
+    die "دریافت کد ناموفق بود — بالا را بخوانید."
+  fi
+fi
 
 AFTER="$(sudo -u "$APP_USER" git rev-parse --short HEAD)"
 
