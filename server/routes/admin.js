@@ -590,7 +590,7 @@ router.post('/users/:id/review', async (req, res) => {
       });
       notified = true;
     } catch (e) {
-      console.error('[review] اطلاع‌رسانی ناموفق:', e.message);
+      console.error('[review] notification failed:', e.message);
     }
   }
 

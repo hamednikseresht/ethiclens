@@ -186,7 +186,7 @@ function migrateModelsToProviders() {
   const cols = db.prepare('PRAGMA table_info(models)').all().map(c => c.name);
   if (cols.includes('provider_id')) return;
 
-  console.log('[migrate] افزودن ارائه‌دهنده به جدول مدل‌ها…');
+  console.log('[migrate] adding provider column to models table…');
   const legacy = db.prepare('SELECT * FROM models').all();
 
   db.transaction(() => {
@@ -222,7 +222,7 @@ function migrateModelsToProviders() {
     db.exec('DROP TABLE models_legacy');
   })();
 
-  console.log(`[migrate] ${legacy.length} مدل به ارائه‌دهنده انویدیا منتقل شد.`);
+  console.log(`[migrate] moved ${legacy.length} model(s) to the NVIDIA provider.`);
 }
 migrateModelsToProviders();
 
@@ -243,11 +243,11 @@ function purgeLegacySettings() {
     const p = db.prepare("SELECT id, api_key FROM providers WHERE key = 'nvidia'").get();
     if (p && !p.api_key) {
       db.prepare('UPDATE providers SET api_key = ?, enabled = 1 WHERE id = ?').run(key, p.id);
-      console.log('[migrate] کلید انویدیا به جدول ارائه‌دهندگان منتقل شد.');
+      console.log('[migrate] moved the NVIDIA key into the providers table.');
     }
   }
   db.prepare(`DELETE FROM settings WHERE key IN (${dead.map(() => '?').join(',')})`).run(...dead);
-  console.log(`[migrate] ${found.length} تنظیم منسوخ حذف شد: ${found.map(f => f.key).join('، ')}`);
+  console.log(`[migrate] removed ${found.length} obsolete setting(s): ${found.map(f => f.key).join(', ')}`);
 }
 purgeLegacySettings();
 
@@ -311,7 +311,7 @@ function addMissingColumns() {
     for (const [col, type] of Object.entries(cols)) {
       if (have.has(col)) continue;
       db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
-      console.log(`[migrate] ستون ${table}.${col} اضافه شد.`);
+      console.log(`[migrate] added column ${table}.${col}.`);
     }
   }
 }
@@ -343,7 +343,7 @@ function migrateDailyQuota() {
   ).run().changes;
 
   db.exec('ALTER TABLE users DROP COLUMN daily_quota');
-  console.log(`[migrate] سهمیه ${moved} کاربر به استثنای فردی منتقل و ستون قدیمی حذف شد.`);
+  console.log(`[migrate] moved ${moved} per-user quota(s) to individual overrides and dropped the old column.`);
 }
 migrateDailyQuota();
 
@@ -360,7 +360,7 @@ function grandfatherVerifiedUsers() {
   ).run().changes;
 
   db.prepare("INSERT INTO settings (key, value) VALUES ('email_verify_migrated', '1')").run();
-  if (n) console.log(`[migrate] ${n} کاربر موجود تأییدشده علامت خورد (پیش از فعال‌شدن تأیید ایمیل ساخته شده بودند).`);
+  if (n) console.log(`[migrate] marked ${n} existing user(s) as verified (created before email verification existed).`);
 }
 grandfatherVerifiedUsers();
 

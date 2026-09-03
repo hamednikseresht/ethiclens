@@ -121,10 +121,10 @@ export function seed() {
       db.prepare(`UPDATE prompts SET content = ?, updated_at = datetime('now') WHERE id = ?`)
         .run(DEFAULT_PROMPT, existing.id);
       setSetting('factory_prompt_hash', factoryHash);
-      console.log('[seed] دستور پیش‌فرض به نسخه تازه به‌روزرسانی شد.');
+      console.log('[seed] default prompt updated to the new factory version.');
     } else {
-      console.log('[seed] ⚠️  دستور تحلیل توسط مدیر ویرایش شده — نسخه تازه کارخانه اعمال نشد.');
-      console.log('[seed]    برای دیدن نسخه تازه: پنل مدیریت ← دستور تحلیل ← بازگرداندن متن کارخانه.');
+      console.log('[seed] ⚠️  analysis prompt was edited by an admin — factory version not applied.');
+      console.log('[seed]    to see the new one: admin panel → analysis prompt → restore factory text.');
     }
   } else {
     setSetting('factory_prompt_hash', factoryHash);
@@ -147,7 +147,7 @@ export function seed() {
       ORDER BY p.sort_order, m.sort_order LIMIT 1`).get();
     if (first) {
       setSetting('default_model', first.ref);
-      console.log(`[seed] مدل پیش‌فرض روی ${first.ref} تنظیم شد.`);
+      console.log(`[seed] default model set to ${first.ref}.`);
     }
   }
 
@@ -157,7 +157,7 @@ export function seed() {
   const promoted = db.prepare(
     "UPDATE users SET tier = 'premium' WHERE role = 'admin' AND tier <> 'premium'").run().changes;
   db.prepare("UPDATE users SET status = 'active' WHERE role = 'admin' AND status = 'pending'").run();
-  if (promoted) console.log(`[seed] ${promoted} مدیر به گروه ویژه منتقل شد.`);
+  if (promoted) console.log(`[seed] promoted ${promoted} admin(s) to the premium tier.`);
 
   /* ---- Initial admin ---- */
   const adminCount = db.prepare("SELECT COUNT(*) c FROM users WHERE role = 'admin'").get().c;
@@ -168,19 +168,19 @@ export function seed() {
     const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existing) {
       db.prepare("UPDATE users SET role = 'admin', tier = 'premium' WHERE id = ?").run(existing.id);
-      console.log(`[seed] کاربر ${email} به مدیر ارتقا یافت.`);
+      console.log(`[seed] promoted user ${email} to admin.`);
     } else {
       db.prepare(`INSERT INTO users (email, name, password_hash, role, tier, status,
                                      quota_override, token_override, email_verified, verified_at)
                   VALUES (?,?,?,?,?, 'active', ?,?, 1, datetime('now'))`)
         .run(email, name, bcrypt.hashSync(pass, 10), 'admin', 'premium', 500, 0);
-      console.log(`[seed] حساب مدیر ساخته شد: ${email}`);
-      if (pass === 'ChangeMe123!') console.log('[seed] ⚠️  رمز پیش‌فرض فعال است — حتماً تغییرش دهید.');
+      console.log(`[seed] admin account created: ${email}`);
+      if (pass === 'ChangeMe123!') console.log('[seed] ⚠️  default password is in use — change it.');
     }
   }
 }
 
 if (process.argv[1] && process.argv[1].endsWith('seed.js')) {
   seed();
-  console.log('[seed] انجام شد.');
+  console.log('[seed] done.');
 }

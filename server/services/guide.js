@@ -36,7 +36,7 @@ export function seedGuide() {
     }
   })();
 
-  if (added) console.log(`[seed] ${added} بخش دانشنامه افزوده شد.`);
+  if (added) console.log(`[seed] added ${added} encyclopedia section(s).`);
   return added;
 }
 

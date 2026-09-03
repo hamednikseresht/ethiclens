@@ -120,7 +120,7 @@ router.post('/register', registerLimiter, async (req, res) => {
   // Email plausibility flag — sends nothing, only helps the admin at approval
   // time. A failure here must not break registration.
   checkAndStore(user.id, email).catch(e =>
-    console.error('[email-check] ناموفق:', e.message));
+    console.error('[email-check] failed:', e.message));
 
   // A session is created so the user can see their own status, but until an
   // admin approves them no useful route is open.
@@ -141,7 +141,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       await sendVerificationCode({ user, code, minutes: OTP_TTL_MINUTES });
       codeSent = true;
     } catch (e) {
-      console.error('[otp] ارسال کد هنگام ثبت‌نام ناموفق:', e.message);
+      console.error('[otp] failed to send signup code:', e.message);
     }
   }
 
@@ -276,7 +276,7 @@ router.post('/resend-verification', requireAuth, async (req, res) => {
     audit(req.user.id, 'verify_resend', null, req.ip);
     res.json({ ok: true, resendInSeconds: 60 });
   } catch (e) {
-    console.error('[verify] ارسال دوباره ناموفق:', e.message);
+    console.error('[verify] resend failed:', e.message);
     res.status(502).json({ error: e.message });
   }
 });
@@ -353,7 +353,7 @@ router.post('/send-code', requireAuth, otpLimiter, async (req, res) => {
     audit(req.user.id, 'verify_code_sent', null, req.ip);
     res.json({ ok: true, resendInSeconds: RESEND_COOLDOWN_SECONDS, expiresInMinutes: OTP_TTL_MINUTES });
   } catch (e) {
-    console.error('[otp] ارسال کد تأیید ناموفق:', e.message);
+    console.error('[otp] failed to send verification code:', e.message);
     res.status(502).json({ error: e.message });
   }
 });
@@ -429,7 +429,7 @@ router.post('/forgot', otpLimiter, async (req, res) => {
   } catch (e) {
     // Logged, not surfaced: a delivery failure must not reveal that the
     // address exists either.
-    console.error('[otp] ارسال کد بازیابی ناموفق:', e.message);
+    console.error('[otp] failed to send reset code:', e.message);
   }
   res.json(generic);
 });

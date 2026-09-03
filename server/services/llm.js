@@ -145,7 +145,7 @@ async function postChat({ provider, key, model, messages, overrides, stream, sig
       const adjusted = quirksFromError(detail, quirks);
       if (adjusted) {
         quirks = adjusted;
-        console.warn(`[llm] «${model}» پارامترهای متفاوتی می‌خواهد — تلاش دوباره`,
+        console.warn(`[llm] "${model}" wants different parameters — retrying`,
                      JSON.stringify(quirks));
         continue;
       }
