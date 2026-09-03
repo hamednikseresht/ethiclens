@@ -41,6 +41,25 @@ const NEW_PARAM_STYLE = /(^|\/)(o[1-9](-|$|\d)|gpt-5|gpt-4\.5)/i;
 /** Models that accept only the default temperature */
 const FIXED_SAMPLING = /(^|\/)(o[1-9](-|$|\d)|gpt-5)/i;
 
+/**
+ * Models that spend part of the token ceiling on hidden reasoning.
+ *
+ * Deliberately separate from NEW_PARAM_STYLE, because the two properties do
+ * not travel together. The OpenAI reasoning families want
+ * max_completion_tokens AND bill their thinking to it, so treating the two as
+ * one thing worked for a while. DeepSeek breaks that: it takes plain
+ * max_tokens, accepts a custom temperature — and still charges reasoning
+ * against the same ceiling.
+ *
+ * Measured on deepseek-v4-flash with the real analysis prompt: 10,451
+ * completion tokens, of which 6,153 were reasoning. Nearly sixty percent of
+ * the budget went to thinking the user never sees. Against a 12,000 ceiling
+ * that leaves very little room, and a heavier dilemma runs past it — the
+ * answer is then cut mid-sentence with finish_reason "length" and the
+ * analysis arrives missing its last blocks.
+ */
+const REASONING_MODELS = /(^|\/)(o[1-9](-|$|\d)|gpt-5|deepseek-(v[4-9]|reasoner)|qwq|deepthink)/i;
+
 function buildBody({ model, messages, overrides, stream, quirks = {} }) {
   const maxTokens = overrides.max_tokens ?? num('max_tokens', 4096);
   const body = { model, messages };
@@ -55,18 +74,17 @@ function buildBody({ model, messages, overrides, stream, quirks = {} }) {
     if (!quirks.noStreamOptions) body.stream_options = { include_usage: true };
   }
 
+  // The headroom follows whether the model reasons, not which parameter name
+  // it wants — those are independent, and conflating them left DeepSeek with
+  // no allowance at all.
+  const reasons = quirks.reasoning ?? REASONING_MODELS.test(model);
+  const ceiling = reasons
+    ? maxTokens + (overrides.reasoning_headroom ?? num('reasoning_headroom', 4000))
+    : maxTokens;
+
   const useCompletionTokens = quirks.completionTokens ?? NEW_PARAM_STYLE.test(model);
-  if (useCompletionTokens) {
-    // These models bill their reasoning against the very same ceiling as the
-    // visible answer. Measured on this account, o4-mini spent 192 reasoning
-    // tokens to produce a single word. Sending the raw ceiling would quietly
-    // shrink the analysis — or empty it — on the models that think hardest,
-    // so the reasoning allowance is added on top rather than taken out of it.
-    body.max_completion_tokens = maxTokens + (overrides.reasoning_headroom
-      ?? num('reasoning_headroom', 4000));
-  } else {
-    body.max_tokens = maxTokens;
-  }
+  if (useCompletionTokens) body.max_completion_tokens = ceiling;
+  else body.max_tokens = ceiling;
 
   const fixedSampling = quirks.fixedSampling ?? FIXED_SAMPLING.test(model);
   if (!fixedSampling) {
