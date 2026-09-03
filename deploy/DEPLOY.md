@@ -15,7 +15,7 @@ nginx و کلادفلر، با گواهی Origin و حالت Full (strict).
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl git nginx build-essential python3
+sudo apt install -y curl git nginx build-essential python3 sqlite3
 ```
 
 نصب Node.js نسخه ۲۲ (LTS):
@@ -645,6 +645,15 @@ cd /opt/ethiclens && sudo -u ethiclens git pull origin main && sudo -u ethiclens
 sudo -u ethiclens sqlite3 /opt/ethiclens/data/ethiclens.db ".backup '/opt/ethiclens/data/backup-$(date +%F).db'"
 ```
 
+> اگر `sqlite3: command not found` گرفتید، در بخش ۱ نصبش نکرده‌اید:
+> `sudo apt install -y sqlite3`
+>
+> `.backup` عمداً به‌جای `cp` استفاده می‌شود. پایگاه داده در حالت WAL کار
+> می‌کند، یعنی بخشی از نوشته‌ها در فایل جانبی `-wal` است و کپی ساده فایل
+> اصلی می‌تواند نسخه‌ای نیم‌بند بدهد. `.backup` از API خود SQLite استفاده
+> می‌کند و روی پایگاه داده‌ای که سرویس در حال استفاده از آن است هم امن است
+> — لازم نیست سرویس را متوقف کنید.
+
 پشتیبان‌گیری روزانه با cron:
 
 ```bash
@@ -679,3 +688,4 @@ sudo crontab -e
 | ایمیل به پوشه اسپم می‌رود | DKIM یا PTR ناقص است — بخش ۹.۵ و ۹.۳ |
 | `git pull` رمز می‌خواهد و ۴۰۱ می‌دهد | HTTP/2 روی شبکه سرور خراب است — `sudo git config --system http.version HTTP/1.1` (بخش ۳). `update.sh` خودش این را تشخیص می‌دهد |
 | به‌روزرسانی زدید ولی چیزی عوض نشد | گام‌ها را جدا زده‌اید و `git pull` بی‌صدا شکست خورده؛ از `update.sh` استفاده کنید |
+| `sqlite3: command not found` | در بخش ۱ نصب نشده — `sudo apt install -y sqlite3` |
