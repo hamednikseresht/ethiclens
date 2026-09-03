@@ -15,7 +15,7 @@ nginx و کلادفلر، با گواهی Origin و حالت Full (strict).
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl git nginx build-essential
+sudo apt install -y curl git nginx build-essential python3
 ```
 
 نصب Node.js نسخه ۲۲ (LTS):
@@ -26,8 +26,15 @@ sudo apt install -y nodejs
 node --version
 ```
 
-> `better-sqlite3` برای Node 20/22 باینری آماده دارد و نیازی به کامپایل ندارد.
-> اگر نسخه Node شما خیلی تازه باشد و باینری آماده نداشته باشد، `build-essential` و `python3` برای کامپایل لازم است.
+> **`build-essential` و `python3` واقعاً لازم‌اند — اختیاری نیستند.**
+> `better-sqlite3@13` هیچ باینری آماده‌ای منتشر نمی‌کند (ریلیزش صفر فایل
+> دارد)، پس روی هر ماشینی از منبع کامپایل می‌شود. اوبونتو `python3` را از
+> پیش دارد، ولی اگر ایمیج کم‌حجمی استفاده می‌کنید که ندارد، `npm ci` با
+> خطای `gyp ERR! find Python` شکست می‌خورد:
+>
+> ```bash
+> sudo apt install -y build-essential python3
+> ```
 
 ---
 
