@@ -505,3 +505,151 @@ tbody tr:hover{background:var(--bg-subtle)}
   background:var(--primary);color:#fff;font-size:.78rem;font-weight:700;text-decoration:none;
 }
 .cat-badge:hover{text-decoration:none;opacity:.9}
+
+/* ==========================================================================
+   Mobile shell — app header, bottom tab bar, account sheet
+   --------------------------------------------------------------------------
+   The tab bar replaces the topbar and its hamburger. The old bar laid seven
+   nav links in a horizontally scrolling flex row with no min-width, so at
+   375px they were squeezed into a 24px window: 591px of links behind a
+   scrollbar nobody could find, with four routes effectively unreachable.
+   Four fixed columns cannot do that.
+   ========================================================================== */
+
+/* ---------- App header ---------- */
+.appbar{
+  display:flex; align-items:center; gap:11px;
+  padding:calc(4px + var(--safe-top)) var(--gutter) 14px;
+}
+.appbar-mark{
+  width:34px; height:34px; border-radius:11px; flex-shrink:0;
+  background:var(--ink); color:#fff;
+  display:grid; place-items:center;
+}
+[data-theme="dark"] .appbar-mark{ color:var(--bg); }
+.appbar-text{ min-width:0; flex:1 }
+.appbar-title{
+  font-family:var(--font-display); font-size:22px; line-height:1.1; font-weight:600;
+  color:var(--text); display:block;
+}
+.appbar-sub{
+  font-size:10.5px; font-weight:500; color:var(--text-5);
+  display:block; margin-top:1px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.appbar-profile{
+  width:36px; height:36px; border-radius:50%; flex-shrink:0;
+  border:1px solid var(--border); background:var(--bg-raised);
+  color:var(--text-3); display:grid; place-items:center; cursor:pointer;
+}
+.appbar-profile:active{ transform:scale(.985) }
+
+/* ---------- Bottom tab bar ---------- */
+.tabbar{
+  position:fixed; inset-inline:0; bottom:0; z-index:90;
+  background:color-mix(in srgb, var(--bg-raised) 95%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);
+  border-top:1px solid var(--border);
+  padding:8px 8px calc(8px + var(--safe-bottom));
+  display:grid; grid-template-columns:repeat(4, 1fr);
+}
+.tabbar a{
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  text-decoration:none; color:var(--text-5); padding:0;
+}
+.tabbar a:hover{ text-decoration:none }
+.tab-ic{
+  width:44px; height:26px; border-radius:var(--r-pill);
+  display:grid; place-items:center;
+  transition:background-color .16s ease, color .16s ease;
+}
+.tab-label{ font-size:10px; font-weight:700; letter-spacing:-.1px }
+.tabbar a.active{ color:var(--primary) }
+.tabbar a.active .tab-ic{ background:var(--primary-soft) }
+.tabbar a.active .tab-label{ font-weight:800 }
+
+/* Pages with a tab bar need room for it, plus the safe area. */
+body.has-tabbar{ padding-bottom:calc(var(--tabbar-h) + var(--safe-bottom)) }
+
+/* ---------- Account sheet ---------- */
+.sheet-backdrop{
+  position:fixed; inset:0; z-index:120;
+  background:rgba(28,25,23,.36);
+  display:flex; align-items:flex-end; justify-content:center;
+}
+.sheet{
+  width:100%; max-width:520px;
+  background:var(--bg-raised);
+  border-radius:var(--r-2xl) var(--r-2xl) 0 0;
+  box-shadow:var(--shadow-lg);
+  padding:10px var(--gutter) calc(18px + var(--safe-bottom));
+  max-height:86vh; overflow-y:auto;
+}
+.sheet-grip{
+  width:38px; height:4px; border-radius:var(--r-pill);
+  background:var(--bg-muted); margin:0 auto 14px;
+}
+.sheet-head{ display:flex; align-items:center; gap:11px; margin-bottom:14px }
+.sheet-avatar{
+  width:42px; height:42px; border-radius:50%; flex-shrink:0;
+  background:var(--primary-soft); color:var(--primary);
+  display:grid; place-items:center; font-weight:800; font-size:15px;
+}
+.sheet-name{ font-size:14px; font-weight:700; color:var(--text) }
+.sheet-mail{ font-size:11.5px; color:var(--text-5); direction:ltr; text-align:start }
+.sheet-rows{ display:flex; flex-direction:column; gap:8px }
+.sheet-row{
+  display:flex; align-items:center; gap:11px; width:100%;
+  padding:12px 13px; border-radius:var(--r-md);
+  border:1px solid var(--border); background:var(--bg-raised);
+  color:var(--text-2); font:inherit; font-size:12.5px; font-weight:600;
+  cursor:pointer; text-decoration:none; text-align:start;
+}
+.sheet-row:hover{ background:var(--bg-sunken); text-decoration:none }
+.sheet-row:active{ transform:scale(.985) }
+.sheet-row .grow{ flex:1 }
+.sheet-row[data-danger]{ color:var(--danger) }
+
+/* ---------- Step indicator ---------- */
+.steps{ display:flex; align-items:center; gap:10px; margin-bottom:16px }
+.steps-pill{
+  font-size:10px; font-weight:800; color:var(--text-3);
+  background:var(--bg-muted); padding:4px 10px; border-radius:var(--r-pill);
+  white-space:nowrap;
+}
+.steps-track{ flex:1; height:3px; border-radius:var(--r-pill); background:var(--bg-muted); overflow:hidden }
+.steps-fill{ height:100%; background:var(--primary); border-radius:var(--r-pill); transition:width .22s cubic-bezier(.32,.72,0,1) }
+
+/* ---------- Buttons, redesign variants ---------- */
+.btn-ink{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; min-height:52px; border-radius:var(--r-lg);
+  background:var(--ink); color:var(--bg-raised);
+  border:0; font:inherit; font-size:15px; font-weight:700; cursor:pointer;
+}
+[data-theme="dark"] .btn-ink{ color:var(--bg) }
+.btn-ink:active{ transform:scale(.985) }
+.btn-ink[disabled], .btn-ink.is-off{ opacity:.4; pointer-events:none }
+
+.btn-soft{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; min-height:52px; border-radius:var(--r-lg);
+  background:var(--bg-raised); color:var(--text);
+  border:1px solid var(--border); font:inherit; font-size:15px; font-weight:700; cursor:pointer;
+}
+.btn-soft:active{ transform:scale(.985) }
+
+/* Sticky footer that fades the content out behind the primary action. */
+.sticky-cta{
+  position:sticky; bottom:0; z-index:20;
+  padding:12px var(--gutter) 10px;
+  background:linear-gradient(180deg, transparent, var(--bg) 40%);
+}
+
+/* ---------- Icon sizing ---------- */
+.ic{ display:block; flex-shrink:0 }
+
+@media (prefers-reduced-motion: reduce){
+  .btn-ink:active, .btn-soft:active, .sheet-row:active, .appbar-profile:active{ transform:none }
+  .steps-fill{ transition:none }
+}

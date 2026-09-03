@@ -445,3 +445,147 @@ export async function boot({ auth = true, admin = false } = {}) {
   mountStatusBanner();
   return true;
 }
+
+/* ==========================================================================
+   Mobile shell — app header, bottom tab bar, account sheet
+   --------------------------------------------------------------------------
+   Replaces the topbar on the four primary screens. Kept alongside
+   renderTopbar() rather than replacing it outright, because settings, admin,
+   dashboard and about were out of scope for the redesign and still expect
+   the old bar. A page opts in by calling mountShell() instead of boot()'s
+   default.
+   ========================================================================== */
+
+/**
+ * The four tabs, in RTL reading order — right to left, so the first entry
+ * sits nearest the thumb on the right edge.
+ */
+const TABS = [
+  { href: '/app',     label: 'تحلیل تازه', icon: 'compass'   },
+  { href: '/history', label: 'تاریخچه',    icon: 'clock'     },
+  { href: '/explore', label: 'عمومی',      icon: 'globe'     },
+  { href: '/guide',   label: 'دانشنامه',   icon: 'book-open' }
+];
+
+let iconLib = null;
+async function icons() {
+  if (!iconLib) iconLib = await import('/js/icons.js');
+  return iconLib;
+}
+
+/**
+ * The header strip: brand mark, title, live quota line, profile button.
+ *
+ * `subtitle` is passed in rather than read here, because what belongs on the
+ * second line differs per screen — the quota on /app, a count on /history.
+ */
+export async function renderAppBar(host, { title = 'دیدگاه اخلاق', subtitle = '' } = {}) {
+  const el = typeof host === 'string' ? $(host) : host;
+  if (!el) return;
+  const { icon } = await icons();
+
+  el.className = 'appbar';
+  el.innerHTML = `
+    <span class="appbar-mark">${icon('compass', { size: 19, stroke: 2 })}</span>
+    <span class="appbar-text">
+      <span class="appbar-title">${esc(title)}</span>
+      ${subtitle ? `<span class="appbar-sub" id="appbarSub">${esc(subtitle)}</span>` : ''}
+    </span>
+    <button class="appbar-profile" id="profileBtn" aria-label="حساب کاربری">
+      ${icon('user', { size: 18 })}
+    </button>`;
+
+  $('#profileBtn', el).onclick = () => openAccountSheet();
+}
+
+/** Update just the subtitle, so a quota refresh does not rebuild the header. */
+export function setAppBarSub(text) {
+  const el = $('#appbarSub');
+  if (el) el.textContent = text;
+}
+
+export async function renderTabBar(activePath) {
+  if ($('.tabbar')) return;
+  const { icon } = await icons();
+  const path = activePath || location.pathname;
+
+  const bar = document.createElement('nav');
+  bar.className = 'tabbar';
+  bar.setAttribute('aria-label', 'ناوبری اصلی');
+  bar.innerHTML = TABS.map(t => {
+    const on = path === t.href;
+    return `<a href="${t.href}" class="${on ? 'active' : ''}" ${on ? 'aria-current="page"' : ''}>
+      <span class="tab-ic">${icon(t.icon, { size: 21, stroke: on ? 2.1 : 2 })}</span>
+      <span class="tab-label">${t.label}</span>
+    </a>`;
+  }).join('');
+
+  document.body.appendChild(bar);
+  document.body.classList.add('has-tabbar');
+}
+
+/**
+ * Everything the tab bar has no room for: settings, tier, theme, admin,
+ * logout. A sheet rather than a menu because the trigger sits at the top of
+ * the screen while the thumb is at the bottom.
+ */
+export async function openAccountSheet() {
+  if ($('.sheet-backdrop')) return;
+  const { icon } = await icons();
+  const u = state.user || {};
+  const a = state.allowance || {};
+
+  const back = document.createElement('div');
+  back.className = 'sheet-backdrop';
+  back.innerHTML = `
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="حساب کاربری">
+      <div class="sheet-grip"></div>
+      <div class="sheet-head">
+        <span class="sheet-avatar">${esc((u.name || u.email || '؟')[0].toUpperCase())}</span>
+        <span class="grow">
+          <span class="sheet-name">${esc(u.name || 'کاربر')}</span><br>
+          <span class="sheet-mail">${esc(u.email || '')}</span>
+        </span>
+      </div>
+      <div class="sheet-rows">
+        ${a.limit ? `<div class="sheet-row" style="cursor:default">
+          ${icon('bar-chart-3', { size: 17 })}
+          <span class="grow">${esc(a.tierLabel || 'گروه شما')}</span>
+          <span style="color:var(--text-5);font-weight:700">${faNum(a.used ?? 0)} از ${faNum(a.limit)}</span>
+        </div>` : ''}
+        <a class="sheet-row" href="/settings">${icon('settings', { size: 17 })}<span class="grow">تنظیمات حساب</span>${icon('chevron-left', { size: 15 })}</a>
+        <button class="sheet-row" id="shTheme">${icon('moon', { size: 17 })}<span class="grow">حالت شب و روز</span></button>
+        ${u.role === 'admin' ? `<a class="sheet-row" href="/admin">${icon('shield', { size: 17 })}<span class="grow">پنل مدیریت</span>${icon('chevron-left', { size: 15 })}</a>` : ''}
+        <a class="sheet-row" href="/about">${icon('alert-circle', { size: 17 })}<span class="grow">درباره دیدگاه اخلاق</span>${icon('chevron-left', { size: 15 })}</a>
+        <button class="sheet-row" data-danger id="shOut">${icon('log-out', { size: 17 })}<span class="grow">خروج از حساب</span></button>
+      </div>
+    </div>`;
+
+  const close = () => back.remove();
+  back.addEventListener('click', e => { if (e.target === back) close(); });
+  document.addEventListener('keydown', function esc_(e) {
+    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc_); }
+  });
+
+  $('#shTheme', back).onclick = () => { toggleTheme(); close(); };
+  $('#shOut', back).onclick = async () => {
+    try { await api.post('/api/auth/logout'); } catch {}
+    location.href = '/login';
+  };
+
+  document.body.appendChild(back);
+}
+
+/**
+ * Boot for a redesigned screen: session, header, tab bar.
+ * Returns false when the user is not signed in, exactly like boot().
+ */
+export async function mountShell({ title, subtitle, headerHost = '#appbar', auth = true } = {}) {
+  try { await loadSession(); } catch (e) { console.error('session load failed', e); }
+  if (auth && !requireUser()) return false;
+
+  await renderAppBar(headerHost, { title, subtitle });
+  await renderTabBar();
+  mountStatusBanner();
+  return true;
+}
