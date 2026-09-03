@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#e7eaef;font-family:'Vazirmatn',system-ui,Tahoma,sans-serif}
+a{color:#2563eb;text-decoration:none}
+a:hover{text-decoration:underline}
+@keyframes el-spin{to{transform:rotate(360deg)}}
+@keyframes el-pulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.12);opacity:1}}
+@keyframes el-shimmer{to{background-position:-200% 0}}
+</style>
+</helmet>
+
+<section style="padding:40px 44px 48px;direction:rtl">
+<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 8px">
+<span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#18181b;color:#fff;border-radius:4px;direction:ltr">R</span>
+<span style="font:800 14px/1.4 'Vazirmatn',sans-serif;color:#18181b">بازسازی وضعیت فعلی — دیدگاه اخلاق روی موبایل (۳۹۰px)</span>
+</div>
+<p style="font:400 12.5px/1.9 'Vazirmatn',sans-serif;color:#52525b;max-width:70ch;margin:0 0 26px">
+بازسازی وفادار از کد فعلی: مقادیر رنگ، فاصله و تایپوگرافی مستقیم از <code style="font-family:ui-monospace,monospace;font-size:.85em;background:#fff;padding:1px 5px;border-radius:5px;direction:ltr">public/css/app.css</code> و <code style="font-family:ui-monospace,monospace;font-size:.85em;background:#fff;padding:1px 5px;border-radius:5px;direction:ltr">result.css</code> برداشته شده. این مبنای مقایسه با طراحی تازه است.
+</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start">
+
+<!-- ============ R1 · Landing ============ -->
+<div style="flex:none;display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 'Vazirmatn',sans-serif;color:#71717a">
+<span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#18181b;border-radius:5px;direction:ltr">R1</span>لندینگ · <span style="direction:ltr">index.html</span></div>
+<div style="width:390px;height:812px;overflow:hidden;position:relative;background:#f6f8fb;color:#0f172a;line-height:1.8;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 4px 16px rgba(15,23,42,.12)">
+
+  <div style="position:sticky;top:0;z-index:10;height:60px;background:rgba(255,255,255,.88);backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid #e2e8f0">
+    <div style="height:100%;padding:0 16px;display:flex;align-items:center;gap:12px">
+      <a href="#" style="display:flex;align-items:center;gap:9px;font-weight:900;font-size:16.8px;color:#0f172a;text-decoration:none;flex-shrink:0">
+        <span style="width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;font-size:15.2px;font-weight:900">EL</span>
+        <span>دیدگاه اخلاق</span>
+      </a>
+      <div style="flex:1"></div>
+      <button style="width:40px;height:40px;padding:0;border-radius:10px;border:1px solid transparent;background:transparent;color:#64748b;font-size:14.4px;font-family:inherit;cursor:pointer">◐</button>
+      <a href="#" style="display:inline-flex;align-items:center;justify-content:center;font:700 13.1px/1 'Vazirmatn',sans-serif;padding:6.4px 11.2px;min-height:34px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#0f172a;text-decoration:none">ورود</a>
+      <button style="display:none;width:38px;height:38px;border-radius:10px;border:1px solid #e2e8f0;background:#fff"></button>
+    </div>
+  </div>
+
+  <section style="padding:56px 16px 48px;text-align:center;background:radial-gradient(900px 460px at 50% -12%,#eff6ff,transparent 62%)">
+    <span style="display:inline-flex;align-items:center;gap:6.4px;font-size:12.5px;font-weight:700;background:#fff;border:1px solid #e2e8f0;border-radius:999px;padding:4.8px 12.8px;color:#64748b;margin-bottom:17.6px">🏛️ هشت مکتب فلسفه اخلاق، در یک تحلیل</span>
+    <h1 style="font-size:27.2px;font-weight:900;line-height:1.4;margin:0 0 14.4px;letter-spacing:-.02em">تصمیم سختت را <span style="background:linear-gradient(120deg,#2563eb,#0d9488);-webkit-background-clip:text;background-clip:text;color:transparent">از هشت منظر</span> ببین</h1>
+    <p style="font-size:15.2px;color:#64748b;margin:0 auto 28.8px;line-height:1.9">موقعیتی که در آن گیر کرده‌ای را بنویس. دیدگاه اخلاق آن را با معیارهای کانت، میل، ارسطو، رالز، گیلیگان، کی‌یرکگور و نیچه می‌سنجد.</p>
+    <div style="display:flex;gap:11.2px;justify-content:center;flex-wrap:wrap">
+      <a href="#" style="display:inline-flex;align-items:center;justify-content:center;gap:7.2px;font:700 16px/1 'Vazirmatn',sans-serif;padding:14.4px 25.6px;min-height:52px;border-radius:12px;border:1px solid #2563eb;background:#2563eb;color:#fff;text-decoration:none">شروع رایگان</a>
+      <a href="#" style="display:inline-flex;align-items:center;justify-content:center;gap:7.2px;font:700 16px/1 'Vazirmatn',sans-serif;padding:14.4px 25.6px;min-height:52px;border-radius:12px;border:1px solid #e2e8f0;background:#fff;color:#0f172a;text-decoration:none">📚 دانشنامه اخلاق</a>
+    </div>
+  </section>
+
+  <main style="max-width:1180px;margin:0 auto;padding:24px 16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11.2px;margin:0 0 48px">
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;border-top:3px solid #7c3aed;text-align:center"><span style="font-size:24px;display:block;margin-bottom:5.6px">🏛️</span><div style="font-size:14.1px;font-weight:800;margin-bottom:2.4px">فضیلت‌گرایی</div><div style="font-size:11.7px;color:#64748b">ارسطو</div></div>
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;border-top:3px solid #2563eb;text-align:center"><span style="font-size:24px;display:block;margin-bottom:5.6px">⚖️</span><div style="font-size:14.1px;font-weight:800;margin-bottom:2.4px">وظیفه‌گرایی</div><div style="font-size:11.7px;color:#64748b">کانت</div></div>
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;border-top:3px solid #0d9488;text-align:center"><span style="font-size:24px;display:block;margin-bottom:5.6px">📊</span><div style="font-size:14.1px;font-weight:800;margin-bottom:2.4px">فایده‌گرایی</div><div style="font-size:11.7px;color:#64748b">میل و بنتام</div></div>
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;border-top:3px solid #0891b2;text-align:center"><span style="font-size:24px;display:block;margin-bottom:5.6px">🏘️</span><div style="font-size:14.1px;font-weight:800;margin-bottom:2.4px">خیر مشترک</div><div style="font-size:11.7px;color:#64748b">سنت خیر مشترک</div></div>
+    </div>
+    <h2 style="text-align:center;margin:0 0 8px;font-size:21.6px;font-weight:900">چطور کار می‌کند؟</h2>
+    <p style="text-align:center;color:#64748b;font-size:14.4px;margin:0 auto 32px;line-height:1.85">دیدگاه اخلاق به‌جای دادن یک پاسخ قطعی، ساختار استدلال را در اختیارتان می‌گذارد.</p>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:22.4px">
+      <div style="width:30px;height:30px;border-radius:9px;background:#eff6ff;color:#2563eb;display:grid;place-items:center;font-weight:900;margin-bottom:11.2px">۱</div>
+      <h3 style="font-size:16px;font-weight:800;margin:0 0 6.4px">موقعیت را شرح دهید</h3>
+      <p style="font-size:13.9px;color:#64748b;line-height:1.85;margin:0">دوراهی‌تان را با جزئیات بنویسید: چه کسانی درگیرند، چه گزینه‌هایی دارید و چه چیزی برایتان مهم است.</p>
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- ============ R2 · Login ============ -->
+<div style="flex:none;display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 'Vazirmatn',sans-serif;color:#71717a">
+<span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#18181b;border-radius:5px;direction:ltr">R2</span>ورود / ثبت‌نام · <span style="direction:ltr">login.html</span></div>
+<div style="width:390px;height:812px;overflow:hidden;position:relative;background:#f6f8fb;color:#0f172a;line-height:1.8;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 4px 16px rgba(15,23,42,.12);display:flex;flex-direction:column">
+
+  <div style="height:60px;flex:none;background:rgba(255,255,255,.88);border-bottom:1px solid #e2e8f0;padding:0 16px;display:flex;align-items:center;gap:12px">
+    <a href="#" style="display:flex;align-items:center;gap:9px;font-weight:900;font-size:16.8px;color:#0f172a;text-decoration:none">
+      <span style="width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;font-size:15.2px;font-weight:900">EL</span><span>دیدگاه اخلاق</span></a>
+    <div style="flex:1"></div>
+    <a href="#" style="display:inline-flex;align-items:center;justify-content:center;font:700 13.1px/1 'Vazirmatn',sans-serif;padding:6.4px 11.2px;min-height:34px;border-radius:8px;border:1px solid #2563eb;background:#2563eb;color:#fff;text-decoration:none">ثبت‌نام</a>
+  </div>
+
+  <div style="flex:1;display:grid;place-items:center;padding:24px 16px;background:radial-gradient(1200px 600px at 70% -10%,#eff6ff,transparent 60%),#f6f8fb">
+    <div style="width:100%;max-width:430px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:9.6px;margin-bottom:9.6px">
+        <span style="width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;font-size:17.6px;font-weight:900">ا</span>
+        <span style="font-size:21.6px;font-weight:900;direction:ltr">Ethic Lens</span>
+      </div>
+      <p style="text-align:center;color:#64748b;font-size:14.1px;margin:0 0 24px">دوراهی‌ات را از هشت منظر فلسفه اخلاق ببین</p>
+
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 1px 3px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04)">
+        <div style="padding:22.4px 16px">
+          <div style="display:flex;background:#f1f5f9;border-radius:11px;padding:4px;margin-bottom:22.4px;border:1px solid #e2e8f0">
+            <button style="flex:1;padding:9.6px;border:none;background:#fff;font-family:inherit;font-size:14.4px;font-weight:700;color:#0f172a;border-radius:8px;cursor:pointer;box-shadow:0 1px 3px rgba(15,23,42,.06)">ورود</button>
+            <button style="flex:1;padding:9.6px;border:none;background:none;font-family:inherit;font-size:14.4px;font-weight:700;color:#64748b;border-radius:8px;cursor:pointer">ثبت‌نام</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6.4px;margin-bottom:16px">
+            <label style="font-size:14.1px;font-weight:700">ایمیل</label>
+            <input placeholder="you@example.com" style="width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;direction:ltr;text-align:left;font-size:14.9px;line-height:1.7;color:#0f172a;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:11.2px 13.6px;box-sizing:border-box">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6.4px;margin-bottom:16px">
+            <label style="font-size:14.1px;font-weight:700">رمز عبور</label>
+            <input type="password" placeholder="••••••••" style="width:100%;font-family:inherit;font-size:14.9px;line-height:1.7;color:#0f172a;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:11.2px 13.6px;box-sizing:border-box">
+          </div>
+          <button style="width:100%;display:inline-flex;align-items:center;justify-content:center;font:700 16px/1 'Vazirmatn',sans-serif;padding:14.4px 25.6px;min-height:52px;border-radius:12px;border:1px solid #2563eb;background:#2563eb;color:#fff;cursor:pointer">ورود</button>
+          <p style="text-align:center;margin:13.6px 0 0"><button style="background:none;border:none;padding:0;cursor:pointer;font-family:inherit;font-size:13.6px;font-weight:600;color:#2563eb;text-decoration:underline">رمزم را فراموش کرده‌ام</button></p>
+        </div>
+      </div>
+
+      <p style="text-align:center;margin-top:19.2px;font-size:13.3px;color:#64748b;line-height:1.9">این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.<br><a href="#" style="color:#2563eb">درباره دیدگاه اخلاق</a></p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ R3 · New analysis ============ -->
+<div style="flex:none;display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 'Vazirmatn',sans-serif;color:#71717a">
+<span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#18181b;border-radius:5px;direction:ltr">R3</span>تحلیل تازه · <span style="direction:ltr">app.html</span></div>
+<div style="width:390px;height:812px;overflow:hidden;position:relative;background:#f6f8fb;color:#0f172a;line-height:1.8;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 4px 16px rgba(15,23,42,.12)">
+
+  <div style="height:60px;background:rgba(255,255,255,.88);border-bottom:1px solid #e2e8f0;padding:0 16px;display:flex;align-items:center;gap:12px">
+    <a href="#" style="display:flex;align-items:center;gap:9px;font-weight:900;font-size:16.8px;color:#0f172a;text-decoration:none">
+      <span style="width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;font-size:15.2px;font-weight:900">EL</span><span>دیدگاه اخلاق</span></a>
+    <div style="flex:1"></div>
+    <button style="width:40px;height:40px;padding:0;border-radius:10px;border:1px solid transparent;background:transparent;color:#64748b;font-size:14.4px;cursor:pointer">◐</button>
+    <button style="display:flex;align-items:center;gap:8px;padding:5.6px;border-radius:999px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;min-height:38px">
+      <span style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#2563eb;color:#fff;font-size:12.5px;font-weight:800">ع</span></button>
+    <button style="width:38px;height:38px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;flex-shrink:0">
+      <span style="display:block;width:17px;height:2px;border-radius:2px;background:#0f172a"></span>
+      <span style="display:block;width:17px;height:2px;border-radius:2px;background:#0f172a"></span>
+      <span style="display:block;width:17px;height:2px;border-radius:2px;background:#0f172a"></span>
+    </button>
+  </div>
+
+  <main style="padding:24px 16px">
+    <div style="margin-bottom:20px">
+      <h1 style="font-size:21.6px;font-weight:900;margin:0 0 4px">یک دوراهی اخلاقی را بشکافید</h1>
+      <p style="font-size:14.1px;color:#64748b;margin:0">موقعیت را با جزئیات شرح دهید. هرچه دقیق‌تر بنویسید، تحلیل کمتر کلی‌گویانه خواهد بود.</p>
+    </div>
+
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 1px 3px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04)">
+      <div style="padding:22.4px">
+        <div style="display:flex;flex-direction:column;gap:6.4px;margin-bottom:16px">
+          <label style="font-size:14.1px;font-weight:700">شرح دوراهی <span style="color:#dc2626">*</span></label>
+          <textarea rows="7" style="width:100%;font-family:inherit;font-size:14.9px;line-height:1.7;color:#0f172a;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:11.2px 13.6px;resize:vertical;box-sizing:border-box" placeholder="مثلاً: مدیرم از من خواسته گزارشی را طوری بنویسم که ایراد یک محصول در آن دیده نشود. اگر قبول نکنم احتمالاً شغلم را از دست می‌دهم، و همسرم بیکار است…"></textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <span style="font-size:12.5px;color:#64748b">حداقل ۲۰ نویسه</span>
+            <span style="font-size:12px;color:#94a3b8;font-variant-numeric:tabular-nums">۰ / ۸۰۰۰</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6.4px;margin-top:8px">
+            <button style="font-size:12.2px;padding:4.8px 9.6px;border-radius:999px;border:1px dashed #cbd5e1;background:transparent;color:#64748b;cursor:pointer;font-family:inherit">نمونه ۱</button>
+            <button style="font-size:12.2px;padding:4.8px 9.6px;border-radius:999px;border:1px dashed #cbd5e1;background:transparent;color:#64748b;cursor:pointer;font-family:inherit">نمونه ۲</button>
+            <button style="font-size:12.2px;padding:4.8px 9.6px;border-radius:999px;border:1px dashed #cbd5e1;background:transparent;color:#64748b;cursor:pointer;font-family:inherit">نمونه ۳</button>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid #e2e8f0;padding-top:14.4px;margin-top:4.8px">
+          <div style="cursor:pointer;font-size:13.9px;font-weight:700;color:#2563eb;display:flex;align-items:center;gap:6.4px"><span style="font-weight:900">＋</span> اطلاعات تکمیلی (اختیاری ولی مؤثر)</div>
+        </div>
+
+        <button style="width:100%;margin-top:16px;display:inline-flex;align-items:center;justify-content:center;gap:7.2px;font:700 16px/1 'Vazirmatn',sans-serif;padding:14.4px 25.6px;min-height:52px;border-radius:12px;border:1px solid #2563eb;background:#2563eb;color:#fff;cursor:pointer">🧭 تحلیل اخلاقی را شروع کن</button>
+        <div style="font-size:12.2px;color:#64748b;text-align:center;margin-top:9.6px">گروه پایه — ۳ تحلیل از ۵ امروز باقی مانده • توکن این ماه: ۱۲K از ۵۰K (۲۴٪)</div>
+      </div>
+    </div>
+
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 1px 3px rgba(15,23,42,.06);margin-top:20px">
+      <div style="padding:22.4px">
+        <div style="text-align:center;padding:48px 24px;color:#64748b">
+          <div style="font-size:41.6px;margin-bottom:9.6px;opacity:.55">🧭</div>
+          <h3 style="font-size:16.8px;font-weight:800;color:#0f172a;margin:0 0 5.6px">هنوز تحلیلی انجام نشده</h3>
+          <p style="font-size:14.1px;margin:0 auto 16px">موقعیت خود را در فرم بالا بنویسید.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- ============ R4 · Waiting ============ -->
+<div style="flex:none;display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 'Vazirmatn',sans-serif;color:#71717a">
+<span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#18181b;border-radius:5px;direction:ltr">R4</span>حالت انتظار · <span style="direction:ltr">.wait</span></div>
+<div style="width:390px;height:812px;overflow:hidden;position:relative;background:#f6f8fb;color:#0f172a;line-height:1.8;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 4px 16px rgba(15,23,42,.12)">
+
+  <div style="height:60px;background:rgba(255,255,255,.88);border-bottom:1px solid #e2e8f0;padding:0 16px;display:flex;align-items:center;gap:12px">
+    <a href="#" style="display:flex;align-items:center;gap:9px;font-weight:900;font-size:16.8px;color:#0f172a;text-decoration:none">
+      <span style="width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;font-size:15.2px;font-weight:900">EL</span><span>دیدگاه اخلاق</span></a>
+    <div style="flex:1"></div>
+    <button style="width:38px;height:38px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer">
+      <span style="display:block;width:17px;height:2px;border-radius:2px;background:#0f172a"></span>
+      <span style="display:block;width:17px;height:2px;border-radius:2px;background:#0f172a"></span>
+      <span style="display:block;width:17px;height:2px;border-radius:2px;background:#0f172a"></span>
+    </button>
+  </div>
+
+  <main style="padding:24px 16px">
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:40px 20px 32px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 1px 3px rgba(15,23,42,.06)">
+      <div style="position:relative;width:82px;height:82px;margin-bottom:17.6px">
+        <i style="position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:#2563eb;animation:el-spin 1.5s linear infinite"></i>
+        <i style="position:absolute;inset:11px;border-radius:50%;border:2px solid transparent;border-top-color:#0d9488;animation:el-spin 2.1s linear infinite reverse"></i>
+        <i style="position:absolute;inset:22px;border-radius:50%;border:2px solid transparent;border-top-color:#d97706;animation:el-spin 2.9s linear infinite"></i>
+        <b style="position:absolute;inset:0;display:grid;place-items:center;font-size:24px;animation:el-pulse 2.4s ease-in-out infinite">🧭</b>
+      </div>
+      <div style="font-size:16.8px;font-weight:900;margin-bottom:4.8px">در حال تحلیل دوراهی شما…</div>
+      <div style="font-size:13.6px;color:#64748b;margin-bottom:17.6px">۴۲٪ از تحلیل نوشته شده است</div>
+      <div style="width:100%;max-width:430px;height:7px;border-radius:99px;background:#e9eef5;overflow:hidden"><i style="display:block;height:100%;width:42%;border-radius:99px;background:linear-gradient(90deg,#2563eb,#0d9488)"></i></div>
+      <div style="font-size:12.5px;color:#64748b;margin-top:7.2px;font-variant-numeric:tabular-nums">۴۲٪</div>
+
+      <div style="margin-top:25.6px;max-width:520px;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:17.6px 19.2px;border-radius:10px;background:#f1f5f9;border:1px solid #e2e8f0">
+        <span style="font-size:21.6px;margin-bottom:8px;display:block">⚖️</span>
+        <blockquote style="font-size:16px;line-height:2;font-weight:600;color:#0f172a;margin:0 0 9.6px">چنان عمل کن که بتوانی بخواهی قاعده عملت قانونی عام شود.</blockquote>
+        <cite style="font-size:12.8px;font-weight:800;color:#2563eb;font-style:normal;display:block">ایمانوئل کانت<span style="display:block;font-size:11.7px;font-weight:500;color:#94a3b8;margin-top:2.4px">بنیاد مابعدالطبیعه اخلاق، ۱۷۸۵</span></cite>
+      </div>
+
+      <div style="margin-top:22.4px">
+        <button style="display:inline-flex;align-items:center;justify-content:center;font:700 13.1px/1 'Vazirmatn',sans-serif;padding:6.4px 11.2px;min-height:34px;border-radius:8px;border:1px solid transparent;background:transparent;color:#64748b;cursor:pointer">لغو تحلیل</button>
+      </div>
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- ============ R5 · Result ============ -->
+<div style="flex:none;display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 'Vazirmatn',sans-serif;color:#71717a">
+<span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#18181b;border-radius:5px;direction:ltr">R5</span>صفحه تحلیل · <span style="direction:ltr">analysis.html</span></div>
+<div style="width:390px;height:812px;overflow:hidden;position:relative;background:#f6f8fb;color:#0f172a;line-height:1.8;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 4px 16px rgba(15,23,42,.12)">
+
+  <div style="height:60px;background:rgba(255,255,255,.88);border-bottom:1px solid #e2e8f0;padding:0 16px;display:flex;align-items:center;gap:12px">
+    <a href="#" style="display:flex;align-items:center;gap:9px;font-weight:900;font-size:16.8px;color:#0f172a;text-decoration:none">
+      <span style="width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;font-size:15.2px;font-weight:900">EL</span><span>دیدگاه اخلاق</span></a>
+    <div style="flex:1"></div>
+    <button style="width:38px;height:38px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer">
+      <span style="display:block;width:17px;height:2px;border-radius:2px;background:#0f172a"></span>
+      <span style="display:block;width:17px;height:2px;border-radius:2px;background:#0f172a"></span>
+      <span style="display:block;width:17px;height:2px;border-radius:2px;background:#0f172a"></span>
+    </button>
+  </div>
+
+  <main style="padding:24px 16px">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20.8px;margin-bottom:20.8px;box-shadow:0 1px 3px rgba(15,23,42,.06)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:9.6px">
+        <a href="#" style="display:inline-flex;align-items:center;justify-content:center;font:700 13.1px/1 'Vazirmatn',sans-serif;padding:6.4px 11.2px;min-height:34px;border-radius:8px;border:1px solid transparent;background:transparent;color:#64748b;text-decoration:none">→ بازگشت به تاریخچه</a>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button style="font:700 13.1px/1 'Vazirmatn',sans-serif;padding:6.4px 11.2px;min-height:34px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer">📄 PDF</button>
+          <button style="font:700 13.1px/1 'Vazirmatn',sans-serif;padding:6.4px 11.2px;min-height:34px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer">☆</button>
+          <button style="font:700 13.1px/1 'Vazirmatn',sans-serif;padding:6.4px 11.2px;min-height:34px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer">🌐</button>
+        </div>
+      </div>
+      <h1 style="font-size:19.2px;font-weight:900;line-height:1.55;margin:0 0 8px">پنهان‌کردن ایراد محصول در گزارش، به فرمان مدیر</h1>
+      <div style="display:flex;flex-wrap:wrap;gap:6.4px;font-size:12.2px;margin-top:11.2px">
+        <span style="display:inline-flex;align-items:center;padding:3.2px 9.6px;border-radius:999px;font-size:12px;font-weight:700;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0">۱۲ مرداد ۱۴۰۴، ۱۴:۳۰</span>
+        <span style="display:inline-flex;align-items:center;padding:3.2px 9.6px;border-radius:999px;font-size:12px;font-weight:700;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;direction:ltr">llama-3.3-70b</span>
+        <span style="display:inline-flex;align-items:center;padding:3.2px 9.6px;border-radius:999px;font-size:12px;font-weight:700;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0">۳۸.۴ ثانیه</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6.4px;margin-top:14.4px">
+        <span style="display:flex;align-items:center;gap:5.6px;font-size:11.8px;font-weight:700;padding:4.8px 10.4px;border-radius:999px;background:#fef2f2;color:#dc2626"><b style="font-weight:900">۱</b> دروازه کرامت: نقض</span>
+        <span style="display:flex;align-items:center;gap:5.6px;font-size:11.8px;font-weight:700;padding:4.8px 10.4px;border-radius:999px;background:#fffbeb;color:#d97706"><b style="font-weight:900">۲</b> دروازه عدالت: مشروط</span>
+        <span style="display:flex;align-items:center;gap:5.6px;font-size:11.8px;font-weight:700;padding:4.8px 10.4px;border-radius:999px;background:#f0fdf4;color:#16a34a"><b style="font-weight:900">۳</b> فایده: مثبت</span>
+      </div>
+      <div style="background:#f1f5f9;border-inline-start:3px solid #0d9488;border-radius:0 10px 10px 0;padding:13.6px 16px;font-size:14.1px;line-height:1.9;margin-top:12.8px">مدیرم از من خواسته گزارشی را طوری بنویسم که ایراد یک محصول در آن دیده نشود…</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14.4px">
+      <div style="display:inline-flex;align-items:center;gap:8px;align-self:flex-start;font-size:12.5px;font-weight:800;color:#2563eb;background:#eff6ff;border-radius:999px;padding:4.8px 13.6px">
+        <span style="display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#2563eb;color:#fff;font-size:11.2px;font-weight:900">۳</span> ارزیابی گزینه‌ها</div>
+      <p style="font-size:13.9px;line-height:1.95;color:#64748b;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:15.2px 17.6px;margin:0">هر گزینه از هفت معیار اخلاقی امتیاز می‌گیرد، سپس تصمیم از پنج دروازه پیاپی می‌گذرد. دو دروازه نخست <strong style="color:#0f172a">وتوکننده</strong>اند.</p>
+
+      <div style="display:grid;grid-template-columns:32px 1fr;gap:9.6px;align-items:start">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6.4px;padding-top:3.2px">
+          <span style="width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:13.6px;font-weight:900;background:#fef2f2;color:#dc2626;border:2px solid #dc2626">۱</span>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(15,23,42,.06);border-inline-start:3px solid #dc2626">
+          <header style="display:flex;align-items:flex-start;gap:9.6px;flex-wrap:wrap;margin-bottom:8px">
+            <div style="flex:1;min-width:0">
+              <h3 style="font-size:16.3px;font-weight:800;line-height:1.4;margin:0">دروازه کرامت</h3>
+              <div style="font-size:12.2px;color:#64748b">ایمانوئل کانت</div>
+            </div>
+            <span style="font-size:10.9px;font-weight:800;padding:2.4px 8px;border-radius:999px;background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;align-self:center">وتوکننده</span>
+            <span style="font-size:12.2px;font-weight:800;padding:4px 11.2px;border-radius:999px;background:#fef2f2;color:#dc2626;align-self:center">نقض شده</span>
+          </header>
+          <p style="font-size:14.2px;font-weight:600;line-height:1.8;color:#0f172a;background:#f1f5f9;border-inline-start:3px solid #0d9488;border-radius:0 8px 8px 0;padding:9.6px 13.6px;margin:0 0 14.4px">آیا در این تصمیم، انسانی صرفاً به ابزار تبدیل شده است؟</p>
+          <div style="border:1px dashed #cbd5e1;border-radius:10px;padding:12px 14.4px;margin-bottom:14.4px;background:#f1f5f9">
+            <div style="font-size:11.5px;font-weight:800;color:#94a3b8;margin-bottom:4px">نتیجه این مرحله</div>
+            <div style="font-size:13.9px;line-height:1.85">مشتریانی که محصول را می‌خرند، در این گزارش صرفاً وسیله‌ای برای حفظ فروش شده‌اند — رضایت آگاهانه‌شان حذف شده است.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr;gap:11.2px;margin-bottom:13.6px">
+            <article style="background:#f6f8fb;border:1px solid #e2e8f0;border-radius:10px;padding:14.4px 16px;border-top:3px solid #2563eb;display:flex;flex-direction:column">
+              <header style="display:flex;align-items:flex-start;gap:8.8px;margin-bottom:8px">
+                <span style="font-size:18.4px;line-height:1.4;flex-shrink:0">⚖️</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:14.7px;font-weight:800;line-height:1.4">وظیفه‌گرایی</div>
+                  <div style="font-size:11.7px;color:#64748b">کانت، راس</div>
+                </div>
+                <span style="font-size:11.5px;font-weight:800;padding:2.9px 8px;border-radius:999px;background:#fef2f2;color:#dc2626;white-space:nowrap;flex-shrink:0">حکم: مردود</span>
+              </header>
+              <div style="font-size:13.8px;line-height:1.85">قاعده «برای حفظ شغل، اطلاعات ایمنی را پنهان کن» را نمی‌توان قانونی عام کرد؛ عام‌شدنش خودِ نهاد گزارش‌دهی را بی‌معنا می‌کند.</div>
+            </article>
+          </div>
+          <p style="font-size:12.2px;color:#64748b;line-height:1.75;padding-top:10.4px;border-top:1px solid #e2e8f0;margin:0">وتوکننده — اگر کرامت کسی نقض شود، گزینه مردود است و باید حذف یا بازطراحی شود.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- ============ R6 · History ============ -->
+<div style="flex:none;display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 'Vazirmatn',sans-serif;color:#71717a">
+<span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#18181b;border-radius:5px;direction:ltr">R6</span>تاریخچه · <span style="direction:ltr">history.html</span></div>
+<div style="width:390px;height:812px;overflow:hidden;position:relative;background:#f6f8fb;color:#0f172a;line-height:1.8;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 4px 16px rgba(15,23,42,.12)">
+
+  <div style="height:60px;background:rgba(255,255,255,.88);border-bottom:1px solid #e2e8f0;padding:0 16px;display:flex;align-items:center;gap:12px">
+    <a href="#" style="display:flex;align-items:center;gap:9px;font-weight:900;font-size:16.8px;color:#0f172a;text-decoration:none">
+      <span style="width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;font-size:15.2px;font-weight:900">EL</span><span>دیدگاه اخلاق</span></a>
+    <div style="flex:1"></div>
+    <button style="width:38px;height:38px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer">
+      <span style="display:block;width:17px;height:2px;border-radius:2px;background:#0f172a"></span>
+      <span style="display:block;width:17px;height:2px;border-radius:2px;background:#0f172a"></span>
+      <span style="display:block;width:17px;height:2px;border-radius:2px;background:#0f172a"></span>
+    </button>
+  </div>
+
+  <main style="padding:24px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:17.6px">
+      <div>
+        <h1 style="font-size:20.8px;font-weight:900;margin:0">تاریخچه تحلیل‌ها</h1>
+        <p style="font-size:13.8px;color:#64748b;margin:0">۱۴ تحلیل ثبت شده</p>
+      </div>
+      <a href="#" style="display:inline-flex;align-items:center;justify-content:center;font:700 13.1px/1 'Vazirmatn',sans-serif;padding:6.4px 11.2px;min-height:34px;border-radius:8px;border:1px solid #2563eb;background:#2563eb;color:#fff;text-decoration:none">＋ تحلیل تازه</a>
+    </div>
+
+    <div style="display:flex;gap:9.6px;flex-wrap:wrap;align-items:center;margin-bottom:17.6px">
+      <input type="search" placeholder="جست‌وجو در عنوان و متن دوراهی…" style="width:100%;max-width:340px;font-family:inherit;font-size:14.9px;line-height:1.7;color:#0f172a;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:11.2px 13.6px;box-sizing:border-box">
+      <label style="display:flex;align-items:center;gap:9.6px;cursor:pointer;font-size:14.4px;font-weight:600"><input type="checkbox" style="width:18.4px;height:18.4px;accent-color:#2563eb"> فقط نشان‌شده‌ها</label>
+      <label style="display:flex;align-items:center;gap:9.6px;cursor:pointer;font-size:14.4px;font-weight:600"><input type="checkbox" style="width:18.4px;height:18.4px;accent-color:#2563eb"> منتظر بازنگری</label>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr;gap:12px">
+      <article style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16.8px 18.4px;display:flex;flex-direction:column;gap:8px">
+        <a href="#" style="font-size:15.2px;font-weight:800;line-height:1.6;color:#0f172a;text-decoration:none">پنهان‌کردن ایراد محصول در گزارش، به فرمان مدیر</a>
+        <p style="font-size:13.3px;color:#64748b;line-height:1.75;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">مدیرم از من خواسته گزارشی را طوری بنویسم که ایراد یک محصول در آن دیده نشود. اگر قبول نکنم احتمالاً شغلم را از دست می‌دهم…</p>
+        <div style="display:flex;align-items:center;gap:6.4px;flex-wrap:wrap;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:9.6px;margin-top:auto">
+          <button style="background:none;border:none;cursor:pointer;font-size:16px;padding:2.4px;line-height:1;filter:none;opacity:1">⭐</button>
+          <span>۲ روز پیش</span><span>•</span><span>۳۸.۴ ثانیه</span>
+          <span style="display:inline-flex;align-items:center;padding:3.2px 9.6px;border-radius:999px;font-size:12px;font-weight:700;background:#f0fdfa;color:#0d9488">📔 بازنگری شد</span>
+          <span style="flex:1"></span>
+          <button style="font:700 13.1px/1 'Vazirmatn',sans-serif;padding:6.4px 11.2px;min-height:34px;border-radius:8px;border:1px solid transparent;background:transparent;color:#64748b;cursor:pointer">تغییر نام</button>
+          <a href="#" style="font:700 13.1px/1 'Vazirmatn',sans-serif;padding:6.4px 11.2px;min-height:34px;border-radius:8px;border:1px solid transparent;background:transparent;color:#64748b;text-decoration:none;display:inline-flex;align-items:center">دانلود</a>
+          <button style="font:700 13.1px/1 'Vazirmatn',sans-serif;padding:6.4px 11.2px;min-height:34px;border-radius:8px;border:1px solid transparent;background:transparent;color:#dc2626;cursor:pointer">حذف</button>
+        </div>
+      </article>
+      <article style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16.8px 18.4px;display:flex;flex-direction:column;gap:8px">
+        <a href="#" style="font-size:15.2px;font-weight:800;line-height:1.6;color:#0f172a;text-decoration:none">گفتن یا نگفتن تشخیص بیماری به پدر</a>
+        <p style="font-size:13.3px;color:#64748b;line-height:1.75;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">پدرم بیماری پیشرفته دارد. پزشک به من گفته، ولی خانواده اصرار دارد به خودش نگوییم…</p>
+        <div style="display:flex;align-items:center;gap:6.4px;flex-wrap:wrap;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:9.6px">
+          <button style="background:none;border:none;cursor:pointer;font-size:16px;padding:2.4px;line-height:1;filter:grayscale(1);opacity:.45">⭐</button>
+          <span>۵ روز پیش</span><span>•</span><span>۴۱.۲ ثانیه</span>
+          <span style="display:inline-flex;align-items:center;padding:3.2px 9.6px;border-radius:999px;font-size:12px;font-weight:700;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0">منتظر بازنگری</span>
+        </div>
+      </article>
+    </div>
+  </main>
+</div>
+</div>
+
+</div>
+</section>
+</x-dc>
+</body>
+</html>
