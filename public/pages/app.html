@@ -4,314 +4,452 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#f5f5f4">
 <title>تحلیل تازه — دیدگاه اخلاق</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&family=Markazi+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
-<link rel="stylesheet" href="/css/result.css">
 <link rel="stylesheet" href="/css/motion.css">
-<style>
-  .layout{display:grid;grid-template-columns:1fr;gap:1.25rem;align-items:start}
-  @media (min-width:1080px){
-    .layout{grid-template-columns:390px 1fr}
-    .form-col{position:sticky;top:calc(var(--nav-h) + 1.5rem);max-height:calc(100vh - var(--nav-h) - 3rem);overflow-y:auto}
-  }
-  .page-head{margin-bottom:1.25rem}
-  .page-head h1{font-size:1.35rem;font-weight:900;margin-bottom:.25rem}
-  .page-head p{font-size:.88rem;color:var(--text-muted)}
-  details.more{border-top:1px solid var(--border);padding-top:.9rem;margin-top:.3rem}
-  details.more summary{cursor:pointer;font-size:.87rem;font-weight:700;color:var(--primary);list-style:none;
-                       display:flex;align-items:center;gap:.4rem;margin-bottom:.9rem}
-  details.more summary::-webkit-details-marker{display:none}
-  details.more summary::before{content:"＋";font-weight:900}
-  details.more[open] summary::before{content:"－"}
-  .quota{font-size:.76rem;color:var(--text-muted);text-align:center;margin-top:.6rem}
-  .examples{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
-  .examples button{font-size:.76rem;padding:.3rem .6rem;border-radius:999px;border:1px dashed var(--border-strong);
-                   background:transparent;color:var(--text-muted);cursor:pointer;font-family:inherit}
-  .examples button:hover{border-color:var(--primary);color:var(--primary);border-style:solid}
-</style>
 <script src="/js/analytics.js"></script>
 </head>
 <body>
-<header class="topbar" id="topbar"></header>
 
-<main class="wrap">
-  <div class="page-head">
-    <h1>یک دوراهی اخلاقی را بشکافید</h1>
-    <p>موقعیت را با جزئیات شرح دهید. هرچه دقیق‌تر بنویسید، تحلیل کمتر کلی‌گویانه خواهد بود.</p>
-  </div>
+<!-- ===== Step 1 — the dilemma, and nothing else ===== -->
+<section class="view on" id="v1">
+  <header id="appbar"></header>
 
-  <div class="layout">
-    <!-- Form column -->
-    <div class="form-col">
-      <div class="card">
-        <div class="card-body">
-          <form id="analyzeForm">
-            <div class="field">
-              <label for="dilemma">شرح دوراهی <span style="color:var(--danger)">*</span></label>
-              <textarea class="textarea" id="dilemma" rows="7" required minlength="20" maxlength="8000"
-                placeholder="مثلاً: مدیرم از من خواسته گزارشی را طوری بنویسم که ایراد یک محصول در آن دیده نشود. اگر قبول نکنم احتمالاً شغلم را از دست می‌دهم، و همسرم بیکار است…"></textarea>
-              <div class="row-between">
-                <span class="hint">حداقل ۲۰ نویسه</span>
-                <span class="char-count" id="charCount">۰ / ۸۰۰۰</span>
-              </div>
-              <div class="examples" id="examples"></div>
-            </div>
+  <div class="view-pad">
+    <div class="steps">
+      <span class="steps-pill">گام ۱ از ۲</span>
+      <span class="steps-track"><span class="steps-fill" style="width:50%"></span></span>
+    </div>
 
-            <details class="more">
-              <summary>اطلاعات تکمیلی (اختیاری ولی مؤثر)</summary>
+    <h1 style="font-family:var(--font-display);font-size:33px;line-height:1.32;font-weight:600;margin-bottom:6px">
+      چه چیزی روی دلت سنگینی می‌کند؟
+    </h1>
+    <p style="font-size:13px;line-height:1.95;color:var(--text-4);margin-bottom:16px">
+      موقعیت را همان‌طور که هست بنویسید — بی‌پرده. هرچه دقیق‌تر، تحلیل کمتر کلی‌گویانه.
+    </p>
 
-              <div class="field">
-                <label for="domain">حوزه</label>
-                <select class="select" id="domain">
-                  <option value="">— انتخاب کنید —</option>
-                  <option>محیط کار و حرفه</option>
-                  <option>خانواده و روابط شخصی</option>
-                  <option>سلامت و پزشکی</option>
-                  <option>کسب‌وکار و مالی</option>
-                  <option>فناوری و هوش مصنوعی</option>
-                  <option>تحصیل و پژوهش</option>
-                  <option>اجتماعی و سیاسی</option>
-                  <option>محیط زیست</option>
-                  <option>سایر</option>
-                </select>
-              </div>
-
-              <div class="field">
-                <label for="stakeholders">چه کسانی درگیرند؟</label>
-                <textarea class="textarea" id="stakeholders" rows="2" maxlength="1000"
-                  placeholder="خودم، همسرم، مدیر، مشتریانی که محصول را می‌خرند…"></textarea>
-              </div>
-
-              <div class="field">
-                <label for="options">گزینه‌هایی که به آن‌ها فکر کرده‌اید</label>
-                <textarea class="textarea" id="options" rows="2" maxlength="2000"
-                  placeholder="۱. قبول کنم ۲. رد کنم و استعفا بدهم ۳. به واحد بازرسی گزارش بدهم"></textarea>
-              </div>
-
-              <div class="grid-2">
-                <div class="field">
-                  <label for="urgency">فوریت</label>
-                  <select class="select" id="urgency">
-                    <option value="">— انتخاب کنید —</option>
-                    <option>همین امروز باید تصمیم بگیرم</option>
-                    <option>چند روز فرصت دارم</option>
-                    <option>چند هفته فرصت دارم</option>
-                    <option>فوریتی ندارد</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label for="model">مدل تحلیل</label>
-                  <select class="select" id="model"></select>
-                  <span class="hint" id="modelNote"></span>
-                </div>
-              </div>
-
-              <div class="field">
-                <label for="values">ارزش‌ها و محدودیت‌های شخصی</label>
-                <textarea class="textarea" id="values" rows="2" maxlength="1000"
-                  placeholder="مثلاً: صداقت برایم از امنیت شغلی مهم‌تر است، ولی نمی‌توانم خانواده‌ام را بی‌درآمد بگذارم."></textarea>
-              </div>
-            </details>
-
-            <button class="btn btn-primary btn-block btn-lg" type="submit" id="submitBtn">
-              🧭 تحلیل اخلاقی را شروع کن
-            </button>
-            <div class="quota" id="quotaLine"></div>
-          </form>
-        </div>
+    <div class="field-card">
+      <textarea id="dilemma" maxlength="8000" aria-label="شرح دوراهی"
+        placeholder="مثلاً: مدیرم از من خواسته گزارشی را طوری بنویسم که ایراد یک محصول در آن دیده نشود. اگر قبول نکنم احتمالاً شغلم را از دست می‌دهم، و همسرم بیکار است…"></textarea>
+      <div class="field-foot">
+        <span class="field-state" id="lenState">حداقل ۲۰ نویسه</span>
+        <span class="char-n" id="charN">۰ / ۸۰۰۰</span>
       </div>
     </div>
 
-    <!-- Result column -->
-    <div id="resultCol">
-      <div class="card">
-        <div class="card-body">
-          <div class="empty">
-            <div class="empty-icon">🧭</div>
-            <h3>هنوز تحلیلی انجام نشده</h3>
-            <p>موقعیت خود را در فرم کنار بنویسید. دیدگاه اخلاق آن را از هشت منظر فلسفه اخلاق می‌سنجد، تعارض‌ها را نشان می‌دهد و یک مسیر موجه پیشنهاد می‌کند.</p>
-            <a class="btn btn-sm" href="/guide">مروری بر مکاتب اخلاقی</a>
-          </div>
-        </div>
-      </div>
-    </div>
+    <span class="eyebrow">یا از یک نمونه شروع کنید</span>
+    <div class="ex-list" id="examples"></div>
+
+    <div id="quotaWarn" style="margin-top:14px"></div>
   </div>
-</main>
+
+  <div class="sticky-cta">
+    <button class="btn-ink is-off" id="toStep2">ادامه — افزودن زمینه</button>
+  </div>
+</section>
+
+<!-- ===== Step 2 — optional context ===== -->
+<section class="view" id="v2">
+  <div class="stepbar">
+    <button class="icon-btn" id="backTo1" aria-label="بازگشت"></button>
+    <h2>زمینه دوراهی</h2>
+    <button class="text-btn" id="skipCtx">رد کردن</button>
+  </div>
+
+  <div class="view-pad">
+    <div class="steps">
+      <span class="steps-pill" style="color:var(--primary);background:var(--primary-soft)">گام ۲ از ۲</span>
+      <span class="steps-track"><span class="steps-fill" style="width:100%"></span></span>
+    </div>
+
+    <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-md);padding:11px 13px;font-size:12.5px;line-height:1.95;color:var(--text-4)">
+      هرکدام را پر کنید، تحلیل مشخص‌تر می‌شود. همه اختیاری‌اند.
+    </div>
+
+    <span class="eyebrow">حوزه</span>
+    <div class="chips" id="domainChips"></div>
+
+    <span class="eyebrow">فوریت</span>
+    <div class="seg" id="urgencySeg"></div>
+
+    <span class="eyebrow">جزئیات بیشتر</span>
+    <div class="rows" id="ctxRows"></div>
+
+    <div id="modelRow" style="margin-top:9px"></div>
+  </div>
+
+  <div class="sticky-cta">
+    <button class="btn btn-primary btn-block" id="submitBtn"
+            style="min-height:54px;border-radius:var(--r-lg);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px">
+      تحلیل اخلاقی را شروع کن
+    </button>
+    <p class="cta-note">حدود ۴۰ ثانیه · می‌توانید اپ را ببندید</p>
+  </div>
+</section>
+
+<!-- ===== Waiting ===== -->
+<section class="waiting" id="v3" hidden>
+  <span class="glow glow-a"></span>
+  <span class="glow glow-b"></span>
+
+  <div class="wait-status">
+    <span class="ring" id="waitRing"></span>
+    <span id="waitStatus">در حال اتصال به مدل…</span>
+  </div>
+
+  <div class="wait-mid">
+    <div class="q-tile" id="qTile"></div>
+    <div id="quoteHost"></div>
+  </div>
+
+  <div class="gate-bars" id="gateBars" role="img" aria-label="پیشرفت پنج دروازه"></div>
+  <div class="wait-pctrow">
+    <span class="wait-pct" id="waitPct">۰٪</span>
+    <button class="wait-cancel" id="cancelRun">لغو</button>
+  </div>
+
+  <div class="wait-foot">
+    <span id="bellIcon"></span>
+    <span>می‌توانید اپ را ببندید — تحلیل در تاریخچه ذخیره می‌شود.</span>
+  </div>
+</section>
 
 <script type="module">
-import { $, api, boot, toast, esc, faNum, state } from '/js/core.js';
+import { $, $$, api, state, toast, esc, faNum,
+         mountShell, renderTabBar, setAppBarSub, modal } from '/js/core.js';
+import { icon } from '/js/icons.js';
 import { parseSections, progressOf } from '/js/result.js';
 import { incompleteSummary } from '/js/publish.js';
-import { quoteDeck, quoteMarkup } from '/js/quotes.js';
-import { initMotion } from '/js/motion.js';
+import { quoteDeck } from '/js/quotes.js';
 
-if (!await boot()) throw new Error('unauthenticated');
+if (!await mountShell({ subtitle: 'در حال بارگذاری…' })) throw new Error('unauthenticated');
 
-const EXAMPLES = [
-  'همکارم بدون اجازه کد من را به نام خودش ارائه داده و مدیر او را تشویق کرده. اگر بگویم، رابطه تیم خراب می‌شود.',
-  'پدرم بیماری پیشرفته دارد. پزشک به من گفته، ولی خانواده اصرار دارد به خودش نگوییم.',
-  'شرکتی به من پیشنهاد کار داده که حقوقش دو برابر است، ولی محصولش داده کاربران را بدون اطلاع کامل می‌فروشد.'
+/* ---------- Static icon slots ---------- */
+$('#backTo1').innerHTML = icon('chevron-right', { size: 21 });
+$('#skipCtx').textContent = 'رد کردن';
+$('#qTile').innerHTML = icon('landmark', { size: 19 });
+$('#bellIcon').innerHTML = icon('bell', { size: 17 });
+$('#toStep2').insertAdjacentHTML('beforeend', icon('arrow-left', { size: 17 }));
+$('#submitBtn').insertAdjacentHTML('afterbegin', icon('compass', { size: 18 }));
+
+/* ==========================================================================
+   Form state
+   --------------------------------------------------------------------------
+   Held in one object rather than read from the DOM at submit time, because
+   the context fields now live inside sheets that are destroyed when closed.
+   ========================================================================== */
+const form = { dilemma: '', domain: '', stakeholders: '', options: '', urgency: '', values: '', model: '' };
+
+const DOMAINS = ['محیط کار و حرفه', 'خانواده و روابط شخصی', 'سلامت و پزشکی', 'کسب‌وکار و مالی',
+                 'فناوری و هوش مصنوعی', 'تحصیل و پژوهش', 'اجتماعی و سیاسی', 'محیط زیست', 'سایر'];
+
+const URGENCY = [
+  { v: 'همین امروز باید تصمیم بگیرم', label: 'امروز' },
+  { v: 'چند روز فرصت دارم',           label: 'چند روز' },
+  { v: 'چند هفته فرصت دارم',          label: 'چند هفته' },
+  { v: 'فوریتی ندارد',                label: 'فوری نیست' }
 ];
 
-/* ---------- Initialisation ---------- */
+const CTX_FIELDS = [
+  { key: 'stakeholders', label: 'چه کسانی درگیرند؟', icon: 'users',
+    tint: 'var(--accent-soft)', ink: 'var(--accent)', max: 1000,
+    hint: 'خودم، همسرم، مدیر، مشتریانی که محصول را می‌خرند…' },
+  { key: 'options', label: 'گزینه‌هایی که به آن فکر کرده‌اید', icon: 'arrow-left-right',
+    tint: '#f5f3ff', ink: 'var(--school-virtue)', max: 2000,
+    hint: '۱. قبول کنم ۲. رد کنم و استعفا بدهم ۳. به واحد بازرسی گزارش بدهم' },
+  { key: 'values', label: 'ارزش‌ها و محدودیت‌های شخصی', icon: 'heart',
+    tint: '#fdf2f8', ink: 'var(--school-care)', max: 1000,
+    hint: 'صداقت برایم از امنیت شغلی مهم‌تر است، ولی نمی‌توانم خانواده‌ام را بی‌درآمد بگذارم.' }
+];
+
+const EXAMPLES = [
+  { hue: 'var(--school-deontology)', text: 'همکارم بدون اجازه کد من را به نام خودش ارائه داده و مدیر او را تشویق کرده. اگر بگویم، رابطه تیم خراب می‌شود.' },
+  { hue: 'var(--school-care)',       text: 'پدرم بیماری پیشرفته دارد. پزشک به من گفته، ولی خانواده اصرار دارد به خودش نگوییم.' },
+  { hue: 'var(--school-utilitarian)',text: 'شرکتی به من پیشنهاد کار داده که حقوقش دو برابر است، ولی محصولش داده کاربران را بدون اطلاع کامل می‌فروشد.' }
+];
+
+/* ---------- Models ---------- */
 const meta = await api.get('/api/analyze/meta');
-const modelSel = $('#model');
+form.model = meta.defaultModel || meta.models[0]?.ref || '';
+const canPickModel = meta.models.length > 1;
 
-if (!meta.models.length) {
-  modelSel.innerHTML = '<option value="">مدلی فعال نیست</option>';
-  modelSel.disabled = true;
-  $('#submitBtn').disabled = true;
-  $('#quotaLine').innerHTML = '<span style="color:var(--danger)">هیچ مدلی فعال نیست — با مدیر سامانه تماس بگیرید.</span>';
-} else if (meta.providers.length > 1) {
-  // Several providers → group them in the list
-  modelSel.innerHTML = meta.providers.map(p => `
-    <optgroup label="${esc(p.label)}">
-      ${p.models.map(m => `<option value="${esc(m.ref)}" ${m.ref === meta.defaultModel ? 'selected' : ''}
-        title="${esc(m.note || '')}">${esc(m.label)}</option>`).join('')}
-    </optgroup>`).join('');
-} else {
-  modelSel.innerHTML = meta.models.map(m =>
-    `<option value="${esc(m.ref)}" ${m.ref === meta.defaultModel ? 'selected' : ''}
-      title="${esc(m.note || '')}">${esc(m.label)}</option>`).join('');
-}
+/* ==========================================================================
+   Step 1
+   ========================================================================== */
+const ta = $('#dilemma');
+const cta = $('#toStep2');
 
-const modelNote = $('#modelNote');
-const showNote = () => {
-  const m = meta.models.find(x => x.ref === modelSel.value);
-  modelNote.textContent = m?.note || '';
-};
-modelSel.addEventListener('change', showNote);
-showNote();
+$('#examples').innerHTML = EXAMPLES.map((e, i) => `
+  <button class="ex" data-i="${i}">
+    <span class="ex-dot" style="background:${e.hue}"></span>
+    <span class="ex-txt">${esc(e.text)}</span>
+    ${icon('chevron-left', { size: 15 })}
+  </button>`).join('');
 
-$('#examples').innerHTML = EXAMPLES.map((t, i) =>
-  `<button type="button" data-i="${i}">نمونه ${faNum(i + 1)}</button>`).join('');
-$('#examples').onclick = e => {
-  const b = e.target.closest('button');
+$('#examples').addEventListener('click', ev => {
+  const b = ev.target.closest('.ex');
   if (!b) return;
-  $('#dilemma').value = EXAMPLES[+b.dataset.i];
-  $('#dilemma').dispatchEvent(new Event('input'));
-  $('#dilemma').focus();
-};
-
-const charCount = $('#charCount');
-$('#dilemma').addEventListener('input', e => {
-  const n = e.target.value.length;
-  charCount.textContent = `${faNum(n)} / ۸۰۰۰`;
-  charCount.classList.toggle('over', n > 8000);
+  ta.value = EXAMPLES[+b.dataset.i].text;
+  ta.dispatchEvent(new Event('input'));
+  ta.focus();
+  ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
 
+function syncStep1() {
+  const n = ta.value.trim().length;
+  form.dilemma = ta.value.trim();
+
+  const st = $('#lenState');
+  if (n >= 20) {
+    st.className = 'field-state ok';
+    st.innerHTML = `${icon('check', { size: 13, stroke: 2.6 })} طول کافی است`;
+  } else {
+    st.className = 'field-state';
+    st.textContent = 'حداقل ۲۰ نویسه';
+  }
+
+  const c = $('#charN');
+  c.textContent = `${faNum(ta.value.length)} / ۸۰۰۰`;
+  c.className = 'char-n' + (ta.value.length >= 8000 ? ' over' : ta.value.length > 7200 ? ' warn' : '');
+
+  cta.classList.toggle('is-off', n < 20);
+
+  // Grow with the content instead of scrolling inside a fixed box.
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(203, ta.scrollHeight) + 'px';
+}
+ta.addEventListener('input', syncStep1);
+syncStep1();
+
+/* ==========================================================================
+   Quota — drives the header subtitle and blocks submission when spent
+   ========================================================================== */
 const fmtTokens = n => n >= 1000 ? faNum((n / 1000).toFixed(n >= 10000 ? 0 : 1)) + 'K' : faNum(n);
+let quotaSpent = false;
 
 async function refreshQuota() {
   try {
     const q = await api.get('/api/analyze/quota');
-    const bits = [];
-
-    bits.push(q.daily.limit > 0
-      ? `گروه ${esc(q.tier.label)} — ${faNum(q.daily.remaining)} تحلیل از ${faNum(q.daily.limit)} امروز باقی مانده`
-      : `گروه ${esc(q.tier.label)} — بدون سقف روزانه`);
-
-    if (q.tokens.limit > 0) {
-      bits.push(`توکن این ماه: ${fmtTokens(q.tokens.used)} از ${fmtTokens(q.tokens.limit)} (${faNum(q.tokens.percent)}٪)`);
-    }
-
-    const outOfDaily = q.daily.limit > 0 && q.daily.remaining <= 0;
+    const outOfDaily  = q.daily.limit > 0 && q.daily.remaining <= 0;
     const outOfTokens = q.tokens.limit > 0 && q.tokens.remaining <= 0;
+    quotaSpent = outOfDaily || outOfTokens;
 
-    $('#quotaLine').innerHTML = outOfDaily || outOfTokens
-      ? `<span style="color:var(--danger);font-weight:700">${outOfDaily
+    setAppBarSub(q.daily.limit > 0
+      ? `${faNum(q.daily.remaining)} تحلیل از ${faNum(q.daily.limit)} امروز باقی مانده`
+      : `گروه ${q.tier.label} — بدون سقف روزانه`);
+
+    $('#quotaWarn').innerHTML = quotaSpent
+      ? `<div class="alert alert-danger" style="margin:0;font-size:12.5px">${outOfDaily
           ? 'سهمیه امروزتان تمام شده — فردا دوباره سر بزنید.'
-          : 'سقف توکن ماهانه‌تان تمام شده — با مدیر سامانه تماس بگیرید.'}</span>`
-      : bits.join(' • ');
+          : 'سقف توکن ماهانه‌تان تمام شده — با مدیر سامانه تماس بگیرید.'}</div>`
+      : (q.tokens.limit > 0
+          ? `<p style="font-size:11px;color:var(--text-5);text-align:center">توکن این ماه: ${fmtTokens(q.tokens.used)} از ${fmtTokens(q.tokens.limit)}</p>`
+          : '');
 
-    $('#submitBtn').disabled = outOfDaily || outOfTokens;
-  } catch {}
+    if (quotaSpent) cta.classList.add('is-off');
+  } catch { /* the quota line is informational; a failure must not block the form */ }
 }
 refreshQuota();
 
-/* ---------- Analysis run ----------
-   The result is no longer assembled in front of the user. Watching sections
-   appear meant reading half-written conclusions that the next block often
-   revised, and a verdict glimpsed mid-stream is worse than no verdict. The
-   work now happens behind a waiting screen and the finished analysis is
-   opened on its own page. */
+/* ==========================================================================
+   Step 2
+   ========================================================================== */
+$('#domainChips').innerHTML = DOMAINS.map(d =>
+  `<button class="chip" aria-pressed="false" data-v="${esc(d)}">${esc(d)}</button>`).join('');
+
+$('#domainChips').addEventListener('click', ev => {
+  const b = ev.target.closest('.chip');
+  if (!b) return;
+  const on = b.getAttribute('aria-pressed') === 'true';
+  $$('.chip', $('#domainChips')).forEach(x => x.setAttribute('aria-pressed', 'false'));
+  b.setAttribute('aria-pressed', String(!on));
+  form.domain = on ? '' : b.dataset.v;
+});
+
+$('#urgencySeg').innerHTML = URGENCY.map(u =>
+  `<button aria-pressed="false" data-v="${esc(u.v)}">${esc(u.label)}</button>`).join('');
+
+$('#urgencySeg').addEventListener('click', ev => {
+  const b = ev.target.closest('button');
+  if (!b) return;
+  const on = b.getAttribute('aria-pressed') === 'true';
+  $$('button', $('#urgencySeg')).forEach(x => x.setAttribute('aria-pressed', 'false'));
+  b.setAttribute('aria-pressed', String(!on));
+  form.urgency = on ? '' : b.dataset.v;
+});
+
+function renderCtxRows() {
+  $('#ctxRows').innerHTML = CTX_FIELDS.map(f => {
+    const val = form[f.key];
+    return `
+      <button class="row-card" data-key="${f.key}">
+        <span class="row-tile" style="background:${f.tint};color:${f.ink}">${icon(f.icon, { size: 16 })}</span>
+        <span class="row-body">
+          <span class="row-label">${esc(f.label)}</span>
+          <span class="row-val">${val ? esc(val) : 'افزودن'}</span>
+        </span>
+        ${val
+          ? `<span class="row-done">${icon('check', { size: 12, stroke: 2.8 })}</span>`
+          : icon('chevron-left', { size: 17 })}
+      </button>`;
+  }).join('');
+}
+renderCtxRows();
+
+$('#ctxRows').addEventListener('click', ev => {
+  const b = ev.target.closest('.row-card');
+  if (b) openFieldSheet(CTX_FIELDS.find(f => f.key === b.dataset.key));
+});
+
+/** A sheet holding one long-text field. Saves on close, never on keystroke. */
+function openFieldSheet(f) {
+  modal({
+    title: f.label,
+    body: `<textarea class="textarea" id="sheetVal" rows="5" maxlength="${f.max}"
+             placeholder="${esc(f.hint)}">${esc(form[f.key])}</textarea>`,
+    actions: [
+      { label: 'ذخیره', className: 'btn-primary', onClick: root => {
+          form[f.key] = root.querySelector('#sheetVal').value.trim();
+          renderCtxRows();
+        } },
+      { label: 'انصراف' }
+    ]
+  });
+}
+
+if (canPickModel) {
+  const label = () => meta.models.find(m => m.ref === form.model)?.label || form.model;
+  const paint = () => {
+    $('#modelRow').innerHTML = `
+      <button class="row-card" id="pickModel">
+        <span class="row-tile" style="background:var(--primary-soft);color:var(--primary)">${icon('sparkles', { size: 16 })}</span>
+        <span class="row-body">
+          <span class="row-label">مدل تحلیل</span>
+          <span class="row-val ltr">${esc(label())}</span>
+        </span>
+        ${icon('chevron-down', { size: 14 })}
+      </button>`;
+    $('#pickModel').onclick = () => modal({
+      title: 'مدل تحلیل',
+      body: `<div class="rows">${meta.models.map(m => `
+        <button class="row-card" data-ref="${esc(m.ref)}">
+          <span class="row-body">
+            <span class="row-label">${esc(m.label)}</span>
+            <span class="row-val">${esc(m.note || m.provider || '')}</span>
+          </span>
+          ${m.ref === form.model ? `<span class="row-done">${icon('check', { size: 12, stroke: 2.8 })}</span>` : ''}
+        </button>`).join('')}</div>`,
+      onOpen: root => root.addEventListener('click', e => {
+        const b = e.target.closest('[data-ref]');
+        if (!b) return;
+        form.model = b.dataset.ref;
+        paint();
+        root.closest('.modal-backdrop')?.remove();
+      }),
+      actions: [{ label: 'بستن' }]
+    });
+  };
+  paint();
+}
+
+/* ==========================================================================
+   Navigation between the two steps
+   ========================================================================== */
+function show(view) {
+  for (const id of ['v1', 'v2']) {
+    const el = $('#' + id);
+    el.classList.toggle('on', id === view);
+    el.classList.toggle('slide', id === view && view === 'v2');
+  }
+  // The tab bar belongs to the primary screens only; step 2 is a modal step
+  // in a flow, and offering an escape hatch mid-form loses the draft.
+  const bar = $('.tabbar');
+  if (view === 'v1') { renderTabBar('/app'); document.body.classList.add('has-tabbar'); }
+  else { bar?.remove(); document.body.classList.remove('has-tabbar'); }
+  scrollTo(0, 0);
+}
+
+cta.onclick = () => { if (!cta.classList.contains('is-off')) show('v2'); };
+$('#backTo1').onclick = () => show('v1');
+$('#skipCtx').onclick = () => run();
+$('#submitBtn').onclick = () => run();
+
+/* ==========================================================================
+   The run
+   --------------------------------------------------------------------------
+   The result is not assembled in front of the user. Watching sections appear
+   meant reading half-written conclusions that the next block often revised,
+   and a verdict glimpsed mid-stream is worse than no verdict. The work
+   happens behind the waiting screen and the finished analysis opens on its
+   own page.
+   ========================================================================== */
 let controller = null;
 
-$('#analyzeForm').onsubmit = async e => {
-  e.preventDefault();
+async function run() {
   if (controller) return;
+  if (form.dilemma.length < 20) { show('v1'); return toast('شرح دوراهی باید حداقل ۲۰ نویسه باشد.', 'err'); }
+  if (quotaSpent) return toast('سهمیه شما تمام شده است.', 'err');
 
-  const dilemma = $('#dilemma').value.trim();
-  if (dilemma.length < 20) return toast('شرح دوراهی باید حداقل ۲۰ نویسه باشد.', 'err');
+  $('#v1').classList.remove('on');
+  $('#v2').classList.remove('on');
+  $('.tabbar')?.remove();
+  document.body.classList.remove('has-tabbar');
+  $('#v3').hidden = false;
 
-  const payload = {
-    dilemma,
-    domain: $('#domain').value,
-    stakeholders: $('#stakeholders').value.trim(),
-    options: $('#options').value.trim(),
-    urgency: $('#urgency').value,
-    values: $('#values').value.trim(),
-    model: modelSel.value
-  };
-
-  const btn = $('#submitBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> در حال تحلیل…';
-
-  $('#resultCol').innerHTML = `
-    <div class="wait" id="waitBox">
-      <div class="wait-orb"><i></i><i></i><i></i><b>🧭</b></div>
-      <div class="wait-title" id="waitTitle">در حال تحلیل دوراهی شما…</div>
-      <div class="wait-sub" id="waitSub">اتصال به مدل…</div>
-      <div class="wait-bar"><i id="waitFill"></i></div>
-      <div class="wait-pct" id="waitPct">۰٪</div>
-      <div class="wait-quote" id="waitQuote"></div>
-      <div class="wait-actions">
-        <button class="btn btn-sm btn-ghost" id="cancelBtn">لغو تحلیل</button>
-      </div>
-    </div>`;
-
-  const box   = $('#waitBox');
-  const fill  = $('#waitFill');
-  const pct   = $('#waitPct');
-  const sub   = $('#waitSub');
-  const qBox  = $('#waitQuote');
-
-  $('#cancelBtn').onclick = () => controller?.abort();
+  const statusEl = $('#waitStatus');
+  const pctEl    = $('#waitPct');
+  const barsEl   = $('#gateBars');
+  barsEl.innerHTML = '<i></i><i></i><i></i><i></i><i></i>';
 
   /* ---- Rotating quotations ---- */
   const deck = quoteDeck();
+  const host = $('#quoteHost');
   let qi = 0;
-  const showQuote = () => {
-    qBox.innerHTML = quoteMarkup(deck[qi % deck.length]);
-    qBox.classList.remove('swap');
-    void qBox.offsetWidth;          // restart the animation
-    qBox.classList.add('swap');
+  const paintQuote = () => {
+    const q = deck[qi % deck.length];
+    host.innerHTML = `
+      <div class="q-swap">
+        <p class="q-text">${esc(q.text)}</p>
+        <p class="q-who">${esc(q.who)}</p>
+        ${q.work ? `<p class="q-src">${esc(q.work)}</p>` : ''}
+      </div>`;
     qi++;
   };
-  showQuote();
-  const quoteTimer = setInterval(showQuote, 9000);
+  paintQuote();
+  const quoteTimer = setInterval(paintQuote, 9000);
 
-  /* ---- Progress ----
-     Driven by how many of the 26 blocks have actually arrived, so the bar
-     reports real work rather than a timer. It is deliberately capped below
-     100 until the server confirms completion. */
   controller = new AbortController();
   let acc = '', analysisId = null, rafPending = false;
 
+  /* Progress reports how many of the 26 blocks actually arrived, so the bar
+     tracks real work rather than a timer. Capped below 100 until the server
+     confirms completion. */
   const paint = () => {
     if (rafPending) return;
     rafPending = true;
     requestAnimationFrame(() => {
       rafPending = false;
-      const p = Math.min(96, progressOf(parseSections(acc)));
-      fill.style.width = p + '%';
-      pct.textContent = faNum(p) + '٪';
-      sub.textContent = p > 0
-        ? `${faNum(p)}٪ از تحلیل نوشته شده است`
+      const sections = parseSections(acc);
+      const p = Math.min(96, progressOf(sections));
+      pctEl.textContent = faNum(p) + '٪';
+
+      const gates = ['dignity', 'justice', 'utility', 'carevirtue', 'authenticity'];
+      const bars = [...barsEl.children];
+      let live = -1;
+      gates.forEach((g, i) => {
+        const has = !!sections['gate:' + g];
+        bars[i].className = has ? 'done' : '';
+        if (!has && live === -1) live = i;
+      });
+      if (live > -1) bars[live].className = 'live';
+
+      const n = gates.filter(g => sections['gate:' + g]).length;
+      statusEl.textContent = p > 0
+        ? `در حال تحلیل — دروازه ${faNum(Math.min(n + 1, 5))} از ۵`
         : 'مدل در حال فکر کردن است…';
     });
   };
@@ -320,7 +458,7 @@ $('#analyzeForm').onsubmit = async e => {
     const res = await fetch('/api/analyze/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-csrf-token': state.csrf },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(form),
       signal: controller.signal
     });
 
@@ -344,84 +482,54 @@ $('#analyzeForm').onsubmit = async e => {
         buffer = buffer.slice(idx + 1);
         const t = line.trim();
         if (!t) { event = null; continue; }
-        if (t.startsWith(':')) continue;                 // heartbeat
+        if (t.startsWith(':')) continue;                     // heartbeat
         if (t.startsWith('event:')) { event = t.slice(6).trim(); continue; }
         if (!t.startsWith('data:')) continue;
 
-        const data = t.slice(5).trim();
-        let obj; try { obj = JSON.parse(data); } catch { continue; }
+        let obj; try { obj = JSON.parse(t.slice(5).trim()); } catch { continue; }
 
-        if (event === 'start') {
-          analysisId = obj.analysisId;
-          sub.textContent = 'مدل شروع کرد…';
-        } else if (event === 'delta') {
-          acc += obj.t;
-          paint();
-        } else if (event === 'done') {
-          finish(obj);
-        } else if (event === 'error') {
-          throw new Error(obj.message);
-        }
+        if (event === 'start')      { analysisId = obj.analysisId; statusEl.textContent = 'مدل شروع کرد…'; }
+        else if (event === 'delta') { acc += obj.t; paint(); }
+        else if (event === 'done')  { finish(obj); }
+        else if (event === 'error') { throw new Error(obj.message); }
       }
     }
     if (!analysisId) throw new Error('پاسخی از سرور دریافت نشد.');
   } catch (err) {
     clearInterval(quoteTimer);
-    if (err.name === 'AbortError') {
-      $('#resultCol').innerHTML = '';
-      toast('تحلیل لغو شد.', '');
-    } else {
-      box.innerHTML = `<div class="alert alert-danger" style="margin:0">${esc(err.message)}</div>`;
-      toast(err.message, 'err');
-    }
-  } finally {
     controller = null;
-    btn.disabled = false;
-    btn.innerHTML = '🧭 تحلیل اخلاقی را شروع کن';
+    $('#v3').hidden = true;
+    show('v1');
+    if (err.name === 'AbortError') toast('تحلیل لغو شد.', '');
+    else toast(err.message, 'err');
     refreshQuota();
+    return;
   }
 
-  /**
-   * Confirm success, then hand the user to the analysis page.
-   *
-   * The pause is short but not zero: a redirect that happens the instant the
-   * last token lands reads as though the click did something unexplained.
-   */
   function finish(info) {
     clearInterval(quoteTimer);
-
     const c = info.completeness;
     const incomplete = c && !c.complete;
-    const secs = info.durationMs ? faNum((info.durationMs / 1000).toFixed(0)) : null;
 
-    fill.style.width = '100%';
-    pct.textContent = '۱۰۰٪';
-    box.classList.add('done');
-    box.querySelector('.wait-orb').outerHTML =
-      `<div class="wait-check">${incomplete ? '⚠' : '✓'}</div>`;
+    pctEl.textContent = '۱۰۰٪';
+    [...barsEl.children].forEach(b => { b.className = 'done'; });
+    $('#waitRing').style.animation = 'none';
+    $('#waitRing').style.borderTopColor = incomplete ? 'var(--warn)' : 'var(--ok)';
+    statusEl.textContent = incomplete ? 'تحلیل ناقص ماند' : 'تحلیل آماده است';
 
-    $('#waitTitle').textContent = incomplete
-      ? 'تحلیل انجام شد، ولی ناقص ماند'
-      : 'تحلیل با موفقیت انجام شد';
+    host.innerHTML = `
+      <div class="q-swap">
+        <p class="q-text">${incomplete ? 'تحلیل انجام شد، ولی ناقص ماند.' : 'تحلیل شما آماده است.'}</p>
+        <p class="q-src">${incomplete ? esc(incompleteSummary(c)) : 'در حال بازکردن صفحه تحلیل…'}</p>
+      </div>`;
 
-    sub.innerHTML = incomplete
-      ? `${esc(incompleteSummary(c))} — در صفحه تحلیل جزئیاتش را می‌بینید.`
-      : `${secs ? `در ${secs} ثانیه · ` : ''}در حال بازکردن صفحه تحلیل…`;
-
-    qBox.innerHTML = `
-      <span class="q-icon" aria-hidden="true">📄</span>
-      <blockquote class="q-text">تحلیل شما ذخیره شد و همیشه در «تاریخچه» در دسترس است.</blockquote>`;
-
-    $('#cancelBtn')?.remove();
-    toast('تحلیل با موفقیت انجام شد.', 'ok');
-
-    // A cancel between `done` and the redirect would otherwise still navigate.
-    setTimeout(() => {
-      if (!document.getElementById('waitBox')) return;
-      location.href = `/analysis?id=${info.analysisId}`;
-    }, incomplete ? 2600 : 1400);
+    // Short, not zero: a redirect the instant the last token lands reads as
+    // though the click did something unexplained.
+    setTimeout(() => { location.href = `/analysis?id=${info.analysisId}`; }, incomplete ? 1600 : 900);
   }
-};
+}
+
+$('#cancelRun').onclick = () => controller?.abort();
 
 addEventListener('beforeunload', e => {
   if (controller) { e.preventDefault(); e.returnValue = ''; }

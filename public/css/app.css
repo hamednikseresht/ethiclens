@@ -653,3 +653,199 @@ body.has-tabbar{ padding-bottom:calc(var(--tabbar-h) + var(--safe-bottom)) }
   .btn-ink:active, .btn-soft:active, .sheet-row:active, .appbar-profile:active{ transform:none }
   .steps-fill{ transition:none }
 }
+
+/* ==========================================================================
+   New-analysis flow: two steps and the waiting screen
+   ========================================================================== */
+
+/* ---------- Views ---------- */
+.view{ display:none }
+.view.on{ display:block }
+/* The sticky CTA floats over the tail of the content by design — the fade
+   makes that read as intentional. But without room to scroll past it the
+   last row is permanently covered: the model picker sat under it, visible
+   but untouchable. This is that room. */
+.view-pad{ padding:0 var(--gutter) 104px }
+
+/* Push navigation, step 1 to step 2. */
+@keyframes el-slide-in{ from{ transform:translateX(6%); opacity:.6 } to{ transform:none; opacity:1 } }
+.view.on.slide{ animation:el-slide-in .22s cubic-bezier(.32,.72,0,1) both }
+
+/* ---------- Modal-step header (no tab bar on these screens) ---------- */
+.stepbar{
+  display:flex; align-items:center; gap:6px;
+  padding:calc(4px + var(--safe-top)) 12px 10px;
+}
+.stepbar h2{ font-size:14px; font-weight:800; color:var(--text); flex:1; text-align:center }
+.icon-btn{
+  width:38px; height:38px; border-radius:50%; flex-shrink:0;
+  border:0; background:transparent; color:var(--text-3);
+  display:grid; place-items:center; cursor:pointer; font:inherit;
+}
+.icon-btn:active{ transform:scale(.985) }
+.text-btn{
+  border:0; background:transparent; cursor:pointer; font:inherit;
+  font-size:12.5px; font-weight:700; color:var(--text-4);
+  min-height:34px; padding:0 6px;
+}
+
+/* ---------- Step 1: dilemma card ---------- */
+.field-card{
+  background:var(--bg-raised); border:1px solid var(--border);
+  border-radius:var(--r-xl); padding:15px 16px 12px;
+}
+.field-card textarea{
+  width:100%; border:0; background:transparent; resize:none; outline:none;
+  font-family:var(--font-ui); font-size:14.5px; line-height:2; color:var(--text);
+  min-height:203px;
+}
+.field-card textarea::placeholder{ color:var(--text-5) }
+.field-foot{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-top:12px; padding-top:11px; border-top:1px solid var(--bg);
+}
+.field-state{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-5) }
+.field-state.ok{ color:var(--ok); font-weight:700 }
+.char-n{ font-size:11px; font-weight:600; color:var(--text-5); font-variant-numeric:tabular-nums }
+.char-n.warn{ color:var(--warn) }
+.char-n.over{ color:var(--danger) }
+
+/* ---------- Eyebrow ---------- */
+.eyebrow{
+  font-size:10.5px; font-weight:800; color:var(--text-5);
+  margin:22px 0 9px; display:block;
+}
+
+/* ---------- Example rows ---------- */
+.ex-list{ display:flex; flex-direction:column; gap:8px }
+.ex{
+  display:flex; align-items:center; gap:9px; width:100%; text-align:start;
+  background:var(--bg-raised); border:1px solid var(--border);
+  border-radius:var(--r-md); padding:11px 13px;
+  font:inherit; font-size:12.5px; line-height:1.7; font-weight:600; color:var(--text-2);
+  cursor:pointer;
+}
+.ex:active{ transform:scale(.985) }
+.ex-dot{ width:6px; height:6px; border-radius:50%; flex-shrink:0 }
+.ex-txt{ flex:1; min-width:0 }
+
+/* ---------- Step 2: chips, segmented control, rows ---------- */
+.chips{ display:flex; flex-wrap:wrap; gap:7px }
+.chip{
+  padding:8px 13px; border-radius:var(--r-pill); cursor:pointer; font:inherit;
+  background:var(--bg-raised); border:1px solid var(--border);
+  font-size:12px; font-weight:600; color:var(--text-3);
+}
+.chip[aria-pressed="true"]{ background:var(--ink); border-color:var(--ink); color:var(--bg-raised); font-weight:700 }
+[data-theme="dark"] .chip[aria-pressed="true"]{ color:var(--bg) }
+
+.seg{
+  display:grid; grid-template-columns:repeat(4,1fr);
+  background:var(--bg-muted); border-radius:var(--r-md); padding:3px;
+}
+.seg button{
+  padding:10px 4px; border-radius:var(--r-sm); border:0; background:transparent;
+  font:inherit; font-size:11.5px; line-height:1; font-weight:600; color:var(--text-4); cursor:pointer;
+}
+.seg button[aria-pressed="true"]{
+  background:var(--bg-raised); color:var(--text); font-weight:700;
+  box-shadow:0 1px 2px rgba(0,0,0,.05);
+}
+
+.rows{ display:flex; flex-direction:column; gap:9px }
+.row-card{
+  display:flex; align-items:center; gap:11px; width:100%; text-align:start;
+  background:var(--bg-raised); border:1px solid var(--border);
+  border-radius:13px; padding:13px 14px; font:inherit; cursor:pointer;
+}
+.row-card:active{ transform:scale(.985) }
+.row-tile{ width:30px; height:30px; border-radius:var(--r-sm); display:grid; place-items:center; flex-shrink:0 }
+.row-body{ flex:1; min-width:0 }
+.row-label{ font-size:13px; font-weight:700; color:var(--text); display:block }
+.row-val{
+  font-size:11.5px; font-weight:400; color:var(--text-5); display:block; margin-top:1px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.row-val.ltr{ direction:ltr; text-align:start }
+.row-done{
+  width:20px; height:20px; border-radius:50%; background:var(--ok); color:#fff;
+  display:grid; place-items:center; flex-shrink:0;
+}
+.cta-note{ text-align:center; font-size:11px; color:var(--text-5); margin-top:9px }
+
+/* ---------- Waiting screen ----------
+   The only dark surface in light mode, on purpose: a held breath between
+   writing the dilemma and reading the verdict. */
+/* [hidden] only carries display:none from the UA sheet, so any author
+   display rule beats it. Without this the waiting screen — position:fixed,
+   inset:0 — sat on top of the form permanently. */
+.waiting[hidden]{ display:none }
+.waiting{
+  position:fixed; inset:0; z-index:80; overflow:hidden;
+  background:var(--ink); color:#fafaf9;
+  display:flex; flex-direction:column;
+  padding:calc(18px + var(--safe-top)) var(--gutter) calc(16px + var(--safe-bottom));
+}
+[data-theme="dark"] .waiting{ background:#0c0a09 }
+.glow{ position:absolute; border-radius:50%; pointer-events:none }
+.glow-a{
+  width:280px; height:280px; top:120px; inset-inline-start:-90px;
+  background:radial-gradient(circle, rgba(29,78,216,.34), transparent 68%);
+  animation:el-breathe 7s ease-in-out infinite;
+}
+.glow-b{
+  width:240px; height:240px; top:330px; inset-inline-end:-80px;
+  background:radial-gradient(circle, rgba(13,148,136,.26), transparent 68%);
+  animation:el-breathe 9s ease-in-out infinite;
+}
+@keyframes el-breathe{ 0%,100%{ transform:scale(1); opacity:.5 } 50%{ transform:scale(1.07); opacity:.9 } }
+
+.wait-status{ display:flex; align-items:center; gap:9px; position:relative; z-index:1 }
+.ring{
+  width:26px; height:26px; border-radius:50%; flex-shrink:0;
+  border:1.5px solid rgba(250,250,249,.15); border-top-color:#fafaf9;
+  animation:el-orbit 1.4s linear infinite;
+}
+@keyframes el-orbit{ to{ transform:rotate(360deg) } }
+.wait-status span{ font-size:12.5px; font-weight:700; color:#d6d3d1 }
+
+.wait-mid{ flex:1; display:flex; flex-direction:column; justify-content:center; position:relative; z-index:1 }
+.q-tile{
+  width:34px; height:34px; border-radius:10px; margin-bottom:18px;
+  background:rgba(37,99,235,.18); color:#93c5fd; display:grid; place-items:center;
+}
+.q-text{
+  font-family:var(--font-display); font-size:33px; line-height:1.5; font-weight:500;
+  color:#fafaf9; text-wrap:pretty; margin-bottom:24px;
+}
+.q-who{ font-size:13px; font-weight:800; color:#93c5fd }
+.q-src{ font-size:11.5px; font-weight:400; color:var(--text-4); margin-top:3px }
+.q-swap{ animation:el-qfade .4s ease both }
+@keyframes el-qfade{ from{ opacity:0; transform:translateY(8px) } to{ opacity:1; transform:none } }
+
+.gate-bars{ display:grid; grid-template-columns:repeat(5,1fr); gap:5px; position:relative; z-index:1 }
+.gate-bars i{ height:3px; border-radius:var(--r-pill); background:rgba(250,250,249,.14); display:block }
+.gate-bars i.done{ background:var(--ok) }
+.gate-bars i.live{ background:linear-gradient(90deg, var(--primary) 60%, rgba(250,250,249,.14) 60%) }
+.wait-pctrow{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-top:10px; position:relative; z-index:1;
+}
+.wait-pct{ font-size:12px; font-weight:700; color:var(--text-4); font-variant-numeric:tabular-nums }
+.wait-cancel{
+  border:0; background:transparent; color:var(--text-4); font:inherit;
+  font-size:12px; font-weight:700; cursor:pointer; min-height:34px;
+}
+.wait-foot{
+  display:flex; align-items:center; gap:8px; margin-top:16px; padding-top:14px;
+  border-top:1px solid var(--ink-2); color:var(--text-4); font-size:11.5px; line-height:1.7;
+  position:relative; z-index:1;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .glow-a, .glow-b{ animation:none; transform:scale(1.035); opacity:.7 }
+  .ring{ animation-duration:3s }
+  .q-swap{ animation:none }
+  .view.on.slide{ animation:none }
+  .ex:active, .row-card:active, .icon-btn:active{ transform:none }
+}

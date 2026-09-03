@@ -46,13 +46,51 @@ const PAGES = {
   '/verify': 'pages/verify.html'
 };
 
+/**
+ * Canned API responses.
+ *
+ * Enough for a signed-in page to render its own shell and chrome. The point
+ * is to see layout and typography, so the data is plausible rather than
+ * complete — anything not listed still returns 503 and the page shows its
+ * error state, which is itself worth looking at.
+ */
+const FIXTURES = {
+  '/api/auth/me': {
+    user: {
+      id: 1, email: 'hamed@ethiclens.ir', name: 'حامد نیک‌سرشت',
+      role: 'admin', tier: 'premium', status: 'active',
+      emailVerified: 1, createdAt: '2026-01-11 09:00:00'
+    },
+    csrf: 'preview-csrf-token',
+    settings: { site_title: 'دیدگاه اخلاق' },
+    allowance: { tierLabel: 'گروه ویژه', used: 12, limit: 40 }
+  },
+
+  '/api/analyze/quota': {
+    tier: { key: 'premium', label: 'ویژه' },
+    daily:  { limit: 40, used: 12, remaining: 28 },
+    tokens: { limit: 2000000, used: 431200, remaining: 1568800, percent: 22 }
+  },
+
+  '/api/analyze/meta': {
+    defaultModel: 'openai:gpt-5.4-nano',
+    models: [
+      { ref: 'openai:gpt-5.4-nano', label: 'GPT-5.4 nano', note: 'پیشنهادی — ارزان و کامل', provider: 'OpenAI' },
+      { ref: 'openai:gpt-4.1-mini', label: 'GPT-4.1 mini', note: 'کم‌مصرف‌تر، کمی کندتر',  provider: 'OpenAI' },
+      { ref: 'deepseek:deepseek-v4-flash', label: 'DeepSeek v4 Flash', note: 'استدلالی', provider: 'DeepSeek' }
+    ],
+    providers: {}, schools: [], gates: []
+  }
+};
+
 http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const pathname = decodeURIComponent(url.pathname);
 
   if (pathname.startsWith('/api/')) {
-    res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
-    return res.end(JSON.stringify({ error: 'پیش‌نمایش ایستا — API در دسترس نیست.' }));
+    const canned = FIXTURES[pathname];
+    res.writeHead(canned ? 200 : 503, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify(canned ?? { error: 'پیش‌نمایش ایستا — این مسیر داده نمونه ندارد.' }));
   }
 
   const rel = PAGES[pathname] || pathname.replace(/^\/+/, '');
