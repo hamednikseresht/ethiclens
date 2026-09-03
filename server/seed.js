@@ -37,6 +37,10 @@ const CATALOG = {
     ['gpt-5-mini',      'GPT-5 mini',      'استدلالی — سه برابر کندتر بدون کیفیت بیشتر', 0, 60],
     ['gpt-5',           'GPT-5',           'رده کامل — برای دوراهی‌های بسیار پیچیده', 0, 70],
     ['o4-mini',         'o4-mini',         'استدلالی سبک', 0, 80]
+  ],
+  deepseek: [
+    ['deepseek-chat',     'DeepSeek Chat',     'ارزان — پیروی خوب از قالب', 1, 10],
+    ['deepseek-reasoner', 'DeepSeek Reasoner', 'استدلالی — کندتر، برای دوراهی‌های چندلایه', 1, 20]
   ]
 };
 
@@ -46,7 +50,9 @@ const PROVIDER_SEED = [
   { key: 'nvidia', label: 'NVIDIA NIM', base_url: 'https://integrate.api.nvidia.com/v1',
     envKey: 'NVIDIA_API_KEY', envUrl: 'NVIDIA_BASE_URL', sort: 10 },
   { key: 'openai', label: 'OpenAI', base_url: 'https://api.openai.com/v1',
-    envKey: 'OPENAI_API_KEY', envUrl: 'OPENAI_BASE_URL', sort: 20 }
+    envKey: 'OPENAI_API_KEY', envUrl: 'OPENAI_BASE_URL', sort: 20 },
+  { key: 'deepseek', label: 'DeepSeek', base_url: 'https://api.deepseek.com/v1',
+    envKey: 'DEEPSEEK_API_KEY', envUrl: 'DEEPSEEK_BASE_URL', sort: 30 }
 ];
 
 const TIER_SEED = [
