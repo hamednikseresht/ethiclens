@@ -1,6 +1,6 @@
 [Unit]
 Description=Ethic Lens — Ethical Decision Assistant
-Documentation=https://github.com/YOUR_USER/ethiclens
+Documentation=https://github.com/hamednikseresht/ethiclens
 After=network-online.target
 Wants=network-online.target
 
