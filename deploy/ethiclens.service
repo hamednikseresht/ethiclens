@@ -1,5 +1,5 @@
 [Unit]
-Description=Ethica — Ethical Decision Assistant
+Description=Ethic Lens — Ethical Decision Assistant
 Documentation=https://github.com/YOUR_USER/ethiclens
 After=network-online.target
 Wants=network-online.target
