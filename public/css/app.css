@@ -1,33 +1,125 @@
 /* ==========================================================================
-   Ethic Lens — سامانه طراحی مشترک
+   Design tokens — mobile PWA redesign.
+
+   The canonical names come from design/mobile-pwa/tokens.css. The block below
+   them maps every legacy name onto the new palette.
+
+   The aliases exist because 356 of the 818 var() references in this codebase
+   still use the old names. Replacing the block outright would have repainted
+   the app by breaking it. With the aliases the new warm-stone palette applies
+   everywhere at once, and the old names are retired screen by screen as each
+   is rebuilt — so a half-finished migration never leaves a page unstyled.
    ========================================================================== */
 :root {
-  --bg-body:#f6f8fb; --bg-surface:#ffffff; --bg-subtle:#f1f5f9; --bg-inset:#e9eef5;
-  --border:#e2e8f0; --border-strong:#cbd5e1;
-  --text:#0f172a; --text-muted:#64748b; --text-faint:#94a3b8;
-  --primary:#2563eb; --primary-hover:#1d4ed8; --primary-soft:#eff6ff; --primary-ring:rgba(37,99,235,.35);
-  --accent:#0d9488; --accent-soft:#f0fdfa;
-  --success:#16a34a; --success-soft:#f0fdf4;
-  --warn:#d97706; --warn-soft:#fffbeb;
-  --danger:#dc2626; --danger-soft:#fef2f2;
-  --shadow-sm:0 1px 3px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04);
-  --shadow-md:0 4px 12px rgba(15,23,42,.08);
-  --shadow-lg:0 12px 32px rgba(15,23,42,.12);
-  --r:16px; --r-sm:10px; --r-xs:8px;
-  --nav-h:60px;
+  /* ---- Neutrals: warm stone, replacing the cold slate ramp ---- */
+  --bg:            #f5f5f4;
+  --bg-raised:     #ffffff;
+  --bg-sunken:     #fafaf9;
+  --bg-muted:      #e7e5e4;
+  --border:        #e7e5e4;
+  --border-strong: #d6d3d1;
+  --text:          #1c1917;
+  --text-2:        #44403c;
+  --text-3:        #57534e;
+  --text-4:        #78716c;
+  --text-5:        #a8a29e;
+
+  /* ---- Brand ---- */
+  --primary:       #1d4ed8;
+  --primary-soft:  #eff6ff;
+  --accent:        #0d9488;
+  --accent-soft:   #f0fdfa;
+  --ink:           #1c1917;
+  --ink-2:         #292524;
+
+  /* ---- Verdicts ---- */
+  --danger: #dc2626;  --danger-soft: #fef2f2;
+  --warn:   #d97706;  --warn-soft:   #fffbeb;
+  --ok:     #059669;  --ok-soft:     #ecfdf5;
+
+  /* ---- The eight schools ----
+     server/services/schools.js is the source of truth for these; the copies
+     here exist only so CSS can reach them. If one changes there, change it
+     here too. */
+  --school-virtue:      #7c3aed;
+  --school-deontology:  #2563eb;
+  --school-utilitarian: #0d9488;
+  --school-common-good: #0891b2;
+  --school-contractual: #ea580c;
+  --school-care:        #db2777;
+  --school-existential: #65a30d;
+  --school-genealogy:   #b45309;
+
+  /* ---- Radius ---- */
+  --r-sm: 9px; --r-md: 12px; --r-lg: 14px; --r-xl: 16px; --r-2xl: 18px;
+  --r-pill: 999px;
+
+  /* ---- Layout ---- */
+  --gutter: 20px;
+  --tabbar-h: 64px;
+
+  /* ---- Type ---- */
+  --font-ui:      'Vazirmatn', system-ui, -apple-system, Tahoma, sans-serif;
+  --font-display: 'Markazi Text', Georgia, serif;
+
+  /* ---- Safe areas ---- */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* ---- Legacy aliases ----
+     Old name → new value. Everything still written against the old names
+     picks up the new palette without being touched. */
+  --bg-body:     var(--bg);
+  --bg-surface:  var(--bg-raised);
+  --bg-subtle:   var(--bg-sunken);
+  --bg-inset:    var(--bg-muted);
+  --text-muted:  var(--text-3);
+  --text-faint:  var(--text-5);
+  --primary-hover: #1e40af;
+  --primary-ring:  rgba(29, 78, 216, .35);
+  --success:      var(--ok);
+  --success-soft: var(--ok-soft);
+  --r:    var(--r-xl);
+  --r-xs: var(--r-sm);
+  --nav-h: 60px;
+
+  /* Cards lost their shadows in this redesign — they are a hairline border on
+     a raised surface now. Neutralising the two card-level shadows here removes
+     them everywhere at once instead of hunting down 19 call sites. The large
+     one survives for genuinely floating layers: sheets and toasts. */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: 0 -8px 24px rgba(28, 25, 23, .10);
 }
+
 [data-theme="dark"] {
-  --bg-body:#080b12; --bg-surface:#111827; --bg-subtle:#1a2233; --bg-inset:#232d40;
-  --border:#2b3648; --border-strong:#3d4a60;
-  --text:#f1f5f9; --text-muted:#94a3b8; --text-faint:#64748b;
-  --primary:#60a5fa; --primary-hover:#93c5fd; --primary-soft:#172554; --primary-ring:rgba(96,165,250,.35);
-  --accent:#2dd4bf; --accent-soft:#134e4a;
-  --success:#4ade80; --success-soft:#052e16;
-  --warn:#fbbf24; --warn-soft:#451a03;
-  --danger:#f87171; --danger-soft:#450a0a;
-  --shadow-sm:0 1px 3px rgba(0,0,0,.5);
-  --shadow-md:0 4px 14px rgba(0,0,0,.55);
-  --shadow-lg:0 14px 36px rgba(0,0,0,.6);
+  --bg:            #1c1917;
+  --bg-raised:     #262322;
+  --bg-sunken:     #1f1d1c;
+  --bg-muted:      #292524;
+  --border:        #322e2c;
+  --border-strong: #44403c;
+  --text:          #fafaf9;
+  --text-2:        #e7e5e4;
+  --text-3:        #d6d3d1;
+  --text-4:        #a8a29e;
+  --text-5:        #78716c;
+
+  --primary:       #60a5fa;
+  --primary-soft:  rgba(96, 165, 250, .14);
+  --accent-soft:   rgba(13, 148, 136, .16);
+  --danger-soft:   rgba(220, 38, 38, .16);
+  --warn-soft:     rgba(217, 119, 6, .16);
+  --ok-soft:       rgba(5, 150, 105, .16);
+
+  /* Dark surfaces invert: the verdict card and primary button read as light
+     on dark rather than the other way round. */
+  --ink:           #fafaf9;
+  --ink-2:         #e7e5e4;
+
+  --primary-hover: #93c5fd;
+  --primary-ring:  rgba(96, 165, 250, .35);
+  --shadow-lg:     0 -8px 24px rgba(0, 0, 0, .55);
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
