@@ -116,12 +116,12 @@ app.use((err, _req, res, _next) => {
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`\n  ✅ دیدگاه اخلاق روی http://localhost:${PORT} در حال اجراست  (${process.env.NODE_ENV || 'development'})\n`);
+  console.log(`\n  ✅ Ethic Lens running on http://localhost:${PORT}  (${process.env.NODE_ENV || 'development'})\n`);
 });
 
 for (const sig of ['SIGINT', 'SIGTERM']) {
   process.on(sig, () => {
-    console.log(`\n[${sig}] در حال خاموش کردن…`);
+    console.log(`\n[${sig}] shutting down…`);
     server.close(() => { try { db.close(); } catch {} process.exit(0); });
     setTimeout(() => process.exit(1), 8000).unref();
   });

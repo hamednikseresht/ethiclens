@@ -37,6 +37,9 @@
     "helmet": "^8.0.0",
     "nodemailer": "^9.1.1"
   },
+  "overrides": {
+    "qs": "^6.16.0"
+  },
   "allowScripts": {
     "better-sqlite3": true
   }
