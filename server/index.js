@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
 import helmet from 'helmet';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -42,7 +43,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", ...GA_SCRIPT],      // Fonts are served from this origin now, so Google's hosts are gone
+      scriptSrc: ["'self'", "'unsafe-inline'", ...GA_SCRIPT],
+      // Fonts are served from this origin now, so Google's hosts are gone
       // from the policy rather than left as entries nothing uses.
       styleSrc: ["'self'", "'unsafe-inline'"],
       fontSrc: ["'self'", 'data:'],
@@ -107,6 +109,26 @@ const PAGES = {
 for (const [route, file] of Object.entries(PAGES)) {
   app.get(route, (_req, res) => res.sendFile(path.join(PUBLIC, file)));
 }
+
+/**
+ * Client-side routes under /v2 fall back to the bundle's own index.html.
+ *
+ * The React app routes in the browser, so /v2/history exists only once its
+ * JavaScript is running. Without this, a reload or a shared link on any route
+ * but the root hits the static handler, finds no such file, and lands on the
+ * 404 page — the classic single-page-app deployment bug, and one that only
+ * shows up after someone refreshes.
+ *
+ * Placed after express.static so real files still win, and it never answers
+ * for an asset path: a mistyped bundle URL should fail as a 404, not quietly
+ * return HTML that the browser then refuses as a script.
+ */
+app.get(/^\/v2(\/.*)?$/, (req, res, next) => {
+  if (req.path.startsWith('/v2/assets/')) return next();
+  const shell = path.join(PUBLIC, 'v2', 'index.html');
+  if (!fs.existsSync(shell)) return next();
+  res.sendFile(shell);
+});
 
 app.use((_req, res) => res.status(404).sendFile(path.join(PUBLIC, 'pages/404.html')));
 
