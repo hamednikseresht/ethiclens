@@ -3,7 +3,7 @@
  *
  * The handoff asks for Persian numerals throughout, and this is the only way
  * to get them: a Latin digit stays Latin no matter what the font does.
- * `font-feature-settings` was tried first and does nothing here — Vazirmatn's
+ * `font-feature-settings` was tried first and does nothing here — Shabnam's
  * stylistic sets change letterforms, not the digits a string is made of.
  *
  * Everything user-visible goes through fa(). Anything the machine reads back

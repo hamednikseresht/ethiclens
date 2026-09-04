@@ -120,8 +120,12 @@ function downloadHtml(meta) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(meta.title || 'تحلیل اخلاقی')} — دیدگاه اخلاق</title>
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&family=Markazi+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>${css}</style>
+<style>
+/* System faces only. The file travels on its own — a webfont link would make
+   an offline document call a third party as soon as someone opens it, and a
+   /fonts/ path cannot resolve from disk. */
+body { font-family: Tahoma, 'Iranian Sans', 'B Nazanin', system-ui, sans-serif; }
+${css}</style>
 </head>
 <body>
 <main class="wrap">

@@ -42,9 +42,10 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", ...GA_SCRIPT],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      scriptSrc: ["'self'", "'unsafe-inline'", ...GA_SCRIPT],      // Fonts are served from this origin now, so Google's hosts are gone
+      // from the policy rather than left as entries nothing uses.
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'", 'data:'],
       imgSrc: ["'self'", 'data:', ...GA_IMG],
       connectSrc: ["'self'", ...GA_CONNECT],
       objectSrc: ["'none'"],

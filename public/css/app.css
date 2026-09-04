@@ -59,7 +59,7 @@
   --tabbar-h: 64px;
 
   /* ---- Type ---- */
-  --font-ui:      'Vazirmatn', system-ui, -apple-system, Tahoma, sans-serif;
+  --font-ui:      'Shabnam', system-ui, -apple-system, Tahoma, sans-serif;
   --font-display: 'Markazi Text', Georgia, serif;
 
   /* ---- Safe areas ---- */
@@ -125,7 +125,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth;scroll-padding-top:calc(var(--nav-h) + 1rem)}
 body{
-  font-family:'Vazirmatn',system-ui,-apple-system,Tahoma,sans-serif;
+  font-family:'Shabnam',system-ui,-apple-system,Tahoma,sans-serif;
   background:var(--bg-body); color:var(--text); line-height:1.8;
   min-height:100vh; overflow-x:hidden;
   transition:background-color .25s,color .25s;

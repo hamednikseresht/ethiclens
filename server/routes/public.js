@@ -24,9 +24,7 @@ router.get('/api/guide', (_req, res) => {
   res.json(guideContent());
 });
 
-const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&family=Markazi+Text:wght@400;500;600;700&display=swap" rel="stylesheet">`;
+const FONTS = `<link rel="stylesheet" href="/css/fonts.css">`;
 
 function shell({ head, body, bodyClass = '' }) {
   return `<!DOCTYPE html>
