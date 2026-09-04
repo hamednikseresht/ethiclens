@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+/* --------------------------------------------------------------------------
+   Shabnam — the Persian UI face.
+
+   Self-hosted rather than loaded from a CDN for three reasons: it is not on
+   Google Fonts, the Content-Security-Policy only admits Google's font hosts,
+   and a font served from the same origin costs no foreign round trip — which
+   matters most for the readers this product is written for.
+
+   Licensed SIL OFL 1.1 (public/fonts/LICENSE.txt), which permits this.
+
+   font-display: swap so text is readable in the fallback while the face
+   loads. The alternative, invisible text, is worse than a brief reflow.
+   -------------------------------------------------------------------------- */
+@font-face {
+  font-family: 'Shabnam';
+  src: url('/fonts/Shabnam-Light.woff2') format('woff2');
+  font-weight: 300; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Shabnam';
+  src: url('/fonts/Shabnam.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Shabnam';
+  src: url('/fonts/Shabnam-Medium.woff2') format('woff2');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Shabnam';
+  src: url('/fonts/Shabnam-Bold.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
 /* ==========================================================================
    Ethic Lens design tokens.
 
@@ -79,7 +113,7 @@
   /* Type. Markazi Text is a display face with a small optical size — the
      handoff is explicit that it must never go below 22px and never carry UI
      labels or body copy. */
-  --font-sans:    'Vazirmatn', system-ui, Tahoma, sans-serif;
+  --font-sans:    'Shabnam', system-ui, Tahoma, sans-serif;
   --font-display: 'Markazi Text', Georgia, serif;
 }
 

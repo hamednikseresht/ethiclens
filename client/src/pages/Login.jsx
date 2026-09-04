@@ -38,7 +38,7 @@ export default function Login({ onSignedIn }) {
     <div className="flex min-h-screen items-center justify-center bg-background p-5">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <span className="mx-auto mb-3 grid size-12 place-items-center rounded-lg bg-primary text-sm font-black text-primary-foreground">
+          <span className="mx-auto mb-3 grid size-12 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
             EL
           </span>
           <h1 className="display text-[30px] font-semibold leading-tight">دیدگاه اخلاق</h1>
