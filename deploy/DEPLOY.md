@@ -92,13 +92,23 @@ sudo -u ethiclens git -C /opt/ethiclens remote -v
 rm -rf /tmp/ethiclens-src
 ```
 
-سپس نصب وابستگی‌ها:
+سپس نصب وابستگی‌ها و ساخت رابط کاربری:
 
 ```bash
-cd /opt/ethiclens
-sudo -u ethiclens npm ci --omit=dev
-sudo -u ethiclens mkdir -p /opt/ethiclens/data
+cd /opt/ethiclens && sudo -u ethiclens npm ci && sudo -u ethiclens npm run build && sudo -u ethiclens mkdir -p /opt/ethiclens/data
 ```
+
+> **چرا `npm ci` کامل و نه `--omit=dev`:** رابط کاربری یک بسته React است
+> که باید همین‌جا ساخته شود، و ابزار ساختش در devDependencies است.
+>
+> ساختن روی سرور به‌جای کامیت‌کردن بسته آماده، یک انتخاب آگاهانه است. بسته
+> کامیت‌شده می‌تواند بی‌صدا از کد عقب بیفتد — کسی کد را پوش می‌کند بدون
+> اینکه دوباره بسازد، و سایت همچنان نسخه قدیمی را سرو می‌کند بی‌آنکه هیچ
+> خطایی جایی دیده شود. ساختی که اینجا شکست بخورد، اسکریپت را متوقف می‌کند
+> و می‌گوید.
+>
+> ساخت در `public/app.next` انجام می‌شود و فقط در صورت موفقیت جای نسخه
+> زنده را می‌گیرد، پس شکست وسط کار، نسخه در حال اجرا را از بین نمی‌برد.
 
 > **اگر `npm ci` گفت `package-lock.json` پیدا نشد**، یعنی مرحله بالا ناقص
 > انجام شده و فایل‌ها کامل کپی نشده‌اند. با `ls /opt/ethiclens` بررسی کنید

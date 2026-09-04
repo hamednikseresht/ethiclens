@@ -18,8 +18,9 @@
     "guide": "node scripts/guide-flow.mjs",
     "test:otp": "node scripts/otp-flow.mjs",
     "test:cats": "node scripts/category-flow.mjs",
-    "build": "vite build",
-    "dev:client": "vite"
+    "build": "vite build && node scripts/swap-build.mjs",
+    "dev:client": "vite",
+    "build:only": "vite build"
   },
   "keywords": [
     "ethics",

@@ -112,8 +112,27 @@ fi
 say "نصب وابستگی‌ها"
 
 [ -f package-lock.json ] || die "package-lock.json نیست — فایل‌ها ناقص کپی شده‌اند."
-sudo -u "$APP_USER" npm ci --omit=dev --no-audit --no-fund
+
+# The full install, not --omit=dev: the frontend is a Vite bundle that has to
+# be compiled here, and its toolchain lives in devDependencies.
+#
+# Building on the server rather than committing the bundle is a deliberate
+# trade. A committed bundle can silently fall out of step with the source —
+# someone pushes code without rebuilding and the site keeps serving the old
+# app with no error anywhere. A build that fails here stops this script and
+# says so.
+sudo -u "$APP_USER" npm ci --no-audit --no-fund
 ok "نصب شد"
+
+say "ساخت رابط کاربری"
+
+# vite builds into public/app.next and the swap only happens on success, so a
+# failed build leaves the running app untouched instead of deleting it.
+if sudo -u "$APP_USER" npm run build; then
+  ok "ساخته شد"
+else
+  die "ساخت رابط کاربری ناموفق بود — نسخه قبلی دست‌نخورده ماند و همچنان سرو می‌شود."
+fi
 
 # ---------------------------------------------------------------------------
 say "راه‌اندازی دوباره سرویس"

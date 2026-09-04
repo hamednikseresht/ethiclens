@@ -32,7 +32,13 @@ export default defineConfig({
   },
 
   build: {
-    outDir: path.resolve(process.cwd(), 'public/app'),
+    // Built into a staging directory, never straight over the live one.
+    // Vite empties outDir before it starts, so building directly into the
+    // served path means a build that fails halfway has already deleted the
+    // assets the site was running on — a white page with no way back until
+    // the next successful build. deploy/update.sh swaps this in only after
+    // the build reports success.
+    outDir: path.resolve(process.cwd(), 'public/app.next'),
     emptyOutDir: true,
     // Hashed filenames let the built assets be cached hard while HTML stays
     // fresh; Express already sends public/ with a one-hour max-age.
