@@ -1,0 +1,157 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Ethic Lens design tokens.
+
+   Two sources merged here. The warm stone neutrals, the radius ramp and the
+   Persian display face come from the mobile PWA handoff. The shape of the
+   file — semantic pairs like background/foreground, and a --radius the
+   components derive from — is shadcn's, so its components drop in without
+   rewriting their class lists.
+
+   Tailwind v4 is configured in CSS rather than a JS config file, so @theme
+   below is what makes these available as utilities (bg-background, text-muted
+   and so on).
+   ========================================================================== */
+
+@theme {
+  /* Neutrals — warm stone, replacing the old cold slate ramp */
+  --color-background:       #f5f5f4;
+  --color-foreground:       #1c1917;
+  --color-card:             #ffffff;
+  --color-card-foreground:  #1c1917;
+  --color-popover:          #ffffff;
+  --color-popover-foreground: #1c1917;
+  --color-muted:            #e7e5e4;
+  --color-muted-foreground: #57534e;
+  --color-subtle:           #fafaf9;
+  --color-border:           #e7e5e4;
+  --color-border-strong:    #d6d3d1;
+  --color-input:            #e7e5e4;
+  --color-ring:             #1d4ed8;
+
+  /* Text ramp kept as named steps: the handoff specifies five, and collapsing
+     them into muted-foreground alone would lose the caption/placeholder
+     distinction the screens rely on. */
+  --color-text-2: #44403c;
+  --color-text-3: #57534e;
+  --color-text-4: #78716c;
+  --color-text-5: #a8a29e;
+
+  /* Brand */
+  --color-primary:            #1d4ed8;
+  --color-primary-foreground: #ffffff;
+  --color-primary-soft:       #eff6ff;
+  --color-accent:             #0d9488;
+  --color-accent-foreground:  #ffffff;
+  --color-accent-soft:        #f0fdfa;
+  --color-ink:                #1c1917;
+  --color-ink-2:              #292524;
+
+  /* Verdicts */
+  --color-destructive:            #dc2626;
+  --color-destructive-foreground: #ffffff;
+  --color-destructive-soft:       #fef2f2;
+  --color-warn:                   #d97706;
+  --color-warn-soft:              #fffbeb;
+  --color-ok:                     #059669;
+  --color-ok-soft:                #ecfdf5;
+
+  /* The eight schools. These match server/services/schools.js exactly and are
+     the product's real visual identity — a lens keeps its colour everywhere
+     it appears, so they are never re-picked per screen. */
+  --color-school-virtue:        #7c3aed;
+  --color-school-deontology:    #2563eb;
+  --color-school-utilitarian:   #0d9488;
+  --color-school-commongood:    #0891b2;
+  --color-school-contractual:   #ea580c;
+  --color-school-care:          #db2777;
+  --color-school-existential:   #65a30d;
+  --color-school-genealogy:     #b45309;
+
+  /* Radii */
+  --radius-sm:  9px;
+  --radius-md:  12px;
+  --radius-lg:  14px;
+  --radius-xl:  16px;
+  --radius-2xl: 18px;
+
+  /* Type. Markazi Text is a display face with a small optical size — the
+     handoff is explicit that it must never go below 22px and never carry UI
+     labels or body copy. */
+  --font-sans:    'Vazirmatn', system-ui, Tahoma, sans-serif;
+  --font-display: 'Markazi Text', Georgia, serif;
+}
+
+/* --------------------------------------------------------------------------
+   Dark theme.
+
+   Declared on [data-theme="dark"] rather than a media query so the existing
+   theme toggle keeps working — it already writes that attribute, and the
+   preference is remembered per person rather than following the OS.
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] {
+  --color-background:       #0c0a09;
+  --color-foreground:       #fafaf9;
+  --color-card:             #1c1917;
+  --color-card-foreground:  #fafaf9;
+  --color-popover:          #1c1917;
+  --color-popover-foreground: #fafaf9;
+  --color-muted:            #292524;
+  --color-muted-foreground: #a8a29e;
+  --color-subtle:           #171412;
+  --color-border:           #292524;
+  --color-border-strong:    #44403c;
+  --color-input:            #292524;
+
+  --color-text-2: #d6d3d1;
+  --color-text-3: #a8a29e;
+  --color-text-4: #78716c;
+  --color-text-5: #57534e;
+
+  --color-primary:      #60a5fa;
+  --color-primary-soft: #172554;
+  --color-accent:       #2dd4bf;
+  --color-accent-soft:  #134e4a;
+  --color-ink:          #fafaf9;
+  --color-ink-2:        #e7e5e4;
+
+  --color-destructive-soft: #450a0a;
+  --color-warn:             #fbbf24;
+  --color-warn-soft:        #451a03;
+  --color-ok:               #4ade80;
+  --color-ok-soft:          #052e16;
+}
+
+@layer base {
+  html {
+    /* Persian numerals everywhere, per the handoff. Set once here rather than
+       per component so a stray Latin digit is the exception that stands out. */
+    font-feature-settings: "ss01";
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    line-height: 1.8;
+    /* Bottom tab bar sits above the home indicator on iOS. */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Latin runs — model ids, emails, URLs — are flipped back individually.
+     Flipping a whole line would reorder the Persian around them. */
+  .ltr { direction: ltr; unicode-bidi: isolate; }
+
+  /* Counters and durations line up in columns only with tabular figures. */
+  .nums { font-variant-numeric: tabular-nums; }
+
+  /* Display face. Guarded at 22px because Markazi's small optical size makes
+     anything under that read as a mistake rather than a choice. */
+  .display { font-family: var(--font-display); font-size: max(22px, 1em); }
+
+  * { border-color: var(--color-border); }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}
