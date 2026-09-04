@@ -33,7 +33,12 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
 
   resolve: {
-    alias: { '@': path.resolve(process.cwd(), 'client/src') }
+    alias: {
+      '@': path.resolve(process.cwd(), 'client/src'),
+      // Shared with the pages still being served the old way, so the quote
+      // deck has one home rather than two copies that drift.
+      '@shared': path.resolve(process.cwd(), 'public/js')
+    }
   },
 
   build: {
@@ -53,6 +58,9 @@ export default defineConfig({
 
   server: {
     port: 5173,
+    // The alias above points outside the Vite root, which the dev server
+    // blocks by default.
+    fs: { allow: [process.cwd()] },
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

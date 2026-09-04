@@ -124,12 +124,6 @@
 }
 
 @layer base {
-  html {
-    /* Persian numerals everywhere, per the handoff. Set once here rather than
-       per component so a stray Latin digit is the exception that stands out. */
-    font-feature-settings: "ss01";
-  }
-
   body {
     @apply bg-background text-foreground font-sans antialiased;
     line-height: 1.8;
