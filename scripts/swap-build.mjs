@@ -2,7 +2,7 @@
  * Move a finished build over the served directory.
  *
  * Vite empties its output directory before it begins, so it builds into
- * public/app.next and this runs only after it exits zero. The live directory
+ * public/v2.next and this runs only after it exits zero. The live directory
  * is therefore replaced in one step by something already known to be
  * complete, instead of being emptied and refilled while the server is
  * serving from it.
@@ -14,9 +14,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const next = path.join(root, 'public', 'app.next');
-const live = path.join(root, 'public', 'app');
-const prev = path.join(root, 'public', 'app.prev');
+const next = path.join(root, 'public', 'v2.next');
+const live = path.join(root, 'public', 'v2');
+const prev = path.join(root, 'public', 'v2.prev');
 
 if (!fs.existsSync(path.join(next, 'index.html'))) {
   console.error('  ✗ build output is missing index.html — refusing to swap');

@@ -18,4 +18,6 @@ _*.js
 Thumbs.db
 
 # Vite build output — rebuilt on deploy, never committed
-public/app/
+public/v2/
+public/v2.next/
+public/v2.prev/

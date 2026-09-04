@@ -19,11 +19,16 @@ import path from 'node:path';
 export default defineConfig({
   root: 'client',
 
-  // The app is served from /app/, not the domain root, so built asset URLs
-  // have to carry that prefix. Without it the bundle requests /assets/… ,
-  // Express answers with the SPA's own index.html, and the browser refuses
-  // it as a stylesheet — a blank page whose only clue is a MIME-type error.
-  base: '/app/',
+  // Served from /v2/, not the domain root, so built asset URLs carry that
+  // prefix. Without it the bundle requests /assets/… , Express answers with
+  // the SPA's own index.html, and the browser refuses it as a stylesheet — a
+  // blank page whose only clue is a MIME-type error.
+  //
+  // /v2/ rather than /app/ because /app is already the current analysis page.
+  // express.static redirects a directory request to its trailing-slash form,
+  // so a public/app directory quietly turned /app into a 301 and shadowed a
+  // live route. The migration has to leave today's product working.
+  base: '/v2/',
 
   plugins: [react(), tailwindcss()],
 
@@ -38,7 +43,7 @@ export default defineConfig({
     // assets the site was running on — a white page with no way back until
     // the next successful build. deploy/update.sh swaps this in only after
     // the build reports success.
-    outDir: path.resolve(process.cwd(), 'public/app.next'),
+    outDir: path.resolve(process.cwd(), 'public/v2.next'),
     emptyOutDir: true,
     // Hashed filenames let the built assets be cached hard while HTML stays
     // fresh; Express already sends public/ with a one-hour max-age.
