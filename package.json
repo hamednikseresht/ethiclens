@@ -59,6 +59,7 @@
     "better-sqlite3": true
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^5.2.0",
     "react": "^19.2.8",
