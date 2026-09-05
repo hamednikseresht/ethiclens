@@ -12,6 +12,7 @@ import Settings from '@/pages/Settings';
 import Dashboard from '@/pages/Dashboard';
 import Verify from '@/pages/Verify';
 import { LazyRoute } from '@/components/LazyRoute';
+import { PageViews } from '@/lib/analytics';
 
 /**
  * The admin panel is fetched on demand.
@@ -79,6 +80,7 @@ export default function App() {
   if (location.pathname === '/verify') {
     return (
       <BrowserRouter>
+        <PageViews />
         <Routes>
           <Route path="/verify" element={<Verify onSignedIn={signIn} />} />
         </Routes>
@@ -107,6 +109,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <PageViews />
       <AppShell user={state.user} onSignedOut={() => setState({ loading: false, user: null })}>
         <Routes>
           <Route path="/" element={<AnalyzeOrResult meta={meta} />} />

@@ -12,6 +12,11 @@
     addresses: /intro, /g, /p, /a/<slug>, /c/<slug> and /about.
   -->
   <meta name="robots" content="noindex, follow">
+  <!-- The same tag the server-rendered pages load, so the measurement id and
+       the do-not-track check live in one file. A classic script rather than a
+       module: analytics that fires after the module graph under-counts anyone
+       who leaves quickly. -->
+  <script src="/js/analytics.js"></script>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
