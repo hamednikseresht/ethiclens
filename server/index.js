@@ -2,6 +2,8 @@ import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
 import helmet from 'helmet';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,10 +16,13 @@ import { router as analyzeRouter } from './routes/analyze.js';
 import { router as historyRouter } from './routes/history.js';
 import { router as adminRouter } from './routes/admin.js';
 import { router as publicRouter } from './routes/public.js';
+import { withNonce } from './services/seo.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
+// The built React app. Outside public/ so nothing in it has a second address.
+const CLIENT = path.join(ROOT, 'client-dist');
 
 seed();
 
@@ -38,13 +43,38 @@ const GA_CONNECT = ['https://www.google-analytics.com', 'https://analytics.googl
 const GA_IMG     = ['https://www.google-analytics.com', 'https://*.google-analytics.com',
                     'https://www.googletagmanager.com'];
 
+/**
+ * A per-request nonce for the inline scripts.
+ *
+ * The policy used to carry 'unsafe-inline' for scripts, which is the one
+ * directive that undoes most of what a CSP is for: it permits any injected
+ * <script> as readily as our own. It was there because the server-rendered
+ * pages each boot from an inline module and because the structured-data
+ * blocks are inline too.
+ *
+ * The application never needed it — its shell loads everything by src — so
+ * the only cost of removing it is stamping a nonce onto the handful of inline
+ * scripts the other half of the site emits. renderHtml() in the public router
+ * does that to every response it sends.
+ */
+app.use((_req, res, next) => {
+  res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", ...GA_SCRIPT],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      scriptSrc: [
+        "'self'",
+        (_req, res) => `'nonce-${res.locals.cspNonce}'`,
+        ...GA_SCRIPT
+      ],
+      // Fonts are served from this origin now, so Google's hosts are gone
+      // from the policy rather than left as entries nothing uses.
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'", 'data:'],
       imgSrc: ["'self'", 'data:', ...GA_IMG],
       connectSrc: ["'self'", ...GA_CONNECT],
       objectSrc: ["'none'"],
@@ -88,26 +118,135 @@ app.use('/', publicRouter);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'مسیر API یافت نشد.' }));
 
 // ---- Static files and page routes ----
-app.use(express.static(PUBLIC, { extensions: ['html'], maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0 }));
+/**
+ * How long each kind of file may be held.
+ *
+ * A single max-age for everything is wrong in both directions at once. The
+ * shell carries the current bundle's filename, so caching it for an hour
+ * means an hour of people running the previous deploy; the bundle filenames
+ * carry a content hash, so revalidating them every hour wastes the hash
+ * entirely. They need opposite answers.
+ *
+ * The service worker is the one that bites hardest: a stale copy keeps
+ * serving its own cached assets and cannot be replaced by a deploy, so it is
+ * never cached.
+ */
+function cacheHeaders(res, filePath) {
+  const rel = path.relative(PUBLIC, filePath).replace(/\\/g, '/');
 
-const PAGES = {
-  '/': 'index.html',
-  '/login': 'pages/login.html',
-  '/app': 'pages/app.html',
-  '/dashboard': 'pages/dashboard.html',
-  '/history': 'pages/history.html',
-  '/analysis': 'pages/analysis.html',
-  '/settings': 'pages/settings.html',
-  '/admin': 'pages/admin.html',
-  '/guide': 'pages/guide.html',
-  '/about': 'pages/about.html',
-  '/verify': 'pages/verify.html'
-};
-for (const [route, file] of Object.entries(PAGES)) {
-  app.get(route, (_req, res) => res.sendFile(path.join(PUBLIC, file)));
+  // Names are stable but the content can be replaced by a deploy, so these
+  // are cached for a while and revalidated rather than trusted outright.
+  if (rel.startsWith('fonts/') || rel.startsWith('icons/')) {
+    return res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+  }
+
+  if (rel === 'sw.js' || rel === 'manifest.webmanifest' || rel.endsWith('.html')) {
+    return res.setHeader('Cache-Control', 'no-cache');
+  }
+
+  res.setHeader('Cache-Control', 'public, max-age=3600');
 }
 
-app.use((_req, res) => res.status(404).sendFile(path.join(PUBLIC, 'pages/404.html')));
+const noCache = (res) => res.setHeader('Cache-Control', 'no-cache');
+
+/**
+ * Anything still bookmarked under /v2 — including an app installed before the
+ * move, whose start_url was /v2/ — lands on the same path at the root.
+ *
+ * Before the static handler, because a previous build may still be sitting in
+ * public/v2 on a server that has not been cleaned, and it would otherwise be
+ * served instead of redirected.
+ */
+app.get(/^\/v2(\/.*)?$/, (req, res) => {
+  const rest = req.originalUrl.slice('/v2'.length);
+  res.redirect(301, rest || '/');
+});
+
+/**
+ * The bundle's hashed assets.
+ *
+ * Vite writes a content hash into every filename, so a given URL can never
+ * mean a different file — a year, never revalidated. They are mounted from
+ * client-dist rather than public/ so each one has exactly one address.
+ */
+app.use('/assets', express.static(path.join(CLIENT, 'assets'), {
+  index: false,
+  immutable: process.env.NODE_ENV === 'production',
+  maxAge: process.env.NODE_ENV === 'production' ? '365d' : 0
+}));
+
+/**
+ * Everything else that is a real file: fonts, icons, the stylesheets and
+ * scripts the server-rendered pages still use, the manifest and the worker.
+ *
+ * index:false matters now — without it this would answer / with the old
+ * public/index.html and the application would never be reached.
+ */
+app.use(express.static(PUBLIC, {
+  index: false,
+  extensions: ['html'],
+  setHeaders: process.env.NODE_ENV === 'production'
+    ? cacheHeaders
+    : (res) => res.setHeader('Cache-Control', 'no-store')
+}));
+
+// Ships with the bundle, so it is not under public/ — but the worker asks for
+// it by an absolute path, so it needs one here.
+app.get('/offline.html', (_req, res) => {
+  noCache(res);
+  res.sendFile(path.join(CLIENT, 'offline.html'));
+});
+
+// Addresses the old product used for screens the app now owns.
+app.get(['/app', '/analysis'], (_req, res) => res.redirect(301, '/'));
+
+/**
+ * The application's own routes.
+ *
+ * The React app routes in the browser, so /history exists only once its
+ * JavaScript is running — a reload or a shared link has to be answered with
+ * the shell or it lands on the 404 page. That is the classic single-page-app
+ * deployment bug and it only shows up after someone refreshes.
+ *
+ * Listed explicitly rather than served by a catch-all. A catch-all answers
+ * *everything* with the shell, which quietly turns two things into lies: an
+ * unpublished analysis at /a/<slug> stops being a 404 and starts being the
+ * app, and so does every mistyped address. Both were caught by the tests the
+ * moment the catch-all went in.
+ *
+ * The cost is that this list has to grow when a route is added to the router.
+ * That is a small, visible coupling, and the alternative is a site with no
+ * 404s at all.
+ */
+const APP_ROUTES = [
+  '/login', '/history', '/explore', '/guide', '/dashboard', '/settings', '/admin', '/verify'
+];
+
+function isAppRoute(pathname) {
+  if (pathname === '/') return true;
+  return APP_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
+}
+
+app.get('*', (req, res, next) => {
+  if (!isAppRoute(req.path)) return next();
+  const shell = path.join(CLIENT, 'index.html');
+  if (!fs.existsSync(shell)) return next();
+  // sendFile does not run the static middleware's header hook, so the shell
+  // would otherwise go out with no policy at all and be heuristically cached.
+  noCache(res);
+  res.sendFile(shell);
+});
+
+// Read rather than sendFile: this page boots from an inline script, which
+// needs the request's nonce stamped into it or it will not run.
+app.use((_req, res) => {
+  const file = path.join(PUBLIC, 'pages/404.html');
+  let html;
+  try { html = fs.readFileSync(file, 'utf8'); }
+  catch { return res.status(404).type('text/plain').send('صفحه پیدا نشد.'); }
+  noCache(res);
+  res.status(404).type('html').send(withNonce(html, res.locals.cspNonce));
+});
 
 app.use((err, _req, res, _next) => {
   console.error('[error]', err);

@@ -16,3 +16,8 @@ _*.js
 .idea/
 .DS_Store
 Thumbs.db
+
+# Vite build output — rebuilt on deploy, never committed
+client-dist/
+client-dist.next/
+client-dist.prev/

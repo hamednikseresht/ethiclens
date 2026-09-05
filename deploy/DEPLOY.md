@@ -15,7 +15,7 @@ nginx و کلادفلر، با گواهی Origin و حالت Full (strict).
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl git nginx build-essential python3
+sudo apt install -y curl git nginx build-essential python3 sqlite3
 ```
 
 نصب Node.js نسخه ۲۲ (LTS):
@@ -92,13 +92,23 @@ sudo -u ethiclens git -C /opt/ethiclens remote -v
 rm -rf /tmp/ethiclens-src
 ```
 
-سپس نصب وابستگی‌ها:
+سپس نصب وابستگی‌ها و ساخت رابط کاربری:
 
 ```bash
-cd /opt/ethiclens
-sudo -u ethiclens npm ci --omit=dev
-sudo -u ethiclens mkdir -p /opt/ethiclens/data
+cd /opt/ethiclens && sudo -u ethiclens npm ci && sudo -u ethiclens npm run build && sudo -u ethiclens mkdir -p /opt/ethiclens/data
 ```
+
+> **چرا `npm ci` کامل و نه `--omit=dev`:** رابط کاربری یک بسته React است
+> که باید همین‌جا ساخته شود، و ابزار ساختش در devDependencies است.
+>
+> ساختن روی سرور به‌جای کامیت‌کردن بسته آماده، یک انتخاب آگاهانه است. بسته
+> کامیت‌شده می‌تواند بی‌صدا از کد عقب بیفتد — کسی کد را پوش می‌کند بدون
+> اینکه دوباره بسازد، و سایت همچنان نسخه قدیمی را سرو می‌کند بی‌آنکه هیچ
+> خطایی جایی دیده شود. ساختی که اینجا شکست بخورد، اسکریپت را متوقف می‌کند
+> و می‌گوید.
+>
+> ساخت در `client-dist.next` انجام می‌شود و فقط در صورت موفقیت جای نسخه
+> زنده را می‌گیرد، پس شکست وسط کار، نسخه در حال اجرا را از بین نمی‌برد.
 
 > **اگر `npm ci` گفت `package-lock.json` پیدا نشد**، یعنی مرحله بالا ناقص
 > انجام شده و فایل‌ها کامل کپی نشده‌اند. با `ls /opt/ethiclens` بررسی کنید
@@ -645,14 +655,49 @@ cd /opt/ethiclens && sudo -u ethiclens git pull origin main && sudo -u ethiclens
 sudo -u ethiclens sqlite3 /opt/ethiclens/data/ethiclens.db ".backup '/opt/ethiclens/data/backup-$(date +%F).db'"
 ```
 
-پشتیبان‌گیری روزانه با cron:
+> اگر `sqlite3: command not found` گرفتید، در بخش ۱ نصبش نکرده‌اید:
+> `sudo apt install -y sqlite3`
+>
+> `.backup` عمداً به‌جای `cp` استفاده می‌شود. پایگاه داده در حالت WAL کار
+> می‌کند، یعنی بخشی از نوشته‌ها در فایل جانبی `-wal` است و کپی ساده فایل
+> اصلی می‌تواند نسخه‌ای نیم‌بند بدهد. `.backup` از API خود SQLite استفاده
+> می‌کند و روی پایگاه داده‌ای که سرویس در حال استفاده از آن است هم امن است
+> — لازم نیست سرویس را متوقف کنید.
+
+پشتیبان‌گیری روزانه. `deploy/backup.sh` را به‌جای یک دستور دستی اجرا کنید:
+خودش تشخیص می‌دهد کدام فایل پایگاه داده زنده است (server/db.js بین
+`ethica.db` و `ethiclens.db` انتخاب می‌کند)، پس از ساخت پشتیبان
+`integrity_check` می‌گیرد، فشرده می‌کند و نسخه‌های قدیمی‌تر از ۳۰ روز را
+پاک می‌کند.
+
+**راه پیشنهادی — تایمر systemd:**
+
+```bash
+sudo cp /opt/ethiclens/deploy/ethiclens-backup.service /etc/systemd/system/
+sudo cp /opt/ethiclens/deploy/ethiclens-backup.timer   /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now ethiclens-backup.timer
+systemctl list-timers ethiclens-backup
+```
+
+> تایمر با `Persistent=true` کار می‌کند، یعنی اگر سرور ساعت ۳:۴۰ خاموش
+> بوده باشد پشتیبان را هنگام بالا آمدن می‌گیرد نه اینکه آن روز را رد کند —
+> و همان روز است که بیشتر به پشتیبان نیاز دارید.
+
+یک بار هم دستی اجرا کنید تا مطمئن شوید کار می‌کند:
+
+```bash
+sudo bash /opt/ethiclens/deploy/backup.sh
+```
+
+**یا با cron، اگر systemd را ترجیح نمی‌دهید:**
 
 ```bash
 sudo crontab -e
 ```
 
 ```cron
-0 3 * * * sudo -u ethiclens sqlite3 /opt/ethiclens/data/ethiclens.db ".backup '/var/backups/ethiclens-$(date +\%F).db'" && find /var/backups -name 'ethiclens-*.db' -mtime +14 -delete
+0 3 * * * bash /opt/ethiclens/deploy/backup.sh >> /var/log/ethiclens-backup.log 2>&1
 ```
 
 ---
@@ -679,3 +724,4 @@ sudo crontab -e
 | ایمیل به پوشه اسپم می‌رود | DKIM یا PTR ناقص است — بخش ۹.۵ و ۹.۳ |
 | `git pull` رمز می‌خواهد و ۴۰۱ می‌دهد | HTTP/2 روی شبکه سرور خراب است — `sudo git config --system http.version HTTP/1.1` (بخش ۳). `update.sh` خودش این را تشخیص می‌دهد |
 | به‌روزرسانی زدید ولی چیزی عوض نشد | گام‌ها را جدا زده‌اید و `git pull` بی‌صدا شکست خورده؛ از `update.sh` استفاده کنید |
+| `sqlite3: command not found` | در بخش ۱ نصب نشده — `sudo apt install -y sqlite3` |

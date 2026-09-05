@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ethic Lens" data-variant="maskable">
+  <!--
+    The product mark: eight points converging on one centre.
+
+    An octagon for the eight schools, each vertex marked, with a single filled
+    dot where they meet — eight perspectives, one decision. The first attempt
+    drew a literal camera iris with overlapping blades; it read as a starburst
+    at icon size and the idea was lost. This is the same thought with less in
+    it, which is what survives at 48px on a crowded home screen.
+
+    Artwork sits inside a 320px circle on a 512 grid, leaving the margin
+    Android's maskable crop needs — it cuts to roughly 80% and anything
+    outside that is gone.
+  -->
+  <rect width="512" height="512" fill="#1d4ed8"/>
+
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <!-- The octagon. Vertices at 22.5° offsets so a flat edge faces up, which
+         sits better under a circular mask than a point does. -->
+    <polygon stroke-width="20"
+             points="256,96 369,143 416,256 369,369 256,416 143,369 96,256 143,143"/>
+
+    <!-- Each vertex given weight, so the eight are countable rather than just
+         implied by the shape. -->
+    <g stroke-width="26">
+      <path d="M256 96 L256 96"/>
+      <path d="M369 143 L369 143"/>
+      <path d="M416 256 L416 256"/>
+      <path d="M369 369 L369 369"/>
+      <path d="M256 416 L256 416"/>
+      <path d="M143 369 L143 369"/>
+      <path d="M96 256 L96 256"/>
+      <path d="M143 143 L143 143"/>
+    </g>
+  </g>
+
+  <!-- The decision the eight converge on. -->
+  <circle cx="256" cy="256" r="58" fill="#ffffff"/>
+</svg>

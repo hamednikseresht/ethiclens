@@ -45,6 +45,12 @@ export function createCategory({ title, slug, description, sort_order }) {
   if (!clean) { const e = new Error('آدرس انگلیسی لازم است و باید حروف لاتین باشد.'); e.code = 'BAD_SLUG'; throw e; }
   if (!String(title || '').trim()) { const e = new Error('عنوان فارسی لازم است.'); e.code = 'BAD_TITLE'; throw e; }
 
+  if (RESERVED_SLUGS.has(clean)) {
+    const e = new Error('این نشانی رزرو شده است و برای تحلیل‌های منتشرشده کاربران به کار می‌رود.');
+    e.code = 'RESERVED';
+    throw e;
+  }
+
   if (getCategoryBySlug(clean)) {
     const e = new Error('دسته‌بندی دیگری با همین آدرس وجود دارد.');
     e.code = 'DUPLICATE';
@@ -67,6 +73,14 @@ export function updateCategory(id, patch) {
 
   const slug = patch.slug !== undefined ? categorySlug(patch.slug) : cur.slug;
   if (!slug) { const e = new Error('آدرس انگلیسی لازم است.'); e.code = 'BAD_SLUG'; throw e; }
+
+  // Guarded on rename as well as creation: otherwise the reserved slug is
+  // simply taken on the second attempt.
+  if (RESERVED_SLUGS.has(slug)) {
+    const e = new Error('این نشانی رزرو شده است و برای تحلیل‌های منتشرشده کاربران به کار می‌رود.');
+    e.code = 'RESERVED';
+    throw e;
+  }
 
   const clash = getCategoryBySlug(slug);
   if (clash && clash.id !== cur.id) {
@@ -131,21 +145,85 @@ export function readTags(json) {
   } catch { return []; }
 }
 
-/** Published analyses in one category. */
+/* ==========================================================================
+   The reader's category
+
+   An admin files an analysis under a category when publishing it. An ordinary
+   user cannot — the editorial fields are admin-only — so everything published
+   by a member arrives with no category at all, and until now had nowhere to
+   appear except the flat list.
+
+   Those are collected under one shelf that behaves like a category everywhere
+   a category is used: it has a slug, it has a page, and it appears in the
+   index. It is not a row, because it is defined by the absence of one — a
+   real row would have to be kept in step with every publish and could be
+   deleted out from under the analyses that depend on it.
+   ========================================================================== */
+export const PUBLIC_CATEGORY = {
+  id: null,
+  slug: 'public',
+  title: 'منتشرشده کاربران',
+  description: 'دوراهی‌هایی که کاربران خودشان تحلیل کرده و برای دیگران عمومی کرده‌اند.',
+  synthetic: true
+};
+
+/**
+ * Slugs an admin may not take, because the router already means something by
+ * them. Without this, creating a category called "public" would produce a
+ * second page at /c/public and one of the two would win by accident.
+ */
+export const RESERVED_SLUGS = new Set([PUBLIC_CATEGORY.slug]);
+
+/** Resolve a slug to a category, real or synthetic. */
+export function resolveCategory(slug) {
+  if (slug === PUBLIC_CATEGORY.slug) return PUBLIC_CATEGORY;
+  return getCategoryBySlug(slug) || null;
+}
+
+/**
+ * The categories a reader can browse: the admin's, plus the members' shelf
+ * when anything is on it. Empty categories are left out — a category page
+ * with nothing on it is a dead end for a reader and a thin page for a
+ * crawler.
+ */
+export function browsableCategories() {
+  const real = listCategories().filter(c => c.published > 0);
+  const mine = countInCategory(null);
+  return mine > 0
+    ? [...real, { ...PUBLIC_CATEGORY, published: mine }]
+    : real;
+}
+
+/**
+ * Published analyses in one category.
+ *
+ * A null id means the members' shelf, so the comparison has to be IS NULL
+ * rather than = ?, which never matches null in SQL.
+ */
 export function analysesInCategory(categoryId, { limit = 50, offset = 0 } = {}) {
+  const where = categoryId === null ? 'category_id IS NULL' : 'category_id = ?';
+  const params = categoryId === null ? [] : [categoryId];
   return db.prepare(`
     SELECT id, slug, title, public_title, seo_title, h1, public_summary,
            public_author, tags, published_at, created_at, views
     FROM analyses
-    WHERE category_id = ? AND is_public = 1 AND slug IS NOT NULL
+    WHERE ${where} AND is_public = 1 AND slug IS NOT NULL
       AND status IN ('done','partial')
     ORDER BY published_at DESC
-    LIMIT ? OFFSET ?`).all(categoryId, limit, offset);
+    LIMIT ? OFFSET ?`).all(...params, limit, offset);
 }
 
 export function countInCategory(categoryId) {
+  const where = categoryId === null ? 'category_id IS NULL' : 'category_id = ?';
+  const params = categoryId === null ? [] : [categoryId];
   return db.prepare(`
     SELECT COUNT(*) c FROM analyses
-    WHERE category_id = ? AND is_public = 1 AND slug IS NOT NULL
-      AND status IN ('done','partial')`).get(categoryId).c;
+    WHERE ${where} AND is_public = 1 AND slug IS NOT NULL
+      AND status IN ('done','partial')`).get(...params).c;
+}
+
+/** The category segment an analysis's public address sits under. */
+export function categoryPathFor(row) {
+  if (!row?.category_id) return PUBLIC_CATEGORY.slug;
+  return getCategory(row.category_id)?.slug || PUBLIC_CATEGORY.slug;
 }

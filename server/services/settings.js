@@ -23,8 +23,6 @@ const DEFAULTS = {
   // adds a code step before that queue — it never replaces the admin gate.
   signup_code: '0',
 
-  require_verification: '1',        // is email verification required?
-  verification_gate: 'analysis',    // analysis = only analysis gated | login = login gated
   mail_provider: 'brevo',           // brevo | mailgun
   brevo_api_key: '',
   mailgun_api_key: '',

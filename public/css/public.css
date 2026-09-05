@@ -79,4 +79,42 @@
             font-size:.83rem;color:var(--text-muted);line-height:1.95;margin-top:2rem}
 .pub-footer a{color:var(--text-muted)}
 .pub-footer a:hover{color:var(--primary)}
+/* --------------------------------------------------------------------------
+   Category index on /p
+   -------------------------------------------------------------------------- */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:.9rem;margin:0 0 2.2rem}
+.cat-card{display:flex;flex-direction:column;gap:.35rem;padding:1.1rem 1.2rem;
+  background:var(--bg-surface);border:1px solid var(--border);
+  border-radius:var(--r-sm);text-decoration:none;transition:border-color .15s}
+.cat-card:hover{border-color:var(--primary)}
+.cat-card-title{font-size:1rem;font-weight:800;color:var(--text)}
+.cat-card-desc{font-size:.82rem;line-height:1.9;color:var(--text-muted);text-align:justify}
+.cat-card-count{font-size:.74rem;font-weight:700;color:var(--primary);margin-top:.2rem}
 
+.pub-sec{font-size:1.05rem;font-weight:800;margin:0 0 1rem}
+
+/* --------------------------------------------------------------------------
+   The options, lifted above the fold on a published analysis
+   -------------------------------------------------------------------------- */
+.pub-options{background:var(--primary-soft);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:1.1rem 1.3rem;margin:1.2rem 0}
+.pub-options h2{font-size:.95rem;font-weight:800;margin:0 0 .6rem}
+.pub-options .prose{font-size:.9rem}
+
+/* --------------------------------------------------------------------------
+   Justified body text
+   --------------------------------------------------------------------------
+   Persian body text is set justified: the eye follows a straight edge down
+   the column instead of a ragged one, and at the widths these pages use the
+   ragged edge is what makes a long paragraph look unset.
+
+   Paragraphs and list items only. Headings, table cells, badges and the
+   footer are short enough that stretching them opens gaps rather than
+   closing an edge — which is the opposite of the point.
+   -------------------------------------------------------------------------- */
+.prose p, .prose li,
+.pub-card-sum,
+.pub-head p,
+.result-dilemma,
+.disclaimer{text-align:justify}

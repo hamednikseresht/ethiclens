@@ -1,0 +1,13 @@
+[Unit]
+Description=Ethic Lens — پشتیبان‌گیری روزانه
+
+[Timer]
+# Nightly, at a minute nobody else picks. Persistent so a machine that was
+# off at 03:40 takes the backup when it comes back rather than skipping the
+# day entirely — which is exactly the day you would want it.
+OnCalendar=*-*-* 03:40:00
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

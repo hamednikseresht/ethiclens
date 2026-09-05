@@ -1,0 +1,24 @@
+/* Append to public/css/motion.css */
+
+@keyframes el-orbit   { to { transform: rotate(360deg); } }
+@keyframes el-breathe {
+  0%, 100% { transform: scale(1);    opacity: .5; }
+  50%      { transform: scale(1.07); opacity: .9; }
+}
+@keyframes el-shimmer { to { background-position: -200% 0; } }
+@keyframes el-fade    { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-muted) 0%, rgba(255,255,255,.6) 50%, var(--bg-muted) 100%);
+  background-size: 200% 100%;
+  animation: el-shimmer 1.4s linear infinite;
+  border-radius: var(--r-md);
+}
+
+.page-enter { animation: el-fade 220ms cubic-bezier(.32,.72,0,1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .glow, .skeleton, .page-enter, .quote-rotate { animation: none !important; }
+  .glow { transform: scale(1.035); opacity: .7; }
+  .spinner { animation-duration: 3s !important; }
+}

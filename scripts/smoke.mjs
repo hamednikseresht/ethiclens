@@ -64,13 +64,13 @@ async function solveCaptcha() {
 
 console.log('\n── صفحات ──');
 for (const [path, needle] of [
-  ['/', 'Ethic Lens'],
-  ['/login', 'ورود'],
-  ['/guide', 'دانشنامه'],
+  ['/', 'id="root"'],
+  ['/intro', 'Ethic Lens'],
+  ['/login', 'id="root"'],
+  ['/g', 'دانشنامه'],
   ['/about', 'علی مهبودی'],
   ['/css/app.css', '--bg-body'],
   ['/js/core.js', 'export'],
-  ['/js/result.js', 'buildSkeleton'],
   ['/css/result.css', '.school'],
   ['/css/motion.css', 'prefers-reduced-motion'],
   ['/js/motion.js', 'revealOnScroll']
@@ -412,9 +412,9 @@ console.log('\n── انتشار عمومی و SEO ──');
     check('محتوای تحلیل در HTML اولیه است', /class="stage-title"/.test(html));
     check('دقیقاً یک h1 دارد', (html.match(/<h1[ >]/g) || []).length === 1);
 
-    const explore = await req('/explore');
-    check('/explore کار می‌کند', explore.status === 200 && /pub-card-title/.test(String(explore.data)));
-    check('/explore داده ItemList دارد', /"@type":"ItemList"/.test(String(explore.data)));
+    const explore = await req('/p');
+    check('/p کار می‌کند', explore.status === 200 && /pub-card-title/.test(String(explore.data)));
+    check('/p داده ItemList دارد', /"@type":"ItemList"/.test(String(explore.data)));
 
     const sm = await req('/sitemap.xml');
     check('نقشه سایت ساخته می‌شود', sm.status === 200 && /sitemaps\.org\/schemas\/sitemap/.test(String(sm.data)));
@@ -452,7 +452,7 @@ console.log('\n── انتشار عمومی و SEO ──');
 
 /* ---------------- noindex on private pages ---------------- */
 console.log('\n── noindex صفحه‌های درون‌برنامه‌ای ──');
-for (const p of ['/app', '/dashboard', '/history', '/admin', '/login', '/settings']) {
+for (const p of ['/', '/dashboard', '/history', '/admin', '/login', '/settings']) {
   const r = await req(p);
   check(`${p} با noindex علامت خورده`, /noindex/.test(String(r.data)), `status=${r.status}`);
 }
@@ -509,10 +509,103 @@ console.log('\n── تأیید ایمیل ──');
   check('توکن خالی رد می‌شود', noToken.status === 400 && noToken.data.reason === 'missing');
 
   const page = await req('/verify');
-  check('صفحه /verify سرو می‌شود', page.status === 200 && /تأیید/.test(String(page.data)));
+  check('صفحه /verify سرو می‌شود', page.status === 200 && /id="root"/.test(String(page.data)));
   check('صفحه /verify نباید ایندکس شود', /noindex/.test(String(page.data)));
 }
 
+
+
+/* ---------------- the public listing API ---------------- */
+console.log('\n── API فهرست عمومی ──');
+{
+  const all = await req('/api/explore');
+  check('/api/explore پاسخ می‌دهد', all.status === 200 && Array.isArray(all.data?.items),
+        `status=${all.status}`);
+  check('شمار کل و صفحه‌بندی برمی‌گردد',
+        typeof all.data?.total === 'number' && typeof all.data?.pages === 'number');
+
+  // Nothing private may appear here: this endpoint is fed to a signed-in list
+  // but every field in it is already on a public page.
+  const leaked = (all.data?.items || []).flatMap(it =>
+    Object.keys(it).filter(k => ['dilemma', 'sections', 'raw_output', 'user_id', 'id'].includes(k)));
+  check('هیچ فیلد خصوصی در پاسخ نیست', leaked.length === 0, leaked.join(', '));
+
+  const none = await req('/api/explore?q=zzz-nothing-matches-zzz');
+  check('جست‌وجوی بی‌نتیجه صفر برمی‌گرداند', none.data?.total === 0, `total=${none.data?.total}`);
+
+  // An unknown category filters to nothing rather than silently ignoring the
+  // filter and listing everything.
+  const badCat = await req('/api/explore?category=does-not-exist');
+  check('دسته ناموجود چیزی برنمی‌گرداند', badCat.data?.total === 0, `total=${badCat.data?.total}`);
+}
+
+/* ---------------- favourite and rename ---------------- */
+console.log('\n── نشان‌کردن و تغییر عنوان ──');
+{
+  const list = await req('/api/history?page=1&perPage=1');
+  const item = list.data?.items?.[0];
+  if (!item) {
+    check('تحلیلی برای آزمودن هست', false, 'تاریخچه خالی است');
+  } else {
+    const was = item.is_favorite;
+
+    const on = await req(`/api/history/${item.id}/favorite`, { method: 'POST', csrf });
+    check('نشان‌کردن پاسخ می‌دهد', on.status === 200 && typeof on.data?.isFavorite === 'boolean',
+          `status=${on.status}`);
+    const after = await req(`/api/history/${item.id}`);
+    check('وضعیت نشان روی سرور عوض شد', Boolean(after.data?.is_favorite) !== Boolean(was));
+
+    const off = await req(`/api/history/${item.id}/favorite`, { method: 'POST', csrf });
+    check('دوباره زدن، حالت را برمی‌گرداند', Boolean(off.data?.isFavorite) === Boolean(was));
+
+    const original = item.title;
+    const renamed = await req(`/api/history/${item.id}/title`,
+                              { method: 'POST', csrf, body: { title: 'عنوان آزمایشی' } });
+    check('تغییر عنوان پذیرفته شد', renamed.status === 200 && renamed.data?.title === 'عنوان آزمایشی',
+          `status=${renamed.status}`);
+
+    const empty = await req(`/api/history/${item.id}/title`,
+                            { method: 'POST', csrf, body: { title: '   ' } });
+    check('عنوان خالی رد می‌شود', empty.status === 400, `status=${empty.status}`);
+
+    await req(`/api/history/${item.id}/title`, { method: 'POST', csrf, body: { title: original } });
+    const back = await req(`/api/history/${item.id}`);
+    check('عنوان اصلی برگردانده شد', back.data?.title === original);
+  }
+}
+
+/* ---------------- the app route list ---------------- */
+console.log('\n── هم‌خوانی مسیرهای اپ ──');
+{
+  // server/index.js keeps an explicit list of paths that get the SPA shell,
+  // and the React router keeps its own. They have to agree: a route added to
+  // one and not the other is a page that works when clicked and 404s when
+  // reloaded — which nobody notices until someone shares a link.
+  const server = await import('node:fs')
+    .then(m => m.readFileSync('server/index.js', 'utf8'));
+  const app = await import('node:fs')
+    .then(m => m.readFileSync('client/src/App.jsx', 'utf8'));
+
+  const listed = (server.match(/const APP_ROUTES = \[([\s\S]*?)\]/)?.[1] || '')
+    .match(/'([^']+)'/g)?.map(s => s.slice(1, -1)) || [];
+
+  // Top-level router paths only; nested admin sections live under /admin.
+  const routed = [...app.matchAll(/<Route path="(\/[^"]*)"/g)]
+    .map(m => m[1])
+    .filter(p => p !== '/' && p !== '*')
+    .filter(p => !p.startsWith('/admin/'));
+
+  const missing = routed.filter(r => !listed.some(l => r === l || r.startsWith(l + '/')));
+  check('هر مسیر روتر در فهرست سرور هست', missing.length === 0,
+        `جا مانده: ${missing.join(', ')}`);
+
+  // /login is served by the shell but is not a router path: signed out, the
+  // app renders the login screen for whatever address was asked for, and
+  // core.js on the server-rendered pages still sends people there by name.
+  const OUTSIDE_ROUTER = ['/login'];
+  const extra = listed.filter(l => !routed.includes(l) && !OUTSIDE_ROUTER.includes(l));
+  check('فهرست سرور مسیر اضافه ندارد', extra.length === 0, `اضافه: ${extra.join(', ')}`);
+}
 
 console.log(`\n${'═'.repeat(46)}`);
 console.log(`  موفق: ${pass}   ناموفق: ${fail}`);

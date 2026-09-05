@@ -1,5 +1,6 @@
 /* ==========================================================================
-   Ethic Lens — shared client core: theme, API, toasts, modal, markdown, page shell
+   Ethic Lens — shared core for the server-rendered pages:
+   theme, API, toasts, markdown and the top bar
    ========================================================================== */
 
 /* ---------------- Theme ---------------- */
@@ -42,17 +43,6 @@ export function faDate(iso) {
       year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
     }).format(d);
   } catch { return d.toLocaleString('fa-IR'); }
-}
-
-export function relTime(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso.includes('T') ? iso : iso.replace(' ', 'T') + 'Z');
-  const diff = (Date.now() - d.getTime()) / 1000;
-  if (diff < 60) return 'همین الان';
-  if (diff < 3600) return `${faNum(Math.floor(diff / 60))} دقیقه پیش`;
-  if (diff < 86400) return `${faNum(Math.floor(diff / 3600))} ساعت پیش`;
-  if (diff < 604800) return `${faNum(Math.floor(diff / 86400))} روز پیش`;
-  return faDate(iso);
 }
 
 export function duration(ms) {
@@ -192,58 +182,9 @@ export function md(src) {
   return out.join('');
 }
 
-/* ---------------- Modal ---------------- */
-export function modal({ title, body, actions = [], onOpen }) {
-  const backdrop = document.createElement('div');
-  backdrop.className = 'modal-backdrop';
-  backdrop.innerHTML = `
-    <div class="modal" role="dialog" aria-modal="true">
-      <div class="modal-head">${esc(title)}</div>
-      <div class="modal-body">${body}</div>
-      <div class="modal-foot"></div>
-    </div>`;
-
-  const close = () => { backdrop.remove(); document.removeEventListener('keydown', onKey); };
-  const onKey = e => { if (e.key === 'Escape') close(); };
-
-  const foot = $('.modal-foot', backdrop);
-  for (const a of actions) {
-    const b = document.createElement('button');
-    b.className = `btn ${a.className || ''}`;
-    b.textContent = a.label;
-    b.onclick = async () => {
-      if (a.onClick) {
-        b.disabled = true;
-        try { const keep = await a.onClick(backdrop, b); if (keep !== 'keep') close(); }
-        finally { b.disabled = false; }
-      } else close();
-    };
-    foot.appendChild(b);
-  }
-
-  backdrop.addEventListener('mousedown', e => { if (e.target === backdrop) close(); });
-  document.addEventListener('keydown', onKey);
-  document.body.appendChild(backdrop);
-  onOpen?.(backdrop, close);
-  return { el: backdrop, close };
-}
-
-export function confirmDialog(title, message, confirmLabel = 'تأیید') {
-  return new Promise(resolve => {
-    modal({
-      title,
-      body: `<p style="font-size:.92rem;line-height:1.8">${esc(message)}</p>`,
-      actions: [
-        { label: confirmLabel, className: 'btn-danger', onClick: () => resolve(true) },
-        { label: 'انصراف', onClick: () => resolve(false) }
-      ]
-    });
-  });
-}
-
 /* ---------------- Page shell (top bar) ---------------- */
 const NAV = [
-  { href: '/app',       label: 'تحلیل تازه' },
+  { href: '/',          label: 'تحلیل تازه' },
   { href: '/dashboard', label: 'داشبورد' },
   { href: '/history',   label: 'تاریخچه' },
   { href: '/explore',   label: 'تحلیل‌های عمومی' },
@@ -253,13 +194,17 @@ const NAV = [
 
 /**
  * Navigation for a guest visitor.
- * Public pages need internal links for search-engine crawlers, so the
- * public routes are shown even when nobody is signed in.
+ *
+ * Public pages need internal links for search-engine crawlers, so the public
+ * routes are shown even when nobody is signed in — and they have to be the
+ * server-rendered ones. /explore and /guide belong to the application now: a
+ * crawler following them would get a shell marked noindex, and a guest would
+ * get a login form instead of the page they were promised.
  */
 const PUBLIC_NAV = [
-  { href: '/explore', label: 'تحلیل‌های عمومی' },
-  { href: '/guide',   label: 'دانشنامه' },
-  { href: '/about',   label: 'درباره ما' }
+  { href: '/p',     label: 'تحلیل‌های عمومی' },
+  { href: '/g',     label: 'دانشنامه' },
+  { href: '/about', label: 'درباره ما' }
 ];
 
 /**
@@ -354,7 +299,7 @@ export function renderTopbar(activePath) {
 
   host.innerHTML = `
     <div class="topbar-inner">
-      <a class="brand" href="${approved ? '/app' : '/'}">
+      <a class="brand" href="/">
         <span class="brand-mark">EL</span><span class="brand-text">دیدگاه اخلاق</span>
       </a>
       <nav class="nav-links" id="navPanel">${links}${adminLink}</nav>
