@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/motion.css">
+<link rel="stylesheet" href="/css/public.css">
 <style>
   .about-hero{
     text-align:center;padding:2.5rem 1rem 2rem;
@@ -48,8 +49,12 @@
   .pillar p{font-size:.85rem;line-height:1.9;color:var(--text-muted);margin:0}
 
   /* Builders */
-  .people{display:grid;grid-template-columns:1fr;gap:1rem;margin-top:1.1rem}
-  @media (min-width:720px){.people{grid-template-columns:1fr 1fr}}
+  /* minmax(0,…) rather than 1fr: a column's automatic minimum is min-content,
+     and the contact rows below hold unbreakable LTR strings — an address and a
+     handle — which pushed each card wider than the column and gave the page a
+     horizontal scroll on a phone. */
+  .people{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;margin-top:1.1rem}
+  @media (min-width:720px){.people{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .person{
     background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);
     padding:1.4rem;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;
@@ -70,7 +75,7 @@
   }
   .person-link:hover{border-color:var(--primary);color:var(--primary);text-decoration:none;transform:translateX(-3px)}
   .person-link .lbl{color:var(--text-muted);font-size:.78rem;flex-shrink:0}
-  .person-link .val{margin-inline-start:auto;direction:ltr;font-family:ui-monospace,monospace;font-size:.82rem}
+  .person-link .val{margin-inline-start:auto;direction:ltr;font-family:ui-monospace,monospace;font-size:.82rem;overflow-wrap:anywhere}
 
   .contact-band{
     background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;

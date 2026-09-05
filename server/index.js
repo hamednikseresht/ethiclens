@@ -15,7 +15,7 @@ import { router as authRouter } from './routes/auth.js';
 import { router as analyzeRouter } from './routes/analyze.js';
 import { router as historyRouter } from './routes/history.js';
 import { router as adminRouter } from './routes/admin.js';
-import { router as publicRouter } from './routes/public.js';
+import { router as publicRouter, siteFooter } from './routes/public.js';
 import { withNonce } from './services/seo.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -275,6 +275,10 @@ app.use((_req, res) => {
   let html;
   try { html = fs.readFileSync(file, 'utf8'); }
   catch { return res.status(404).type('text/plain').send('صفحه پیدا نشد.'); }
+  // Same footer as every other page outside the app. Someone who lands here
+  // from a stale link has nowhere else to go otherwise: the top bar is built
+  // by script and the two buttons point at the app and the homepage only.
+  html = html.replace('</body>', `${siteFooter()}\n</body>`);
   noCache(res);
   res.status(404).type('html').send(withNonce(html, res.locals.cspNonce));
 });
