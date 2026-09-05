@@ -1,0 +1,16 @@
+[Unit]
+Description=Ethic Lens — پشتیبان‌گیری از پایگاه داده
+Documentation=file:///opt/ethiclens/deploy/DEPLOY.md
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/env bash /opt/ethiclens/deploy/backup.sh
+
+# The script drops to the application user itself for the writes, so it needs
+# root only to create the backup directory the first time.
+User=root
+
+# A failed backup should be visible in the journal rather than silently
+# retried into the same broken state.
+StandardOutput=journal
+StandardError=journal

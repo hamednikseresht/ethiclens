@@ -126,7 +126,7 @@ ok "نصب شد"
 
 say "ساخت رابط کاربری"
 
-# vite builds into public/app.next and the swap only happens on success, so a
+# vite builds into client-dist.next and the swap only happens on success, so a
 # failed build leaves the running app untouched instead of deleting it.
 if sudo -u "$APP_USER" npm run build; then
   ok "ساخته شد"

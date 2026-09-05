@@ -107,7 +107,7 @@ cd /opt/ethiclens && sudo -u ethiclens npm ci && sudo -u ethiclens npm run build
 > خطایی جایی دیده شود. ساختی که اینجا شکست بخورد، اسکریپت را متوقف می‌کند
 > و می‌گوید.
 >
-> ساخت در `public/app.next` انجام می‌شود و فقط در صورت موفقیت جای نسخه
+> ساخت در `client-dist.next` انجام می‌شود و فقط در صورت موفقیت جای نسخه
 > زنده را می‌گیرد، پس شکست وسط کار، نسخه در حال اجرا را از بین نمی‌برد.
 
 > **اگر `npm ci` گفت `package-lock.json` پیدا نشد**، یعنی مرحله بالا ناقص
@@ -664,14 +664,40 @@ sudo -u ethiclens sqlite3 /opt/ethiclens/data/ethiclens.db ".backup '/opt/ethicl
 > می‌کند و روی پایگاه داده‌ای که سرویس در حال استفاده از آن است هم امن است
 > — لازم نیست سرویس را متوقف کنید.
 
-پشتیبان‌گیری روزانه با cron:
+پشتیبان‌گیری روزانه. `deploy/backup.sh` را به‌جای یک دستور دستی اجرا کنید:
+خودش تشخیص می‌دهد کدام فایل پایگاه داده زنده است (server/db.js بین
+`ethica.db` و `ethiclens.db` انتخاب می‌کند)، پس از ساخت پشتیبان
+`integrity_check` می‌گیرد، فشرده می‌کند و نسخه‌های قدیمی‌تر از ۳۰ روز را
+پاک می‌کند.
+
+**راه پیشنهادی — تایمر systemd:**
+
+```bash
+sudo cp /opt/ethiclens/deploy/ethiclens-backup.service /etc/systemd/system/
+sudo cp /opt/ethiclens/deploy/ethiclens-backup.timer   /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now ethiclens-backup.timer
+systemctl list-timers ethiclens-backup
+```
+
+> تایمر با `Persistent=true` کار می‌کند، یعنی اگر سرور ساعت ۳:۴۰ خاموش
+> بوده باشد پشتیبان را هنگام بالا آمدن می‌گیرد نه اینکه آن روز را رد کند —
+> و همان روز است که بیشتر به پشتیبان نیاز دارید.
+
+یک بار هم دستی اجرا کنید تا مطمئن شوید کار می‌کند:
+
+```bash
+sudo bash /opt/ethiclens/deploy/backup.sh
+```
+
+**یا با cron، اگر systemd را ترجیح نمی‌دهید:**
 
 ```bash
 sudo crontab -e
 ```
 
 ```cron
-0 3 * * * sudo -u ethiclens sqlite3 /opt/ethiclens/data/ethiclens.db ".backup '/var/backups/ethiclens-$(date +\%F).db'" && find /var/backups -name 'ethiclens-*.db' -mtime +14 -delete
+0 3 * * * bash /opt/ethiclens/deploy/backup.sh >> /var/log/ethiclens-backup.log 2>&1
 ```
 
 ---
