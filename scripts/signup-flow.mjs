@@ -1,5 +1,5 @@
 /** End-to-end test of the signup and admin-approval flow */
-const BASE = 'http://localhost:3000';
+const BASE = process.env.BASE || 'http://localhost:3000';
 
 function client() {
   const jar = new Map();
