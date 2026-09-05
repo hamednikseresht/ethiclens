@@ -19,9 +19,24 @@
       document, and replaying one from a cache would repeat it.
    ========================================================================== */
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL = `ethiclens-shell-${VERSION}`;
 const ASSETS = `ethiclens-assets-${VERSION}`;
+
+/**
+ * A ceiling on the runtime cache.
+ *
+ * Every asset URL carries a content hash, so a deploy never overwrites an
+ * entry — it adds a whole new set beside the old one, and nothing here ever
+ * asked for the old one back. Left alone this grows without limit for as long
+ * as the app is installed. Splitting the admin panel into its own chunks made
+ * that roughly fifteen files per build instead of two, which is what made it
+ * visible.
+ *
+ * Sixty holds about three builds' worth, so a page opened before a deploy can
+ * still fetch a chunk it was going to need.
+ */
+const MAX_ASSETS = 60;
 
 /**
  * Fonts and icons are worth pre-caching: they are needed on the very first
@@ -105,7 +120,7 @@ self.addEventListener('fetch', (event) => {
       const hit = await caches.match(request);
       if (hit) return hit;
       const res = await fetch(request);
-      if (res.ok) (await caches.open(ASSETS)).put(request, res.clone());
+      await store(request, res);
       return res;
     })());
     return;
@@ -117,7 +132,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     try {
       const res = await fetch(request);
-      if (res.ok) (await caches.open(ASSETS)).put(request, res.clone());
+      await store(request, res);
       return res;
     } catch {
       const hit = await caches.match(request);
@@ -126,3 +141,28 @@ self.addEventListener('fetch', (event) => {
     }
   })());
 });
+
+/**
+ * Put a response in the runtime cache, if it is the sort of thing that
+ * belongs there, and keep that cache from growing forever.
+ *
+ * The HTML check is rule 2 again, enforced on the response rather than the
+ * request. The navigation branch above only catches documents the browser is
+ * navigating to; a page fetched by script — /a/<slug> from a link preview,
+ * say — arrives here instead with mode 'cors' and would otherwise be stored.
+ * Checking the content type catches both, which is what the rule actually
+ * meant.
+ */
+async function store(request, res) {
+  if (!res.ok) return;
+  if ((res.headers.get('content-type') || '').includes('text/html')) return;
+
+  const cache = await caches.open(ASSETS);
+  await cache.put(request, res.clone());
+
+  // keys() is in insertion order, so the front of the list is the oldest
+  // thing here — which after a deploy is the previous build's assets.
+  const keys = await cache.keys();
+  const excess = keys.length - MAX_ASSETS;
+  for (let i = 0; i < excess; i++) await cache.delete(keys[i]);
+}
