@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import {
   metaTags, siteUrl, absoluteUrl, escapeHtml as esc, jsonLd, isoDate, faDate,
   metaDescription, publishedAnalyses, publishedCount, findBySlug,
-  siteJsonLd, breadcrumbJsonLd, injectHead
+  siteJsonLd, breadcrumbJsonLd, injectHead, withNonce
 } from '../services/seo.js';
 import { renderAnalysis, verdictChips, faNum, splitVerdict } from '../services/render-analysis.js';
 import { guideContent } from '../services/guide.js';
@@ -120,6 +120,47 @@ function siteFooter() {
 }
 
 /* ==========================================================================
+   The view counter
+   --------------------------------------------------------------------------
+   Every hit on a published page used to be an unconditional write. That was
+   tolerable while only people reached these pages; now that they are the
+   crawlable half of the site, a single crawl writes once per article and the
+   number stops meaning "people who read this".
+
+   So a viewer counts once an hour per article. The window is held in memory
+   rather than a table: the count is a vanity number, not an audit, and it is
+   not worth a schema and a second write to make it survive a restart.
+
+   Bots that announce themselves are not counted at all. The ones that lie
+   still get through, which is why this is a floor on the noise rather than a
+   fix for it.
+   ========================================================================== */
+const VIEW_WINDOW_MS = 60 * 60 * 1000;
+const recentViews = new Map();          // `${id}:${ip}` → timestamp
+const BOT = /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|headless|lighthouse|monitor|curl|wget|python-requests/i;
+
+function countView(id, req) {
+  if (BOT.test(req.get('user-agent') || '')) return;
+
+  const key = `${id}:${req.ip}`;
+  const now = Date.now();
+  const seen = recentViews.get(key);
+  if (seen && now - seen < VIEW_WINDOW_MS) return;
+
+  recentViews.set(key, now);
+
+  // Swept on write rather than on a timer, so an idle process holds nothing
+  // and there is no interval to clean up on shutdown.
+  if (recentViews.size > 5000) {
+    for (const [k, t] of recentViews) {
+      if (now - t >= VIEW_WINDOW_MS) recentViews.delete(k);
+    }
+  }
+
+  db.prepare('UPDATE analyses SET views = views + 1 WHERE id = ?').run(id);
+}
+
+/* ==========================================================================
    A published analysis page
    ========================================================================== */
 router.get('/a/:slug', (req, res, next) => {
@@ -142,7 +183,7 @@ router.get('/a/:slug', (req, res, next) => {
   const path = `/a/${encodeURIComponent(row.slug)}`;
   const url = absoluteUrl(req, path);
 
-  db.prepare('UPDATE analyses SET views = views + 1 WHERE id = ?').run(row.id);
+  countView(row.id, req);
 
   const ctx = (() => { try { return JSON.parse(row.context) || {}; } catch { return {}; } })();
 
@@ -239,7 +280,7 @@ ${publicNav()}
 ${siteFooter()}`;
 
   res.set('Cache-Control', 'public, max-age=300');
-  res.send(shell({ head, body }));
+  res.send(withNonce(shell({ head, body }), res.locals.cspNonce));
 });
 
 /* ==========================================================================
@@ -324,7 +365,7 @@ ${publicNav()}
 ${siteFooter()}`;
 
   res.set('Cache-Control', 'public, max-age=600');
-  res.send(shell({ head, body }));
+  res.send(withNonce(shell({ head, body }), res.locals.cspNonce));
 });
 
 /* ==========================================================================
@@ -476,7 +517,7 @@ for (const [route, page] of Object.entries(SEO_PAGES)) {
     // be cached publicly. Kept short because an admin's edit to the guide
     // should show up in minutes, not hours.
     res.set('Cache-Control', 'public, max-age=300');
-    res.type('html').send(injectHead(html, blocks.join('\n')));
+    res.type('html').send(withNonce(injectHead(html, blocks.join('\n')), res.locals.cspNonce));
   });
 }
 
@@ -574,5 +615,5 @@ ${publicNav()}
 ${siteFooter()}`;
 
   res.set('Cache-Control', 'public, max-age=300');
-  res.send(shell({ head, body }));
+  res.send(withNonce(shell({ head, body }), res.locals.cspNonce));
 });
