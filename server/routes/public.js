@@ -425,6 +425,7 @@ const SEO_PAGES = {
   },
   '/g': {
     file: 'pages/guide.html',
+    footer: true,
     title: () => 'دانشنامه لنزهای اخلاقی — راهنمای هشت مکتب فلسفه اخلاق',
     description: () => 'راهنمای هشت لنز فلسفه اخلاق و فرایند پنج‌فازی تصمیم‌گیری: ' +
       'فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، خیر مشترک، قراردادگرایی، اخلاق مراقبت، ' +
@@ -442,6 +443,7 @@ const SEO_PAGES = {
   },
   '/about': {
     file: 'pages/about.html',
+    footer: true,
     title: () => 'درباره دیدگاه اخلاق',
     description: () => 'Ethic Lens حاصل همکاری یک دانش‌آموخته فلسفه و یک مهندس نرم‌افزار است؛ ' +
       'ابزاری برای مستدل و قابل‌دفاع کردن تصمیم‌های اخلاقی روزمره.',
@@ -461,6 +463,14 @@ for (const [route, page] of Object.entries(SEO_PAGES)) {
       ...(page.trail ? [`<script type="application/ld+json">${jsonLd(breadcrumbJsonLd(req, page.trail))}</script>`] : []),
       ...page.extra(req).map(o => `<script type="application/ld+json">${jsonLd(o)}</script>`)
     ];
+
+    // The site footer is the only set of internal links these pages carry in
+    // their raw HTML — their top bar is built by script, so a crawler reading
+    // the response alone would find nothing to follow out of them. index.html
+    // ships its own, hence the flag rather than appending unconditionally.
+    if (page.footer) {
+      html = html.replace('</body>', `${siteFooter()}\n</body>`);
+    }
 
     // Identical for every visitor — no session data is injected — so this can
     // be cached publicly. Kept short because an admin's edit to the guide
