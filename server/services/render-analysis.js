@@ -151,7 +151,8 @@ const PHASES = [
     { key: 'revisit',        title: 'بازنگری', icon: '🔁' }] }
 ];
 
-function block(b, sections) {
+function block(b, sections, omit) {
+  if (omit?.has(b.key)) return '';
   const content = sections[b.key];
   if (!content) return '';
   return `
@@ -161,8 +162,8 @@ function block(b, sections) {
     </section>`;
 }
 
-function phase(p, sections, extra = '') {
-  const inner = p.blocks.map(b => block(b, sections)).join('') + extra;
+function phase(p, sections, extra = '', omit) {
+  const inner = p.blocks.map(b => block(b, sections, omit)).join('') + extra;
   if (!inner.trim()) return '';
   return `
     <div class="phase">
@@ -224,7 +225,15 @@ function renderStages(sections) {
 }
 
 /* ---------------- Full output ---------------- */
-export function renderAnalysis(sections) {
+/**
+ * The whole analysis as HTML.
+ *
+ * `omit` names sections the caller renders itself. The published page lifts
+ * the options above the fold, and printing them twice in one article reads
+ * worse than either placement on its own.
+ */
+export function renderAnalysis(sections, { omit = [] } = {}) {
+  const skip = new Set(omit);
   const matrix = sections.matrix ? `
     <section class="res-block" id="rs-matrix">
       <h3 class="res-h"><span class="res-ic">🧮</span> ماتریس مقایسه گزینه‌ها</h3>
@@ -240,11 +249,11 @@ export function renderAnalysis(sections) {
     : '';
 
   return `<div class="result">
-    ${phase(PHASES[0], sections)}
-    ${phase(PHASES[1], sections)}
+    ${phase(PHASES[0], sections, '', skip)}
+    ${phase(PHASES[1], sections, '', skip)}
     ${phase3}
-    ${phase(PHASES[2], sections)}
-    ${phase(PHASES[3], sections)}
+    ${phase(PHASES[2], sections, '', skip)}
+    ${phase(PHASES[3], sections, '', skip)}
   </div>`;
 }
 
