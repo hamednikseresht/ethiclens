@@ -127,7 +127,14 @@ function AnalyzeOrResult({ meta }) {
 
   const clear = () => { setResult(null); setParams({}, { replace: true }); };
 
-  if (id && result) return <Result analysis={result} meta={meta} onNew={clear} />;
+  // The actions on the result page each change one part of this row. Merging
+  // their patch here keeps the star, the published badge and the reflection in
+  // step without refetching and re-rendering a twenty-six-section document.
+  const patch = (fields) => setResult(r => (r ? { ...r, ...fields } : r));
+
+  if (id && result) {
+    return <Result analysis={result} meta={meta} onNew={clear} onUpdated={patch} />;
+  }
   if (id) {
     return (
       <div className="grid min-h-[60vh] place-items-center">

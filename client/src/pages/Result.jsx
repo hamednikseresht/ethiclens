@@ -8,6 +8,7 @@ import {
   parseMatrix, MATRIX_COLUMNS, scoreStyle, scoreLabel, matrixTotals
 } from '@/lib/analysis';
 import { ChevronDown, TriangleAlert, RotateCcw } from 'lucide-react';
+import { AnalysisActions, Reflection } from '@/components/AnalysisActions';
 
 /**
  * The finished analysis.
@@ -18,7 +19,7 @@ import { ChevronDown, TriangleAlert, RotateCcw } from 'lucide-react';
  * tensions and what to do. Someone who reads only the top gets the answer;
  * someone who reads on gets the reasoning that produced it.
  */
-export default function Result({ analysis, meta, onNew }) {
+export default function Result({ analysis, meta, onNew, onUpdated }) {
   const sections = analysis.sections || {};
   const schools = useMemo(
     () => Object.fromEntries((meta?.schools || []).map(s => [s.key, s])),
@@ -37,6 +38,14 @@ export default function Result({ analysis, meta, onNew }) {
   return (
     <div className="mx-auto max-w-xl px-5 pb-24 pt-6">
       {incomplete && <Gaps c={completeness} onNew={onNew} />}
+
+      <h1 className="mb-3 text-[15px] font-bold leading-relaxed">{analysis.title}</h1>
+
+      {onUpdated && (
+        <div className="mb-4">
+          <AnalysisActions analysis={analysis} onUpdated={onUpdated} />
+        </div>
+      )}
 
       <GateStrip sections={sections} gates={gates} />
 
@@ -82,6 +91,10 @@ export default function Result({ analysis, meta, onNew }) {
           <Block key={b.key} title={b.title} body={sections[b.key]} />
         ))}
       </Phase>
+
+      {/* Phase five sits after the argument because that is when it happens:
+          you read, you decide, and only then is there something to record. */}
+      {onUpdated && <Reflection analysis={analysis} onUpdated={onUpdated} />}
 
       <p className="mt-8 rounded-md border border-border bg-subtle p-4 text-[11px] leading-loose text-text-4">
         این تحلیل با کمک یک مدل زبانی تولید شده و می‌تواند خطا داشته باشد.
