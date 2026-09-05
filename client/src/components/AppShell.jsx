@@ -1,7 +1,7 @@
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { api } from '@/lib/api';
-import { Compass, Clock, Globe, BookOpen, X, LogOut, Settings, Shield } from 'lucide-react';
+import { Compass, Clock, Globe, BookOpen, X, LogOut, Settings, Shield, LayoutDashboard } from 'lucide-react';
 
 /**
  * The app frame: a header with the account button, and a four-tab bar pinned
@@ -111,6 +111,7 @@ function AccountSheet({ user, onClose, onSignedOut }) {
         </div>
 
         <div className="space-y-1">
+          <SheetLink icon={LayoutDashboard} label="داشبورد" to="/dashboard" onGo={onClose} />
           <SheetLink icon={Settings} label="تنظیمات حساب" to="/settings" onGo={onClose} />
           {user?.role === 'admin' && (
             <SheetLink icon={Shield} label="پنل مدیریت" to="/admin" onGo={onClose} />

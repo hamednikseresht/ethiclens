@@ -9,6 +9,7 @@ import History from '@/pages/History';
 import Explore from '@/pages/Explore';
 import Guide from '@/pages/Guide';
 import Settings from '@/pages/Settings';
+import Dashboard from '@/pages/Dashboard';
 import AdminLayout from '@/pages/admin/AdminLayout';
 import AdminOverview from '@/pages/admin/Overview';
 import AdminAi from '@/pages/admin/Ai';
@@ -80,6 +81,7 @@ export default function App() {
           <Route path="/history" element={<History />} />
           <Route path="/guide" element={<Guide />} />
           <Route path="/explore" element={<Explore />} />
+          <Route path="/dashboard" element={<Dashboard user={state.user} />} />
           <Route path="/settings" element={
             <Settings user={state.user}
                       onUserChanged={(user) => setState(s => ({ ...s, user }))} />
