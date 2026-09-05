@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { fa, faCount, faDate } from '@/lib/fa';
 import { getTheme, applyTheme } from '@/lib/theme';
-import { watchInstallPrompt } from '@/lib/pwa';
+import { watchInstallPrompt, isStandalone, isIosSafari } from '@/lib/pwa';
 import {
   User, KeyRound, Gauge, Palette, Download, BadgeCheck, MailWarning, Check
 } from 'lucide-react';
@@ -318,14 +318,36 @@ function InstallCard() {
   // storing it.
   useEffect(() => watchInstallPrompt(fn => setPrompt(() => fn)), []);
 
-  if (!prompt || outcome === 'accepted') return null;
+  // Already installed — there is nothing to offer.
+  if (isStandalone() || outcome === 'accepted') return null;
+
+  const blurb = (
+    <p className="mb-3 text-justify text-[12.5px] leading-loose text-text-3">
+      دیدگاه اخلاق را مثل یک برنامه روی صفحه اصلی نصب کنید تا سریع‌تر باز شود
+      و نوار مرورگر را نگیرد.
+    </p>
+  );
+
+  // iOS installs apps but never offers the event, so the only thing that can
+  // be shown there is the manual route. Saying nothing would make the feature
+  // look missing on iPhone rather than manual.
+  if (!prompt) {
+    if (!isIosSafari()) return null;
+    return (
+      <Card icon={Download} title="نصب روی گوشی">
+        {blurb}
+        <ol className="space-y-1.5 text-[12.5px] leading-loose text-text-2">
+          <li>۱. دکمه هم‌رسانی (Share) را در نوار پایین سافاری بزنید.</li>
+          <li>۲. گزینه «Add to Home Screen» را انتخاب کنید.</li>
+          <li>۳. روی Add بزنید.</li>
+        </ol>
+      </Card>
+    );
+  }
 
   return (
     <Card icon={Download} title="نصب روی گوشی">
-      <p className="mb-3 text-justify text-[12.5px] leading-loose text-text-3">
-        دیدگاه اخلاق را مثل یک برنامه روی صفحه اصلی نصب کنید تا سریع‌تر باز شود
-        و نوار مرورگر را نگیرد.
-      </p>
+      {blurb}
       <Button variant="primary" size="sm"
               onClick={async () => setOutcome(await prompt())}>
         نصب

@@ -1,6 +1,7 @@
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { OfflineBar } from '@/components/OfflineBar';
 import { Compass, Clock, Globe, BookOpen, X, LogOut, Settings, Shield, LayoutDashboard } from 'lucide-react';
 
 /**
@@ -33,6 +34,7 @@ export function AppShell({ user, children, onSignedOut }) {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur"
               style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <OfflineBar />
         <div className="mx-auto flex h-14 max-w-xl items-center gap-3 px-5">
           <span className="grid size-8 place-items-center rounded-sm bg-primary text-[11px] font-bold text-primary-foreground">
             EL

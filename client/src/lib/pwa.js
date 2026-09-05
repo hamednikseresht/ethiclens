@@ -62,3 +62,27 @@ export function watchInstallPrompt(onAvailable) {
     window.removeEventListener('appinstalled', onInstalled);
   };
 }
+
+/** Already running as an installed app rather than in a browser tab. */
+export function isStandalone() {
+  return window.matchMedia?.('(display-mode: standalone)').matches
+    // iOS predates the media query and reports it here instead.
+    || window.navigator.standalone === true;
+}
+
+/**
+ * iOS Safari, which installs apps but never fires beforeinstallprompt.
+ *
+ * Without this the install card simply never appears on an iPhone and the
+ * feature looks absent rather than manual. Detection is by platform because
+ * there is nothing to feature-detect: the capability exists, the event does
+ * not. iPadOS reports itself as a Mac, so touch points disambiguate.
+ */
+export function isIosSafari() {
+  const ua = navigator.userAgent;
+  const iOS = /iPad|iPhone|iPod/.test(ua)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  // Chrome and Firefox on iOS wrap WebKit but cannot add to the home screen.
+  const safari = !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+  return iOS && safari;
+}

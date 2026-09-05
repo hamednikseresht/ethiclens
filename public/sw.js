@@ -29,10 +29,18 @@ const ASSETS = `ethiclens-assets-${VERSION}`;
  * an installed app look like itself while offline.
  */
 const PRECACHE = [
+  // All six faces, because the offline page and the app share them and a
+  // missing weight is synthesised by the browser — which on Persian text
+  // looks like a different typeface, not like a slightly lighter one.
+  '/fonts/Shabnam-Light.woff2',
   '/fonts/Shabnam.woff2',
   '/fonts/Shabnam-Medium.woff2',
   '/fonts/Shabnam-Bold.woff2',
   '/fonts/MarkaziText-arabic.woff2',
+  '/fonts/MarkaziText-latin.woff2',
+  // The offline page is plain HTML outside the bundle, so it carries its own
+  // stylesheet; without this it renders in a fallback face at the one moment
+  // the product is trying to look deliberate rather than broken.
   '/css/fonts.css',
   '/icons/icon-192.png',
   '/v2/offline.html'
