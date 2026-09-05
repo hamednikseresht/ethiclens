@@ -75,7 +75,13 @@
 
 .pager{display:flex;justify-content:center;align-items:center;gap:.7rem;margin-top:1.8rem;flex-wrap:wrap}
 
-.pub-footer{border-top:1px solid var(--border);padding:2.2rem 1rem;text-align:center;
+/* The bottom padding clears the floating back-to-top button.
+   It is fixed to the viewport, so once the page is scrolled all the way down
+   it comes to rest over whatever is last on screen — which is this footer,
+   and it was landing on the text. The extra room is its height plus its own
+   inset, so it settles on empty padding instead. */
+.pub-footer{border-top:1px solid var(--border);
+            padding:2.2rem 1rem calc(2.2rem + 46px + 1.25rem);text-align:center;
             font-size:.83rem;color:var(--text-muted);line-height:1.95;margin-top:2rem}
 .pub-footer a{color:var(--text-muted)}
 .pub-footer a:hover{color:var(--primary)}
