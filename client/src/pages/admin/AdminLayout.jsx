@@ -1,4 +1,5 @@
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
+import { LazyRoute } from '@/components/LazyRoute';
 
 /**
  * The admin panel's frame.
@@ -54,8 +55,14 @@ export default function AdminLayout({ user }) {
         </div>
       </nav>
 
+      {/* Its own boundary, inside the layout: each section is a separate
+          chunk, and suspending here keeps the heading and the section strip
+          on screen while one loads. A boundary further out would blank the
+          whole panel and make switching sections feel like a page load. */}
       <div className="mx-auto max-w-xl px-5 pt-5">
-        <Outlet />
+        <LazyRoute>
+          <Outlet />
+        </LazyRoute>
       </div>
     </div>
   );

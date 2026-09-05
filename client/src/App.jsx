@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useSearchParams, Navigate } from 'react-router-dom';
 import { api, setCsrf } from '@/lib/api';
 import { AppShell } from '@/components/AppShell';
@@ -10,18 +10,28 @@ import Explore from '@/pages/Explore';
 import Guide from '@/pages/Guide';
 import Settings from '@/pages/Settings';
 import Dashboard from '@/pages/Dashboard';
-import AdminLayout from '@/pages/admin/AdminLayout';
-import AdminOverview from '@/pages/admin/Overview';
-import AdminAi from '@/pages/admin/Ai';
-import AdminPrompts from '@/pages/admin/Prompts';
-import AdminUsers from '@/pages/admin/Users';
-import AdminTiers from '@/pages/admin/Tiers';
-import AdminAnalyses from '@/pages/admin/Analyses';
-import AdminMail from '@/pages/admin/Mail';
-import AdminCategories from '@/pages/admin/Categories';
-import AdminGuide from '@/pages/admin/GuideAdmin';
-import AdminSite from '@/pages/admin/Site';
-import AdminAudit from '@/pages/admin/Audit';
+import { LazyRoute } from '@/components/LazyRoute';
+
+/**
+ * The admin panel is fetched on demand.
+ *
+ * It is eleven sections of forms and tables that only an admin ever opens,
+ * and bundling it with everything else meant every ordinary user downloaded
+ * all of it to reach the analysis page. Each section is its own chunk, so
+ * opening one section does not pull the other ten either.
+ */
+const AdminLayout     = lazy(() => import('@/pages/admin/AdminLayout'));
+const AdminOverview   = lazy(() => import('@/pages/admin/Overview'));
+const AdminAi         = lazy(() => import('@/pages/admin/Ai'));
+const AdminPrompts    = lazy(() => import('@/pages/admin/Prompts'));
+const AdminUsers      = lazy(() => import('@/pages/admin/Users'));
+const AdminTiers      = lazy(() => import('@/pages/admin/Tiers'));
+const AdminAnalyses   = lazy(() => import('@/pages/admin/Analyses'));
+const AdminMail       = lazy(() => import('@/pages/admin/Mail'));
+const AdminCategories = lazy(() => import('@/pages/admin/Categories'));
+const AdminGuide      = lazy(() => import('@/pages/admin/GuideAdmin'));
+const AdminSite       = lazy(() => import('@/pages/admin/Site'));
+const AdminAudit      = lazy(() => import('@/pages/admin/Audit'));
 
 /**
  * Shell and routing.
@@ -89,7 +99,9 @@ export default function App() {
           {/* Nested so every section is its own address: /admin/users is a
               link one admin can send another, and each section fetches only
               when it is opened rather than all eleven on arrival. */}
-          <Route path="/admin" element={<AdminLayout user={state.user} />}>
+          <Route path="/admin" element={
+            <LazyRoute><AdminLayout user={state.user} /></LazyRoute>
+          }>
             <Route index element={<AdminOverview />} />
             <Route path="ai" element={<AdminAi />} />
             <Route path="prompts" element={<AdminPrompts />} />

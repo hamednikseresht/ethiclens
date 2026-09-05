@@ -51,7 +51,8 @@ export default defineConfig({
     outDir: path.resolve(process.cwd(), 'public/v2.next'),
     emptyOutDir: true,
     // Hashed filenames let the built assets be cached hard while HTML stays
-    // fresh; Express already sends public/ with a one-hour max-age.
+    // fresh: Express serves everything under this directory immutable for a
+    // year and the shell that names them no-cache.
     assetsDir: 'assets',
     sourcemap: false
   },
