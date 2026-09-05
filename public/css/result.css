@@ -11,12 +11,6 @@
   font-size:.78rem;font-weight:800;color:var(--primary);
   background:var(--primary-soft);border-radius:999px;padding:.3rem .85rem;
 }
-.phase-lead{
-  font-size:.87rem;line-height:1.95;color:var(--text-muted);
-  background:var(--bg-surface);border:1px solid var(--border);
-  border-radius:var(--r-sm);padding:.95rem 1.1rem;
-}
-.phase-lead strong{color:var(--text)}
 .phase-body{display:flex;flex-direction:column;gap:.9rem}
 
 /* ---------- بلوک متنی ---------- */
@@ -127,8 +121,7 @@
   .stage{grid-template-columns:32px 1fr;gap:.6rem}
   .stage-num{width:32px;height:32px;font-size:.85rem}
   .stage-link{margin-inline-start:15px}
-  .stage-main{padding:1rem}
-}
+  .stage-main{padding:1rem}}
 
 /* ==========================================================================
    کارت مکاتب
@@ -154,7 +147,6 @@
 .school-verdict.v-maybe{background:var(--warn-soft);color:var(--warn);border-color:transparent}
 .school-verdict.v-neutral{background:var(--primary-soft);color:var(--primary);border-color:transparent}
 .school-body{font-size:.86rem;line-height:1.85}
-
 
 /* ==========================================================================
    ماتریس مقایسه گزینه‌ها
@@ -191,13 +183,6 @@
 .mx-total[data-t='neg']{color:var(--danger)}
 .mx-best .mx-opt{background:var(--primary-soft);color:var(--primary);box-shadow:inset 0 0 0 1.5px var(--primary)}
 .mx-badge{font-size:.65rem;font-weight:800;background:var(--primary);color:#fff;border-radius:999px;padding:.05rem .4rem;vertical-align:middle}
-.mx-legend{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .5rem;margin-top:.7rem;font-size:.72rem;color:var(--text-muted)}
-.mx-key{display:inline-grid;place-items:center;min-width:1.8rem;padding:.1rem .3rem;border-radius:5px;font-weight:800}
-.mx-key[data-v='2']{background:#16a34a;color:#fff}
-.mx-key[data-v='1']{background:#86efac;color:#14532d}
-.mx-key[data-v='0']{background:var(--bg-inset);color:var(--text-faint)}
-.mx-key[data-v='-1']{background:#fca5a5;color:#7f1d1d}
-.mx-key[data-v='-2']{background:#dc2626;color:#fff}
 .mx-note{font-size:.75rem;color:var(--text-muted);line-height:1.8;margin-top:.6rem;
          padding-top:.6rem;border-top:1px solid var(--border)}
 .mx-note strong{color:var(--text)}
@@ -205,27 +190,7 @@
 @media (max-width:720px){
   .mx{font-size:.75rem;border-spacing:2px}
   .mx .mx-opt{min-width:7rem;font-size:.78rem;padding:.4rem .5rem}
-  .mx-cell{min-width:2.1rem;padding:.4rem .2rem}
-}
-
-/* ==========================================================================
-   نوار پیشرفت استریم
-   ========================================================================== */
-.streambar{
-  position:sticky;top:calc(var(--nav-h) + .5rem);z-index:50;
-  background:var(--bg-surface);border:1px solid var(--primary);border-radius:var(--r-sm);
-  padding:.75rem 1rem;box-shadow:var(--shadow-md);margin-bottom:1.1rem;
-}
-.streambar-label{font-size:.87rem;font-weight:700;display:flex;align-items:center;gap:.5rem}
-.progress{height:5px;background:var(--bg-inset);border-radius:99px;overflow:hidden;margin-top:.6rem}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:99px;transition:width .35s ease;width:0}
-.raw-peek{
-  margin-top:.6rem;max-height:110px;overflow:hidden;
-  font-size:.78rem;line-height:1.7;color:var(--text-muted);
-  -webkit-mask-image:linear-gradient(180deg,#000 30%,transparent);
-  mask-image:linear-gradient(180deg,#000 30%,transparent);
-  white-space:pre-wrap;word-break:break-word;
-}
+  .mx-cell{min-width:2.1rem;padding:.4rem .2rem}}
 
 /* ==========================================================================
    سربرگ نتیجه
@@ -242,19 +207,6 @@
 }
 .meta-row{display:flex;flex-wrap:wrap;gap:.4rem;font-size:.76rem;margin-top:.7rem}
 
-/* خلاصه دروازه‌ها در سربرگ */
-.gate-strip{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.9rem}
-.gate-pill{
-  display:flex;align-items:center;gap:.35rem;font-size:.74rem;font-weight:700;
-  padding:.3rem .65rem;border-radius:999px;border:1px solid var(--border);
-  background:var(--bg-subtle);color:var(--text-muted);
-}
-.gate-pill b{font-weight:900}
-.gate-pill[data-state="yes"]{background:var(--success-soft);color:var(--success);border-color:transparent}
-.gate-pill[data-state="maybe"]{background:var(--warn-soft);color:var(--warn);border-color:transparent}
-.gate-pill[data-state="no"]{background:var(--danger-soft);color:var(--danger);border-color:transparent}
-.gate-pill[data-state="neutral"]{background:var(--primary-soft);color:var(--primary);border-color:transparent}
-
 /* ---------- سلب مسئولیت ---------- */
 .disclaimer{
   font-size:.78rem;color:var(--text-muted);line-height:1.85;
@@ -265,7 +217,7 @@
 /* ==========================================================================
    چاپ / خروجی PDF
    ========================================================================== */
-@page { size: A4; margin: 14mm 12mm; }
+@page{ size: A4; margin: 14mm 12mm; }
 
 @media print{
   /* رنگ‌ها را روی حالت روشن قفل کن تا PDF همیشه خوانا باشد */
@@ -280,19 +232,19 @@
     --danger:#b91c1c; --danger-soft:#fef2f2;
     --shadow-sm:none; --shadow-md:none; --shadow-lg:none;
   }
-  html,body{background:#fff !important;font-size:10.5pt}
-  .topbar,.fab,#toasts,.no-print,.streambar,.modal-backdrop{display:none !important}
+  html, body{background:#fff !important;font-size:10.5pt}
+  .topbar, .fab, #toasts{display:none !important}
 
-  .wrap,.wrap-narrow{max-width:none;padding:0;margin:0}
+  .wrap, .wrap-narrow{max-width:none;padding:0;margin:0}
   .result{gap:10mm}
-  .card,.res-block,.stage-main,.result-head{box-shadow:none !important}
+  .card, .res-block, .stage-main, .result-head{box-shadow:none !important}
 
   /* هر مرحله یکپارچه بماند و وسط صفحه نشکند */
-  .stage,.res-block,.school,.result-head,.mx-wrap{break-inside:avoid;page-break-inside:avoid}
-  .mx-cell,.mx-key,.mx-total{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .stage, .res-block, .school, .result-head, .mx-wrap{break-inside:avoid;page-break-inside:avoid}
+  .mx-cell, .mx-total{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .phase{break-inside:auto}
   .phase-label{break-after:avoid;page-break-after:avoid}
-  .res-h,.stage-head{break-after:avoid;page-break-after:avoid}
+  .res-h, .stage-head{break-after:avoid;page-break-after:avoid}
 
   .res-block.featured{
     background:var(--primary-soft) !important;
@@ -302,20 +254,10 @@
   .stage-main{border-inline-start-width:2.5pt}
 
   /* در PDF اسکلت‌های در حال بارگذاری دیده نشوند */
-  .res-block[data-empty="1"] .res-body::after,
-  .stage-gate-note:empty::after{display:none !important}
+  .res-block[data-empty="1"] .res-body::after, .stage-gate-note:empty::after{display:none !important}
 
   a{color:var(--text) !important;text-decoration:none}
-  .result-dilemma{max-height:none;overflow:visible}
-
-  /* سربرگ چاپ */
-  .print-head{display:block !important}
-}
-
-/* سربرگ مخصوص چاپ — در نمایش عادی پنهان */
-.print-head{display:none;margin-bottom:6mm;padding-bottom:3mm;border-bottom:1.5pt solid var(--border-strong)}
-.print-head .ph-brand{font-size:12pt;font-weight:900}
-.print-head .ph-sub{font-size:8.5pt;color:var(--text-muted);margin-top:1mm}
+  .result-dilemma{max-height:none;overflow:visible}}
 
 /* ==========================================================================
    دفترچه بازنگری (فاز پنجم)
@@ -324,27 +266,13 @@
   border-style:dashed;border-color:var(--accent);
   background:linear-gradient(180deg,var(--accent-soft) 0%,var(--bg-surface) 120px);
 }
-.reflect-saved{display:flex;flex-direction:column;gap:.7rem}
-.reflect-meta{font-size:.74rem;color:var(--text-muted);font-weight:700}
-.reflect-decision{
-  background:var(--bg-subtle);border-inline-start:3px solid var(--accent);
-  border-radius:0 var(--r-xs) var(--r-xs) 0;padding:.6rem .85rem;
-}
-.reflect-decision span{display:block;font-size:.72rem;color:var(--text-muted);font-weight:700;margin-bottom:.15rem}
-.reflect-decision strong{font-size:.92rem;font-weight:800;line-height:1.6}
-.reflect-text{font-size:.88rem;line-height:1.9;white-space:normal}
-.reflect-saved .btn{align-self:flex-start}
-
-/* نشان «منتظر بازنگری» در فهرست تاریخچه */
-.badge-reflect{background:var(--accent-soft);color:var(--accent);border-color:transparent}
 
 /* ==========================================================================
    Waiting screen
    --------------------------------------------------------------------------
    Shown instead of the result while an analysis runs. The sections used to
    fill in live, which meant the user watched a half-written analysis and read
-   conclusions that later changed. Now the work is hidden until it is whole,
-   and the wait is given something worth reading.
+   conclusions that later changed. Now the work is hidden until it is whole, and the wait is given something worth reading.
    ========================================================================== */
 .wait{
   display:flex;flex-direction:column;align-items:center;text-align:center;
@@ -353,42 +281,9 @@
   border-radius:var(--r);box-shadow:var(--shadow-sm);
 }
 
-/* The orb is the only thing that moves continuously, so a stalled request
-   still looks alive even when the progress bar has nothing new to report. */
-.wait-orb{position:relative;width:82px;height:82px;margin-bottom:1.1rem}
-.wait-orb i{
-  position:absolute;inset:0;border-radius:50%;
-  border:2px solid transparent;border-top-color:var(--primary);
-  animation:wait-spin 1.5s linear infinite;
-}
-.wait-orb i:nth-child(2){inset:11px;border-top-color:var(--accent);animation-duration:2.1s;animation-direction:reverse}
-.wait-orb i:nth-child(3){inset:22px;border-top-color:var(--warn);animation-duration:2.9s}
-.wait-orb b{
-  position:absolute;inset:0;display:grid;place-items:center;
-  font-size:1.5rem;animation:wait-pulse 2.4s ease-in-out infinite;
-}
+/* The orb is the only thing that moves continuously{position:relative;width:82px;height:82px;margin-bottom:1.1rem}
 @keyframes wait-spin{to{transform:rotate(360deg)}}
 @keyframes wait-pulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.12);opacity:1}}
-
-.wait-title{font-size:1.05rem;font-weight:900;margin-bottom:.3rem}
-.wait-sub{font-size:.85rem;color:var(--text-muted);margin-bottom:1.1rem}
-
-.wait-bar{width:100%;max-width:430px;height:7px;border-radius:99px;background:var(--bg-inset);overflow:hidden}
-.wait-bar i{
-  display:block;height:100%;width:0;border-radius:99px;
-  background:linear-gradient(90deg,var(--primary),var(--accent));
-  transition:width .6s cubic-bezier(.4,0,.2,1);
-}
-.wait-pct{font-size:.78rem;color:var(--text-muted);margin-top:.45rem;font-variant-numeric:tabular-nums}
-
-/* ---- Rotating quotation ---- */
-.wait-quote{
-  margin-top:1.6rem;max-width:520px;min-height:150px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:1.1rem 1.2rem;border-radius:var(--r-sm);
-  background:var(--bg-subtle);border:1px solid var(--border);
-}
-.wait-quote.swap{animation:q-swap .5s var(--ease-out,ease)}
 @keyframes q-swap{
   0%{opacity:0;transform:translateY(9px)}
   100%{opacity:1;transform:none}
@@ -398,19 +293,5 @@
 .q-who{font-size:.8rem;font-weight:800;color:var(--primary);font-style:normal;display:block}
 .q-work{display:block;font-size:.73rem;font-weight:500;color:var(--text-faint);margin-top:.15rem}
 
-.wait-actions{margin-top:1.4rem}
-
-/* ---- Success, shown briefly before the redirect ---- */
-.wait.done .wait-orb i{animation:none;border-top-color:var(--success);opacity:.35}
-.wait-check{
-  width:70px;height:70px;border-radius:50%;display:grid;place-items:center;
-  background:var(--success-soft);border:2px solid var(--success);
-  font-size:2rem;margin-bottom:1.1rem;animation:pop .45s var(--ease-out,ease)
-}
+/* ---- Success{animation:none;border-top-color:var(--success);opacity:.35}
 @keyframes pop{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
-
-@media (prefers-reduced-motion: reduce){
-  .wait-orb i,.wait-orb b{animation:none}
-  .wait-quote.swap,.wait-check{animation:none}
-  .wait-bar i{transition:none}
-}
