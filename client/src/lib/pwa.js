@@ -5,9 +5,9 @@
  * fetches the pre-cache list, and doing that while the page is still painting
  * competes with the very assets the person is waiting for.
  *
- * The scope is /v2/ because that is where the app lives. A worker registered
- * at the root would claim the pages the current product still serves, and
- * start answering for screens it knows nothing about.
+ * The scope is the root, which is where the app lives now. That includes the
+ * server-rendered pages, and it should: they are same-origin GET documents,
+ * and the worker's own rules already send every navigation to the network.
  */
 
 export function registerServiceWorker() {
@@ -15,8 +15,23 @@ export function registerServiceWorker() {
   if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
 
   const register = () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/v2/' })
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then(retireOldScope)
       .catch(err => console.warn('[pwa] registration failed:', err.message));
+  };
+
+  /**
+   * Anyone who used the app before it moved to the root still has a worker
+   * registered at /v2/. Registering a new scope does not replace it, and it
+   * would go on answering for that path — which now only exists to redirect.
+   * Unregistering it is the only way it leaves.
+   */
+  const retireOldScope = async () => {
+    try {
+      for (const reg of await navigator.serviceWorker.getRegistrations()) {
+        if (reg.scope.endsWith('/v2/')) await reg.unregister();
+      }
+    } catch { /* nothing here is worth breaking startup over */ }
   };
 
   // Waiting on `load` unconditionally would mean never registering at all in

@@ -6,10 +6,8 @@ import path from 'node:path';
 /**
  * The React app is one bundle served by the existing Express server.
  *
- * Output goes to public/app/ rather than a top-level dist/, because Express
- * already serves public/ as static and the deploy copies that directory as
- * it is. Keeping the build inside it means no new serving rule and no change
- * to how files reach the server.
+ * Output goes to client-dist/, which Express mounts explicitly: the hashed
+ * assets at /assets and the shell as the fallback for every app route.
  *
  * The dev server proxies /api to Express instead of hosting its own backend,
  * so sessions, CSRF and the SSE analysis stream behave in development exactly
@@ -19,16 +17,8 @@ import path from 'node:path';
 export default defineConfig({
   root: 'client',
 
-  // Served from /v2/, not the domain root, so built asset URLs carry that
-  // prefix. Without it the bundle requests /assets/… , Express answers with
-  // the SPA's own index.html, and the browser refuses it as a stylesheet — a
-  // blank page whose only clue is a MIME-type error.
-  //
-  // /v2/ rather than /app/ because /app is already the current analysis page.
-  // express.static redirects a directory request to its trailing-slash form,
-  // so a public/app directory quietly turned /app into a 301 and shadowed a
-  // live route. The migration has to leave today's product working.
-  base: '/v2/',
+  // The app is the site now, so assets are requested from the domain root.
+  base: '/',
 
   plugins: [react(), tailwindcss()],
 
@@ -48,7 +38,10 @@ export default defineConfig({
     // assets the site was running on — a white page with no way back until
     // the next successful build. deploy/update.sh swaps this in only after
     // the build reports success.
-    outDir: path.resolve(process.cwd(), 'public/v2.next'),
+    // Outside public/ on purpose. Anything under public/ is also reachable at
+    // its own URL, which would give every built file a second address — and
+    // the shell a second one that no route controls.
+    outDir: path.resolve(process.cwd(), 'client-dist.next'),
     emptyOutDir: true,
     // Hashed filenames let the built assets be cached hard while HTML stays
     // fresh: Express serves everything under this directory immutable for a

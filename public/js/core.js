@@ -243,7 +243,7 @@ export function confirmDialog(title, message, confirmLabel = 'تأیید') {
 
 /* ---------------- Page shell (top bar) ---------------- */
 const NAV = [
-  { href: '/app',       label: 'تحلیل تازه' },
+  { href: '/',          label: 'تحلیل تازه' },
   { href: '/dashboard', label: 'داشبورد' },
   { href: '/history',   label: 'تاریخچه' },
   { href: '/explore',   label: 'تحلیل‌های عمومی' },
@@ -253,13 +253,17 @@ const NAV = [
 
 /**
  * Navigation for a guest visitor.
- * Public pages need internal links for search-engine crawlers, so the
- * public routes are shown even when nobody is signed in.
+ *
+ * Public pages need internal links for search-engine crawlers, so the public
+ * routes are shown even when nobody is signed in — and they have to be the
+ * server-rendered ones. /explore and /guide belong to the application now: a
+ * crawler following them would get a shell marked noindex, and a guest would
+ * get a login form instead of the page they were promised.
  */
 const PUBLIC_NAV = [
-  { href: '/explore', label: 'تحلیل‌های عمومی' },
-  { href: '/guide',   label: 'دانشنامه' },
-  { href: '/about',   label: 'درباره ما' }
+  { href: '/p',     label: 'تحلیل‌های عمومی' },
+  { href: '/g',     label: 'دانشنامه' },
+  { href: '/about', label: 'درباره ما' }
 ];
 
 /**
@@ -354,7 +358,7 @@ export function renderTopbar(activePath) {
 
   host.innerHTML = `
     <div class="topbar-inner">
-      <a class="brand" href="${approved ? '/app' : '/'}">
+      <a class="brand" href="/">
         <span class="brand-mark">EL</span><span class="brand-text">دیدگاه اخلاق</span>
       </a>
       <nav class="nav-links" id="navPanel">${links}${adminLink}</nav>
@@ -461,7 +465,7 @@ export async function boot({ auth = true, admin = false } = {}) {
  * sits nearest the thumb on the right edge.
  */
 const TABS = [
-  { href: '/app',     label: 'تحلیل تازه', icon: 'compass'   },
+  { href: '/',        label: 'تحلیل تازه', icon: 'compass'   },
   { href: '/history', label: 'تاریخچه',    icon: 'clock'     },
   { href: '/explore', label: 'عمومی',      icon: 'globe'     },
   { href: '/guide',   label: 'دانشنامه',   icon: 'book-open' }

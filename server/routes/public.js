@@ -27,7 +27,7 @@ router.get('/api/guide', (_req, res) => {
 /**
  * The published analyses, as JSON, for the in-app list.
  *
- * The crawled /explore page stays exactly where it is and keeps rendering on
+ * The crawled /p page stays exactly where it is and keeps rendering on
  * the server — that is the copy search engines read, and serving it from the
  * app bundle instead would hand them an empty div. This endpoint feeds the
  * signed-in list, which can search and filter in a way a static page cannot.
@@ -113,7 +113,7 @@ function publicNav() {
 function siteFooter() {
   return `<footer class="site pub-footer">
     <p><strong>Ethic Lens</strong> — دستیار تصمیم‌گیری اخلاقی ·
-       <a href="/about">درباره ما</a> · <a href="/guide">دانشنامه</a> · <a href="/explore">تحلیل‌های عمومی</a></p>
+       <a href="/about">درباره ما</a> · <a href="/g">دانشنامه</a> · <a href="/p">تحلیل‌های عمومی</a></p>
     <p>تحلیل‌ها با کمک مدل‌های زبانی تولید می‌شوند و می‌توانند خطا داشته باشند.<br>
        این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</p>
   </footer>`;
@@ -172,8 +172,8 @@ router.get('/a/:slug', (req, res, next) => {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'خانه', item: siteUrl(req) },
-      { '@type': 'ListItem', position: 2, name: 'تحلیل‌های عمومی', item: absoluteUrl(req, '/explore') },
+      { '@type': 'ListItem', position: 1, name: 'خانه', item: absoluteUrl(req, '/intro') },
+      { '@type': 'ListItem', position: 2, name: 'تحلیل‌های عمومی', item: absoluteUrl(req, '/p') },
       ...(category
         ? [{ '@type': 'ListItem', position: 3, name: category.title, item: absoluteUrl(req, `/c/${category.slug}`) }]
         : []),
@@ -201,7 +201,7 @@ ${publicNav()}
   <article>
     <div class="result-head">
       <nav class="pub-crumbs" aria-label="مسیر">
-        <a href="/">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a>
+        <a href="/intro">خانه</a> ‹ <a href="/p">تحلیل‌های عمومی</a>
         ${category ? `‹ <a href="/c/${esc(category.slug)}">${esc(category.title)}</a>` : ''}
         ‹ <span>${esc(title)}</span>
       </nav>
@@ -233,7 +233,7 @@ ${publicNav()}
     <h2>دوراهی خودتان را تحلیل کنید</h2>
     <p>Ethic Lens موقعیت شما را از هشت منظر فلسفه اخلاق می‌سنجد، تعارض‌ها را نشان می‌دهد و مسیری موجه پیشنهاد می‌کند.</p>
     <a class="btn btn-primary btn-lg" href="/login?mode=register">شروع رایگان</a>
-    <a class="btn btn-lg" href="/explore">تحلیل‌های دیگر</a>
+    <a class="btn btn-lg" href="/p">تحلیل‌های دیگر</a>
   </aside>
 </main>
 ${siteFooter()}`;
@@ -245,14 +245,14 @@ ${siteFooter()}`;
 /* ==========================================================================
    Public analyses index
    ========================================================================== */
-router.get('/explore', (req, res) => {
+router.get('/p', (req, res) => {
   const perPage = 12;
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const total = publishedCount();
   const pages = Math.max(1, Math.ceil(total / perPage));
   const items = publishedAnalyses({ limit: perPage, offset: (page - 1) * perPage });
 
-  const path = page > 1 ? `/explore?page=${page}` : '/explore';
+  const path = page > 1 ? `/p?page=${page}` : '/p';
   const description = total
     ? `${total} تحلیل اخلاقی منتشرشده — دوراهی‌های واقعی بررسی‌شده از منظر هشت مکتب فلسفه اخلاق: فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، خیر مشترک، قراردادگرایی، اخلاق مراقبت و بیشتر.`
     : 'تحلیل‌های اخلاقی منتشرشده در دیدگاه اخلاق.';
@@ -273,8 +273,8 @@ router.get('/explore', (req, res) => {
       req, title: page > 1 ? `تحلیل‌های عمومی — صفحه ${page} | Ethic Lens` : 'تحلیل‌های اخلاقی عمومی | Ethic Lens',
       description, path
     }),
-    page > 1 ? `<link rel="prev" href="${esc(absoluteUrl(req, page === 2 ? '/explore' : `/explore?page=${page - 1}`))}">` : '',
-    page < pages ? `<link rel="next" href="${esc(absoluteUrl(req, `/explore?page=${page + 1}`))}">` : '',
+    page > 1 ? `<link rel="prev" href="${esc(absoluteUrl(req, page === 2 ? '/p' : `/p?page=${page - 1}`))}">` : '',
+    page < pages ? `<link rel="next" href="${esc(absoluteUrl(req, `/p?page=${page + 1}`))}">` : '',
     listLd ? `<script type="application/ld+json">${jsonLd(listLd)}</script>` : ''
   ].filter(Boolean).join('\n');
 
@@ -301,9 +301,9 @@ router.get('/explore', (req, res) => {
 
   const pager = pages > 1 ? `
     <nav class="pager" aria-label="صفحه‌بندی">
-      ${page > 1 ? `<a class="btn btn-sm" rel="prev" href="${page === 2 ? '/explore' : `/explore?page=${page - 1}`}">قبلی</a>` : ''}
+      ${page > 1 ? `<a class="btn btn-sm" rel="prev" href="${page === 2 ? '/p' : `/p?page=${page - 1}`}">قبلی</a>` : ''}
       <span class="hint">صفحه ${faNum(page)} از ${faNum(pages)}</span>
-      ${page < pages ? `<a class="btn btn-sm" rel="next" href="/explore?page=${page + 1}">بعدی</a>` : ''}
+      ${page < pages ? `<a class="btn btn-sm" rel="next" href="/p?page=${page + 1}">بعدی</a>` : ''}
     </nav>` : '';
 
   const body = `
@@ -333,18 +333,23 @@ ${siteFooter()}`;
 router.get('/robots.txt', (req, res) => {
   const base = siteUrl(req);
   res.type('text/plain').send(
+// The root is the application now, so it is no longer an allowed path: the
+// crawlable pages are the ones listed here, and everything the app owns is
+// behind a login where there is nothing to index.
 `User-agent: *
-Allow: /$
+Allow: /intro
 Allow: /about
-Allow: /guide
-Allow: /explore
+Allow: /g
+Allow: /p
 Allow: /a/
+Allow: /c/
 
 # صفحه‌های خصوصی و درون‌برنامه‌ای نباید ایندکس شوند
-Disallow: /app
+Disallow: /$
 Disallow: /dashboard
 Disallow: /history
-Disallow: /analysis
+Disallow: /explore
+Disallow: /guide
 Disallow: /settings
 Disallow: /admin
 Disallow: /login
@@ -359,9 +364,9 @@ router.get('/sitemap.xml', (req, res) => {
     .send('نشانی سایت تنظیم نشده است. در پنل مدیریت «آدرس سایت» را وارد کنید.');
 
   const statics = [
-    { loc: '/',        priority: '1.0', freq: 'weekly' },
-    { loc: '/explore', priority: '0.9', freq: 'daily'  },
-    { loc: '/guide',   priority: '0.8', freq: 'monthly'},
+    { loc: '/intro',   priority: '1.0', freq: 'weekly' },
+    { loc: '/p', priority: '0.9', freq: 'daily'  },
+    { loc: '/g',   priority: '0.8', freq: 'monthly'},
     { loc: '/about',   priority: '0.5', freq: 'yearly' }
   ];
 
@@ -397,7 +402,7 @@ ${posts.map(p => url(`/a/${encodeURIComponent(p.slug)}`,
    Landing and reference pages
    --------------------------------------------------------------------------
    These are static files, which means they cannot know the site's own
-   address — so they shipped without a canonical link, and /guide had no
+   address — so they shipped without a canonical link, and /g had no
    OpenGraph or robots tag at all. Serving them through here lets the same
    metaTags() that produces the published pages produce theirs too, so all
    public pages stay consistent, and it adds the site-level structured data
@@ -410,7 +415,7 @@ ${posts.map(p => url(`/a/${encodeURIComponent(p.slug)}`,
 const PUBLIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public');
 
 const SEO_PAGES = {
-  '/': {
+  '/intro': {
     file: 'index.html',
     title: () => getSetting('site_title') || 'دیدگاه اخلاق — Ethic Lens',
     description: () => getSetting('site_tagline') ||
@@ -418,13 +423,13 @@ const SEO_PAGES = {
     trail: null,
     extra: req => siteJsonLd(req)
   },
-  '/guide': {
+  '/g': {
     file: 'pages/guide.html',
     title: () => 'دانشنامه لنزهای اخلاقی — راهنمای هشت مکتب فلسفه اخلاق',
     description: () => 'راهنمای هشت لنز فلسفه اخلاق و فرایند پنج‌فازی تصمیم‌گیری: ' +
       'فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، خیر مشترک، قراردادگرایی، اخلاق مراقبت، ' +
       'اگزیستانسیالیسم و تبارشناسی — با ارجاع به منابع اصلی.',
-    trail: [{ name: 'خانه', path: '/' }, { name: 'دانشنامه', path: '/guide' }],
+    trail: [{ name: 'خانه', path: '/intro' }, { name: 'دانشنامه', path: '/g' }],
     extra: req => [{
       '@context': 'https://schema.org',
       '@type': 'Article',
@@ -432,7 +437,7 @@ const SEO_PAGES = {
       inLanguage: 'fa-IR',
       author: { '@type': 'Organization', name: getSetting('site_title') || 'Ethic Lens' },
       publisher: { '@type': 'Organization', name: getSetting('site_title') || 'Ethic Lens' },
-      mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(req, '/guide') }
+      mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(req, '/g') }
     }]
   },
   '/about': {
@@ -440,7 +445,7 @@ const SEO_PAGES = {
     title: () => 'درباره دیدگاه اخلاق',
     description: () => 'Ethic Lens حاصل همکاری یک دانش‌آموخته فلسفه و یک مهندس نرم‌افزار است؛ ' +
       'ابزاری برای مستدل و قابل‌دفاع کردن تصمیم‌های اخلاقی روزمره.',
-    trail: [{ name: 'خانه', path: '/' }, { name: 'درباره ما', path: '/about' }],
+    trail: [{ name: 'خانه', path: '/intro' }, { name: 'درباره ما', path: '/about' }],
     extra: () => []
   }
 };
@@ -469,7 +474,7 @@ for (const [route, page] of Object.entries(SEO_PAGES)) {
    Category listing
    --------------------------------------------------------------------------
    A shelf of published analyses under one heading. Worth having as a real
-   page rather than a filter on /explore: it gives each subject a stable
+   page rather than a filter on /p: it gives each subject a stable
    address that can be linked to and indexed on its own.
    ========================================================================== */
 router.get('/c/:slug', (req, res, next) => {
@@ -493,8 +498,8 @@ router.get('/c/:slug', (req, res, next) => {
       description, path
     }),
     `<script type="application/ld+json">${jsonLd(breadcrumbJsonLd(req, [
-      { name: 'خانه', path: '/' },
-      { name: 'تحلیل‌های عمومی', path: '/explore' },
+      { name: 'خانه', path: '/intro' },
+      { name: 'تحلیل‌های عمومی', path: '/p' },
       { name: cat.title, path: `/c/${cat.slug}` }
     ]))}</script>`,
     // An ItemList tells Google this is a collection rather than an article,
@@ -546,7 +551,7 @@ router.get('/c/:slug', (req, res, next) => {
 ${publicNav()}
 <main class="wrap" id="main">
   <nav class="pub-crumbs" aria-label="مسیر">
-    <a href="/">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a> ‹ <span>${esc(cat.title)}</span>
+    <a href="/intro">خانه</a> ‹ <a href="/p">تحلیل‌های عمومی</a> ‹ <span>${esc(cat.title)}</span>
   </nav>
   <div class="pub-head">
     <h1>${esc(cat.title)}</h1>
@@ -554,7 +559,7 @@ ${publicNav()}
   </div>
   ${items.length
     ? `<div class="pub-grid">${cards}</div>${pager}`
-    : '<div class="empty"><div class="empty-icon">📂</div><h3>هنوز تحلیلی در این دسته منتشر نشده</h3><a class="btn" href="/explore">دیدن همه تحلیل‌ها</a></div>'}
+    : '<div class="empty"><div class="empty-icon">📂</div><h3>هنوز تحلیلی در این دسته منتشر نشده</h3><a class="btn" href="/p">دیدن همه تحلیل‌ها</a></div>'}
 </main>
 ${siteFooter()}`;
 

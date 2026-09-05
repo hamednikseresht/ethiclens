@@ -64,9 +64,10 @@ async function solveCaptcha() {
 
 console.log('\n── صفحات ──');
 for (const [path, needle] of [
-  ['/', 'Ethic Lens'],
-  ['/login', 'ورود'],
-  ['/guide', 'دانشنامه'],
+  ['/', 'id="root"'],
+  ['/intro', 'Ethic Lens'],
+  ['/login', 'id="root"'],
+  ['/g', 'دانشنامه'],
   ['/about', 'علی مهبودی'],
   ['/css/app.css', '--bg-body'],
   ['/js/core.js', 'export'],
@@ -412,9 +413,9 @@ console.log('\n── انتشار عمومی و SEO ──');
     check('محتوای تحلیل در HTML اولیه است', /class="stage-title"/.test(html));
     check('دقیقاً یک h1 دارد', (html.match(/<h1[ >]/g) || []).length === 1);
 
-    const explore = await req('/explore');
-    check('/explore کار می‌کند', explore.status === 200 && /pub-card-title/.test(String(explore.data)));
-    check('/explore داده ItemList دارد', /"@type":"ItemList"/.test(String(explore.data)));
+    const explore = await req('/p');
+    check('/p کار می‌کند', explore.status === 200 && /pub-card-title/.test(String(explore.data)));
+    check('/p داده ItemList دارد', /"@type":"ItemList"/.test(String(explore.data)));
 
     const sm = await req('/sitemap.xml');
     check('نقشه سایت ساخته می‌شود', sm.status === 200 && /sitemaps\.org\/schemas\/sitemap/.test(String(sm.data)));
@@ -452,7 +453,7 @@ console.log('\n── انتشار عمومی و SEO ──');
 
 /* ---------------- noindex on private pages ---------------- */
 console.log('\n── noindex صفحه‌های درون‌برنامه‌ای ──');
-for (const p of ['/app', '/dashboard', '/history', '/admin', '/login', '/settings']) {
+for (const p of ['/', '/dashboard', '/history', '/admin', '/login', '/settings']) {
   const r = await req(p);
   check(`${p} با noindex علامت خورده`, /noindex/.test(String(r.data)), `status=${r.status}`);
 }

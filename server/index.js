@@ -19,6 +19,8 @@ import { router as publicRouter } from './routes/public.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
+// The built React app. Outside public/ so nothing in it has a second address.
+const CLIENT = path.join(ROOT, 'client-dist');
 
 seed();
 
@@ -107,12 +109,6 @@ app.use('/api', (_req, res) => res.status(404).json({ error: 'مسیر API یا�
 function cacheHeaders(res, filePath) {
   const rel = path.relative(PUBLIC, filePath).replace(/\\/g, '/');
 
-  // Vite writes a content hash into every filename here, so a given URL can
-  // never mean a different file. Safe to keep for a year and never revalidate.
-  if (rel.startsWith('v2/assets/')) {
-    return res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-  }
-
   // Names are stable but the content can be replaced by a deploy, so these
   // are cached for a while and revalidated rather than trusted outright.
   if (rel.startsWith('fonts/') || rel.startsWith('icons/')) {
@@ -126,53 +122,99 @@ function cacheHeaders(res, filePath) {
   res.setHeader('Cache-Control', 'public, max-age=3600');
 }
 
+const noCache = (res) => res.setHeader('Cache-Control', 'no-cache');
+
+/**
+ * Anything still bookmarked under /v2 — including an app installed before the
+ * move, whose start_url was /v2/ — lands on the same path at the root.
+ *
+ * Before the static handler, because a previous build may still be sitting in
+ * public/v2 on a server that has not been cleaned, and it would otherwise be
+ * served instead of redirected.
+ */
+app.get(/^\/v2(\/.*)?$/, (req, res) => {
+  const rest = req.originalUrl.slice('/v2'.length);
+  res.redirect(301, rest || '/');
+});
+
+/**
+ * The bundle's hashed assets.
+ *
+ * Vite writes a content hash into every filename, so a given URL can never
+ * mean a different file — a year, never revalidated. They are mounted from
+ * client-dist rather than public/ so each one has exactly one address.
+ */
+app.use('/assets', express.static(path.join(CLIENT, 'assets'), {
+  index: false,
+  immutable: process.env.NODE_ENV === 'production',
+  maxAge: process.env.NODE_ENV === 'production' ? '365d' : 0
+}));
+
+/**
+ * Everything else that is a real file: fonts, icons, the stylesheets and
+ * scripts the server-rendered pages still use, the manifest and the worker.
+ *
+ * index:false matters now — without it this would answer / with the old
+ * public/index.html and the application would never be reached.
+ */
 app.use(express.static(PUBLIC, {
+  index: false,
   extensions: ['html'],
   setHeaders: process.env.NODE_ENV === 'production'
     ? cacheHeaders
     : (res) => res.setHeader('Cache-Control', 'no-store')
 }));
 
-const PAGES = {
-  '/': 'index.html',
-  '/login': 'pages/login.html',
-  '/app': 'pages/app.html',
-  '/dashboard': 'pages/dashboard.html',
-  '/history': 'pages/history.html',
-  '/analysis': 'pages/analysis.html',
-  '/settings': 'pages/settings.html',
-  '/admin': 'pages/admin.html',
-  '/guide': 'pages/guide.html',
-  '/about': 'pages/about.html',
-  '/verify': 'pages/verify.html'
-};
-for (const [route, file] of Object.entries(PAGES)) {
-  app.get(route, (_req, res) => {
-    res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(path.join(PUBLIC, file));
-  });
-}
+// Ships with the bundle, so it is not under public/ — but the worker asks for
+// it by an absolute path, so it needs one here.
+app.get('/offline.html', (_req, res) => {
+  noCache(res);
+  res.sendFile(path.join(CLIENT, 'offline.html'));
+});
+
+// The one page not yet ported: the link in a verification email lands here.
+app.get('/verify', (_req, res) => {
+  noCache(res);
+  res.sendFile(path.join(PUBLIC, 'pages/verify.html'));
+});
+
+// Addresses the old product used for screens the app now owns.
+app.get(['/app', '/analysis'], (_req, res) => res.redirect(301, '/'));
 
 /**
- * Client-side routes under /v2 fall back to the bundle's own index.html.
+ * The application's own routes.
  *
- * The React app routes in the browser, so /v2/history exists only once its
- * JavaScript is running. Without this, a reload or a shared link on any route
- * but the root hits the static handler, finds no such file, and lands on the
- * 404 page — the classic single-page-app deployment bug, and one that only
- * shows up after someone refreshes.
+ * The React app routes in the browser, so /history exists only once its
+ * JavaScript is running — a reload or a shared link has to be answered with
+ * the shell or it lands on the 404 page. That is the classic single-page-app
+ * deployment bug and it only shows up after someone refreshes.
  *
- * Placed after express.static so real files still win, and it never answers
- * for an asset path: a mistyped bundle URL should fail as a 404, not quietly
- * return HTML that the browser then refuses as a script.
+ * Listed explicitly rather than served by a catch-all. A catch-all answers
+ * *everything* with the shell, which quietly turns two things into lies: an
+ * unpublished analysis at /a/<slug> stops being a 404 and starts being the
+ * app, and so does every mistyped address. Both were caught by the tests the
+ * moment the catch-all went in.
+ *
+ * The cost is that this list has to grow when a route is added to the router.
+ * That is a small, visible coupling, and the alternative is a site with no
+ * 404s at all.
  */
-app.get(/^\/v2(\/.*)?$/, (req, res, next) => {
-  if (req.path.startsWith('/v2/assets/')) return next();
-  const shell = path.join(PUBLIC, 'v2', 'index.html');
+const APP_ROUTES = [
+  '/login', '/history', '/explore', '/guide', '/dashboard', '/settings', '/admin'
+];
+
+function isAppRoute(pathname) {
+  if (pathname === '/') return true;
+  return APP_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
+}
+
+app.get('*', (req, res, next) => {
+  if (!isAppRoute(req.path)) return next();
+  const shell = path.join(CLIENT, 'index.html');
   if (!fs.existsSync(shell)) return next();
   // sendFile does not run the static middleware's header hook, so the shell
   // would otherwise go out with no policy at all and be heuristically cached.
-  res.setHeader('Cache-Control', 'no-cache');
+  noCache(res);
   res.sendFile(shell);
 });
 

@@ -19,7 +19,10 @@
       document, and replaying one from a cache would repeat it.
    ========================================================================== */
 
-const VERSION = 'v2';
+// v3: the app moved from /v2/ to the root, so every path this worker had
+// cached — the shell, the offline page, every asset — points at an address
+// that now only redirects. Bumping the key is what makes activate drop them.
+const VERSION = 'v3';
 const SHELL = `ethiclens-shell-${VERSION}`;
 const ASSETS = `ethiclens-assets-${VERSION}`;
 
@@ -58,7 +61,7 @@ const PRECACHE = [
   // the product is trying to look deliberate rather than broken.
   '/css/fonts.css',
   '/icons/icon-192.png',
-  '/v2/offline.html'
+  '/offline.html'
 ];
 
 self.addEventListener('install', (event) => {
@@ -102,7 +105,7 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).catch(async () =>
-        (await caches.match('/v2/offline.html')) ||
+        (await caches.match('/offline.html')) ||
         new Response('آفلاین', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
       )
     );
@@ -111,7 +114,7 @@ self.addEventListener('fetch', (event) => {
 
   // Build assets carry a content hash in the filename, so a hit is always the
   // right file and can be served from cache without checking the network.
-  const immutable = url.pathname.startsWith('/v2/assets/') ||
+  const immutable = url.pathname.startsWith('/assets/') ||
                     url.pathname.startsWith('/fonts/') ||
                     url.pathname.startsWith('/icons/');
 

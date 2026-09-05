@@ -36,9 +36,9 @@ const AdminAudit      = lazy(() => import('@/pages/admin/Audit'));
 /**
  * Shell and routing.
  *
- * basename is /v2 because the bundle is served from there while the current
- * product still owns the root. Without it every route would resolve one level
- * up and land on the old pages.
+ * No basename: the application is served from the domain root now. The pages
+ * that stay server-rendered — the landing page, the encyclopedia, the
+ * published analyses — have their own addresses and never reach the router.
  */
 export default function App() {
   const [state, setState] = useState({ loading: true, user: null });
@@ -84,7 +84,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter basename="/v2">
+    <BrowserRouter>
       <AppShell user={state.user} onSignedOut={() => setState({ loading: false, user: null })}>
         <Routes>
           <Route path="/" element={<AnalyzeOrResult meta={meta} />} />
