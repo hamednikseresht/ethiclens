@@ -172,12 +172,6 @@ app.get('/offline.html', (_req, res) => {
   res.sendFile(path.join(CLIENT, 'offline.html'));
 });
 
-// The one page not yet ported: the link in a verification email lands here.
-app.get('/verify', (_req, res) => {
-  noCache(res);
-  res.sendFile(path.join(PUBLIC, 'pages/verify.html'));
-});
-
 // Addresses the old product used for screens the app now owns.
 app.get(['/app', '/analysis'], (_req, res) => res.redirect(301, '/'));
 
@@ -200,7 +194,7 @@ app.get(['/app', '/analysis'], (_req, res) => res.redirect(301, '/'));
  * 404s at all.
  */
 const APP_ROUTES = [
-  '/login', '/history', '/explore', '/guide', '/dashboard', '/settings', '/admin'
+  '/login', '/history', '/explore', '/guide', '/dashboard', '/settings', '/admin', '/verify'
 ];
 
 function isAppRoute(pathname) {

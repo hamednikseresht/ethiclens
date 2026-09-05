@@ -10,6 +10,7 @@ import Explore from '@/pages/Explore';
 import Guide from '@/pages/Guide';
 import Settings from '@/pages/Settings';
 import Dashboard from '@/pages/Dashboard';
+import Verify from '@/pages/Verify';
 import { LazyRoute } from '@/components/LazyRoute';
 
 /**
@@ -56,6 +57,8 @@ export default function App() {
     if (state.user?.status === 'active') api.get('/api/analyze/meta').then(setMeta).catch(() => {});
   }, [state.user]);
 
+  const signIn = (user) => setState({ loading: false, user });
+
   if (state.loading) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
@@ -64,8 +67,27 @@ export default function App() {
     );
   }
 
+  /**
+   * One route sits outside the sign-in gate.
+   *
+   * A verification link arrives in a mailbox, which may well be opened on a
+   * device that has never signed in — so /verify has to answer before the
+   * gate, or the link lands on a login form and the token is never spent.
+   * Checked here rather than as a route because the gate below returns
+   * before any router exists.
+   */
+  if (location.pathname === '/verify') {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/verify" element={<Verify onSignedIn={signIn} />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
   if (!state.user) {
-    return <Login onSignedIn={(user) => setState({ loading: false, user })} />;
+    return <Login onSignedIn={signIn} />;
   }
 
   // The approval gate is the server's rule, mirrored here so a pending user

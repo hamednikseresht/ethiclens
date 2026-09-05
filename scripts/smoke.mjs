@@ -509,7 +509,7 @@ console.log('\n── تأیید ایمیل ──');
   check('توکن خالی رد می‌شود', noToken.status === 400 && noToken.data.reason === 'missing');
 
   const page = await req('/verify');
-  check('صفحه /verify سرو می‌شود', page.status === 200 && /تأیید/.test(String(page.data)));
+  check('صفحه /verify سرو می‌شود', page.status === 200 && /id="root"/.test(String(page.data)));
   check('صفحه /verify نباید ایندکس شود', /noindex/.test(String(page.data)));
 }
 
