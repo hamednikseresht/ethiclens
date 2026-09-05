@@ -60,7 +60,7 @@
 
   /* ---- Type ---- */
   --font-ui:      'Shabnam', system-ui, -apple-system, Tahoma, sans-serif;
-  --font-display: 'Markazi Text', Georgia, serif;
+  --font-display: 'Shabnam', system-ui, Tahoma, sans-serif;
 
   /* ---- Safe areas ---- */
   --safe-top:    env(safe-area-inset-top, 0px);

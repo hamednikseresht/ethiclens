@@ -5,9 +5,10 @@
  * fetches the pre-cache list, and doing that while the page is still painting
  * competes with the very assets the person is waiting for.
  *
- * The scope is the root, which is where the app lives now. That includes the
- * server-rendered pages, and it should: they are same-origin GET documents,
- * and the worker's own rules already send every navigation to the network.
+ * The scope is /app/, which is exactly what the installed app covers. The
+ * homepage and the public pages are outside it on purpose: they are plain
+ * server-rendered documents that the browser and the CDN can cache on their
+ * own, and a worker in front of them would only add a layer to go wrong.
  */
 
 export function registerServiceWorker() {
@@ -15,7 +16,7 @@ export function registerServiceWorker() {
   if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
 
   const register = () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    navigator.serviceWorker.register('/sw.js', { scope: '/app/' })
       .then(retireOldScope)
       .catch(err => console.warn('[pwa] registration failed:', err.message));
   };
@@ -29,7 +30,7 @@ export function registerServiceWorker() {
   const retireOldScope = async () => {
     try {
       for (const reg of await navigator.serviceWorker.getRegistrations()) {
-        if (reg.scope.endsWith('/v2/')) await reg.unregister();
+        if (!reg.scope.endsWith('/app/')) await reg.unregister();
       }
     } catch { /* nothing here is worth breaking startup over */ }
   };
