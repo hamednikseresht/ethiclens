@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
 import helmet from 'helmet';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +16,7 @@ import { router as analyzeRouter } from './routes/analyze.js';
 import { router as historyRouter } from './routes/history.js';
 import { router as adminRouter } from './routes/admin.js';
 import { router as publicRouter } from './routes/public.js';
+import { withNonce } from './services/seo.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -41,11 +43,34 @@ const GA_CONNECT = ['https://www.google-analytics.com', 'https://analytics.googl
 const GA_IMG     = ['https://www.google-analytics.com', 'https://*.google-analytics.com',
                     'https://www.googletagmanager.com'];
 
+/**
+ * A per-request nonce for the inline scripts.
+ *
+ * The policy used to carry 'unsafe-inline' for scripts, which is the one
+ * directive that undoes most of what a CSP is for: it permits any injected
+ * <script> as readily as our own. It was there because the server-rendered
+ * pages each boot from an inline module and because the structured-data
+ * blocks are inline too.
+ *
+ * The application never needed it — its shell loads everything by src — so
+ * the only cost of removing it is stamping a nonce onto the handful of inline
+ * scripts the other half of the site emits. renderHtml() in the public router
+ * does that to every response it sends.
+ */
+app.use((_req, res, next) => {
+  res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", ...GA_SCRIPT],
+      scriptSrc: [
+        "'self'",
+        (_req, res) => `'nonce-${res.locals.cspNonce}'`,
+        ...GA_SCRIPT
+      ],
       // Fonts are served from this origin now, so Google's hosts are gone
       // from the policy rather than left as entries nothing uses.
       styleSrc: ["'self'", "'unsafe-inline'"],
@@ -212,7 +237,16 @@ app.get('*', (req, res, next) => {
   res.sendFile(shell);
 });
 
-app.use((_req, res) => res.status(404).sendFile(path.join(PUBLIC, 'pages/404.html')));
+// Read rather than sendFile: this page boots from an inline script, which
+// needs the request's nonce stamped into it or it will not run.
+app.use((_req, res) => {
+  const file = path.join(PUBLIC, 'pages/404.html');
+  let html;
+  try { html = fs.readFileSync(file, 'utf8'); }
+  catch { return res.status(404).type('text/plain').send('صفحه پیدا نشد.'); }
+  noCache(res);
+  res.status(404).type('html').send(withNonce(html, res.locals.cspNonce));
+});
 
 app.use((err, _req, res, _next) => {
   console.error('[error]', err);

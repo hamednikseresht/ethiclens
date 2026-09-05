@@ -283,3 +283,21 @@ export function injectHead(html, headHtml) {
 
   return stripped.replace('</head>', `${headHtml}\n</head>`);
 }
+
+/**
+ * Stamp the request's CSP nonce onto every inline script in a document.
+ *
+ * The policy names a nonce instead of allowing inline scripts wholesale, so a
+ * script without one does not run — silently, which is the failure mode to
+ * watch for. Applied to the whole document at the point of sending rather
+ * than to each template, because one missed template is a page that boots to
+ * a blank top bar and says nothing about why.
+ *
+ * Scripts with a src are given one too. They do not need it, and it costs a
+ * few bytes, but the alternative is a regex that has to reason about
+ * attribute order to tell them apart.
+ */
+export function withNonce(html, nonce) {
+  if (!nonce) return html;
+  return html.replace(/<script(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
+}
