@@ -428,7 +428,7 @@ tbody tr:hover{background:var(--bg-subtle)}
 /* ---------- Publish state and sharing ----------
    Moved here from public.css: the publish strip is shown both on the
    analysis page and on the bar that appears the moment an analysis
-   finishes, and app.html does not load public.css. */
+   finishes, and the analysis page did not load public.css. */
 .pub-state{
   display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;
   background:var(--success-soft);border:1px solid var(--success);

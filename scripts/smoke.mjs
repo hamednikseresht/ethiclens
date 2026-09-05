@@ -71,7 +71,6 @@ for (const [path, needle] of [
   ['/about', 'علی مهبودی'],
   ['/css/app.css', '--bg-body'],
   ['/js/core.js', 'export'],
-  ['/js/result.js', 'buildSkeleton'],
   ['/css/result.css', '.school'],
   ['/css/motion.css', 'prefers-reduced-motion'],
   ['/js/motion.js', 'revealOnScroll']

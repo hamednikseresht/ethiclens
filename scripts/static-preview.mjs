@@ -31,18 +31,13 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json'
 };
 
-// Same route table as server/index.js, so the URLs match the real app.
+// The pages still rendered on the server, at the addresses server/index.js
+// serves them from. The application itself is a Vite build — preview it with
+// `npm run dev:client`, not from here.
 const PAGES = {
-  '/': 'index.html',
-  '/login': 'pages/login.html',
-  '/app': 'pages/app.html',
-  '/dashboard': 'pages/dashboard.html',
-  '/history': 'pages/history.html',
-  '/analysis': 'pages/analysis.html',
-  '/settings': 'pages/settings.html',
-  '/admin': 'pages/admin.html',
-  '/guide': 'pages/guide.html',
-  '/about': 'pages/about.html',
+  '/intro':  'index.html',
+  '/g':      'pages/guide.html',
+  '/about':  'pages/about.html',
   '/verify': 'pages/verify.html'
 };
 
