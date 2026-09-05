@@ -131,10 +131,15 @@ function AccountSheet({ user, pendingUsers, onClose, onSignedOut }) {
   };
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end bg-foreground/40"
+    // Same shape as the form sheets: pinned to the bottom edge on a phone,
+    // a centred dialog with its own width from md up.
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-foreground/40
+                    md:items-center md:p-6"
          onClick={onClose}>
-      <div className="w-full rounded-t-2xl bg-card p-5 pb-8"
-           style={{ boxShadow: '0 -8px 24px rgba(28,25,23,.10)' }}
+      <div className="w-full rounded-t-2xl bg-card p-5 pb-8
+                      shadow-[0_-8px_24px_rgba(28,25,23,.10)]
+                      md:max-w-sm md:rounded-2xl md:pb-5
+                      md:shadow-[0_12px_40px_rgba(28,25,23,.18)]"
            onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-start gap-3">
           <span className="grid size-11 place-items-center rounded-full bg-muted text-sm font-bold">
