@@ -7,7 +7,6 @@ import Analyze from '@/pages/Analyze';
 import Result from '@/pages/Result';
 import History from '@/pages/History';
 import Explore from '@/pages/Explore';
-import Guide from '@/pages/Guide';
 import Settings from '@/pages/Settings';
 import Dashboard from '@/pages/Dashboard';
 import Verify from '@/pages/Verify';
@@ -22,6 +21,10 @@ import { PageViews } from '@/lib/analytics';
  * all of it to reach the analysis page. Each section is its own chunk, so
  * opening one section does not pull the other ten either.
  */
+// The encyclopedia is the largest single page in the app and one tab of
+// five reaches it, so it travels in its own chunk too.
+const Guide           = lazy(() => import('@/pages/Guide'));
+
 const AdminLayout     = lazy(() => import('@/pages/admin/AdminLayout'));
 const AdminOverview   = lazy(() => import('@/pages/admin/Overview'));
 const AdminAi         = lazy(() => import('@/pages/admin/Ai'));
@@ -114,7 +117,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<AnalyzeOrResult meta={meta} />} />
           <Route path="/history" element={<History />} />
-          <Route path="/guide" element={<Guide />} />
+          <Route path="/guide" element={<LazyRoute><Guide /></LazyRoute>} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/dashboard" element={<Dashboard user={state.user} />} />
           <Route path="/settings" element={
