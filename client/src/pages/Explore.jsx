@@ -9,11 +9,11 @@ import { Search, Globe, Eye, ExternalLink } from 'lucide-react';
 /**
  * Analyses other people have published.
  *
- * Each card leaves the app for /a/<slug>, the server-rendered page. That is
- * deliberate: those pages are the ones search engines read, they render
- * without JavaScript, and they are already the canonical address anyone would
- * share. Re-implementing them inside the bundle would produce a second URL
- * for the same text and split whatever authority it earns.
+ * Each card leaves the app for /a/<category>/<slug>, the server-rendered
+ * page. That is deliberate: those pages are the ones search engines read,
+ * they render without JavaScript, and they are already the canonical address
+ * anyone would share. Re-implementing them inside the bundle would produce a
+ * second URL for the same text and split whatever authority it earns.
  *
  * What this page adds over that crawled list is search and a category filter,
  * which a static page cannot offer.
@@ -152,7 +152,7 @@ function Chip({ active, onClick, children }) {
  */
 function Card({ item }) {
   return (
-    <a href={`/a/${encodeURIComponent(item.slug)}`}
+    <a href={`/a/${item.category?.slug || 'public'}/${encodeURIComponent(item.slug)}`}
        className="block rounded-xl border border-border bg-card p-4 transition-colors hover:bg-subtle">
       {item.category && (
         <span className="mb-2 inline-block rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold text-primary">

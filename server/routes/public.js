@@ -9,11 +9,12 @@ import {
   metaDescription, publishedAnalyses, publishedCount, findBySlug,
   siteJsonLd, breadcrumbJsonLd, injectHead, withNonce
 } from '../services/seo.js';
-import { renderAnalysis, verdictChips, faNum, splitVerdict } from '../services/render-analysis.js';
+import { renderAnalysis, verdictChips, faNum, splitVerdict, md } from '../services/render-analysis.js';
 import { guideContent } from '../services/guide.js';
 import {
   getCategory, getCategoryBySlug, listCategories, readTags,
-  analysesInCategory, countInCategory
+  analysesInCategory, countInCategory, browsableCategories,
+  resolveCategory, categoryPathFor, PUBLIC_CATEGORY
 } from '../services/categories.js';
 
 export const router = express.Router();
@@ -163,9 +164,39 @@ function countView(id, req) {
 /* ==========================================================================
    A published analysis page
    ========================================================================== */
+/**
+ * The address published analyses used before the category went into the path.
+ * Anything already shared points here, so it moves rather than breaking.
+ */
 router.get('/a/:slug', (req, res, next) => {
   const row = findBySlug(req.params.slug);
   if (!row) return next();
+  res.redirect(301, `/a/${categoryPathFor(row)}/${encodeURIComponent(row.slug)}`);
+});
+
+/**
+ * A published analysis, at /a/<category>/<slug>.
+ *
+ * The category is in the path because a reader seeing the address should be
+ * able to tell what kind of thing it is, and because it gives every article a
+ * parent that is a real page rather than a flat pile.
+ *
+ * An analysis with no category — anything a member published — sits under the
+ * members' shelf, so every article has a category segment and there is no
+ * second shape of address to handle.
+ */
+router.get('/a/:category/:slug', (req, res, next) => {
+  const row = findBySlug(req.params.slug);
+  if (!row) return next();
+
+  // The slug is what identifies the analysis; the category segment is there
+  // for the reader. If it does not match — a stale link, or a hand-edited
+  // address — redirect to the right one rather than serving the same article
+  // at two addresses.
+  const correct = categoryPathFor(row);
+  if (req.params.category !== correct) {
+    return res.redirect(301, `/a/${correct}/${encodeURIComponent(row.slug)}`);
+  }
 
   let sections = {};
   try { sections = JSON.parse(row.sections) || {}; } catch { /* no sections */ }
@@ -180,7 +211,7 @@ router.get('/a/:slug', (req, res, next) => {
   const description = row.public_summary?.trim()
     || metaDescription(sections.reframe || row.dilemma);
   const author = row.public_author?.trim() || '';
-  const path = `/a/${encodeURIComponent(row.slug)}`;
+  const path = `/a/${categoryPathFor(row)}/${encodeURIComponent(row.slug)}`;
   const url = absoluteUrl(req, path);
 
   countView(row.id, req);
@@ -232,6 +263,17 @@ router.get('/a/:slug', (req, res, next) => {
     breadcrumb ? `<script type="application/ld+json">${jsonLd(breadcrumb)}</script>` : ''
   ].filter(Boolean).join('\n');
 
+  /* ---- The options, above the fold ----
+     What a reader wants first is what was actually being chosen between.
+     It sits in phase two of the document, a long way down, so it is lifted
+     here and omitted from its usual place — the same list twice in one
+     article reads worse than either position on its own. */
+  const optionsBlock = sections.options ? `
+      <section class="pub-options">
+        <h2>گزینه‌هایی که سنجیده شده</h2>
+        <div class="prose">${md(sections.options)}</div>
+      </section>` : '';
+
   const rec = sections.recommendation
     ? `<div class="pub-lead"><strong>خلاصه پیشنهاد:</strong> ${esc(metaDescription(sections.recommendation, { max: 260 }))}</div>`
     : '';
@@ -255,6 +297,7 @@ ${publicNav()}
         ${verdictChips(sections)}
       </div>
       ${rec}
+      ${optionsBlock}
       <details class="pub-dilemma">
         <summary>متن دوراهی که تحلیل شده است</summary>
         <div class="result-dilemma">${esc(row.dilemma)}</div>
@@ -262,7 +305,7 @@ ${publicNav()}
       ${tags.length ? `<div class="pub-tags">${tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
     </div>
 
-    ${renderAnalysis(sections)}
+    ${renderAnalysis(sections, { omit: ['options'] })}
 
     <div class="disclaimer">
       این تحلیل با کمک یک مدل زبانی تولید شده و می‌تواند خطا داشته باشد.
@@ -304,7 +347,7 @@ router.get('/p', (req, res) => {
     itemListElement: items.map((it, i) => ({
       '@type': 'ListItem',
       position: (page - 1) * perPage + i + 1,
-      url: absoluteUrl(req, `/a/${encodeURIComponent(it.slug)}`),
+      url: absoluteUrl(req, `/a/${it.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIComponent(it.slug)}`),
       name: (it.public_title || it.title).slice(0, 110)
     }))
   } : null;
@@ -324,7 +367,7 @@ router.get('/p', (req, res) => {
     let ctx = {}; try { ctx = JSON.parse(it.context || '{}'); } catch {}
     return `
       <article class="pub-card">
-        <a class="pub-card-title" href="/a/${encodeURIComponent(it.slug)}">${esc(it.public_title || it.title)}</a>
+        <a class="pub-card-title" href="/a/${it.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIComponent(it.slug)}">${esc(it.public_title || it.title)}</a>
         <p class="pub-card-sum">${esc(summary)}</p>
         <div class="pub-card-foot">
           ${ctx.domain ? `<span class="badge">${esc(ctx.domain)}</span>` : ''}
@@ -337,7 +380,7 @@ router.get('/p', (req, res) => {
       <div class="empty-icon">🌱</div>
       <h3>هنوز تحلیلی منتشر نشده است</h3>
       <p>کاربران می‌توانند تحلیل‌هایشان را به‌صورت عمومی منتشر کنند. اولین نفر باشید.</p>
-      <a class="btn btn-primary" href="/app">شروع تحلیل</a>
+      <a class="btn btn-primary" href="/">شروع تحلیل</a>
     </div></div>`;
 
   const pager = pages > 1 ? `
@@ -345,6 +388,24 @@ router.get('/p', (req, res) => {
       ${page > 1 ? `<a class="btn btn-sm" rel="prev" href="${page === 2 ? '/p' : `/p?page=${page - 1}`}">قبلی</a>` : ''}
       <span class="hint">صفحه ${faNum(page)} از ${faNum(pages)}</span>
       ${page < pages ? `<a class="btn btn-sm" rel="next" href="/p?page=${page + 1}">بعدی</a>` : ''}
+    </nav>` : '';
+
+  /* ---- The shelves ----
+     A reader arriving here wants a subject before a list, so the categories
+     come first and the recent posts follow. Only shelves with something on
+     them appear: an empty category is a dead end for a reader and a thin
+     page for a crawler. They are hidden entirely on page two and beyond,
+     where someone is already reading a list and does not need the index
+     repeated above it. */
+  const shelves = browsableCategories();
+  const shelfCards = page === 1 && shelves.length ? `
+    <nav class="cat-grid" aria-label="دسته‌بندی‌ها">
+      ${shelves.map(c => `
+        <a class="cat-card" href="/c/${esc(c.slug)}">
+          <span class="cat-card-title">${esc(c.title)}</span>
+          ${c.description ? `<span class="cat-card-desc">${esc(c.description)}</span>` : ''}
+          <span class="cat-card-count">${faNum(c.published)} تحلیل</span>
+        </a>`).join('')}
     </nav>` : '';
 
   const body = `
@@ -359,6 +420,9 @@ ${publicNav()}
     ${total ? `<p class="hint">${faNum(total)} تحلیل منتشرشده</p>` : ''}
   </div>
 
+  ${shelfCards}
+
+  ${page === 1 && shelves.length ? '<h2 class="pub-sec">تازه‌ترین‌ها</h2>' : ''}
   <div class="pub-grid">${cards}</div>
   ${pager}
 </main>
@@ -417,9 +481,10 @@ router.get('/sitemap.xml', (req, res) => {
     const cats = listCategories().filter(c => c.published > 0);
 
   const posts = db.prepare(`
-    SELECT slug, published_at, created_at FROM analyses
-    WHERE is_public = 1 AND slug IS NOT NULL AND status IN ('done','partial')
-    ORDER BY published_at DESC LIMIT 20000`).all();
+    SELECT a.slug, a.published_at, a.created_at, c.slug AS category_slug
+    FROM analyses a LEFT JOIN categories c ON c.id = a.category_id
+    WHERE a.is_public = 1 AND a.slug IS NOT NULL AND a.status IN ('done','partial')
+    ORDER BY a.published_at DESC LIMIT 20000`).all();
 
   const url = (loc, lastmod, freq, priority) =>
     `  <url>
@@ -432,7 +497,7 @@ router.get('/sitemap.xml', (req, res) => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${statics.map(s => url(s.loc, null, s.freq, s.priority)).join('\n')}
 ${cats.map(c => url('/c/' + c.slug, null, 'weekly', '0.8')).join('\n')}
-${posts.map(p => url(`/a/${encodeURIComponent(p.slug)}`,
+${posts.map(p => url(`/a/${p.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIComponent(p.slug)}`,
     isoDate(p.published_at || p.created_at), 'monthly', '0.7')).join('\n')}
 </urlset>`;
 
@@ -529,7 +594,7 @@ for (const [route, page] of Object.entries(SEO_PAGES)) {
    address that can be linked to and indexed on its own.
    ========================================================================== */
 router.get('/c/:slug', (req, res, next) => {
-  const cat = getCategoryBySlug(req.params.slug);
+  const cat = resolveCategory(req.params.slug);
   if (!cat) return next();
 
   const perPage = 12;
@@ -569,7 +634,7 @@ router.get('/c/:slug', (req, res, next) => {
           '@type': 'ListItem',
           position: (page - 1) * perPage + i + 1,
           name: a.h1?.trim() || a.public_title?.trim() || a.title,
-          url: absoluteUrl(req, `/a/${encodeURIComponent(a.slug)}`)
+          url: absoluteUrl(req, `/a/${cat.slug}/${encodeURIComponent(a.slug)}`)
         }))
       }
     })}</script>`
@@ -580,7 +645,7 @@ router.get('/c/:slug', (req, res, next) => {
     const tags = readTags(a.tags);
     return `
       <article class="pub-card">
-        <h2><a href="/a/${encodeURIComponent(a.slug)}">${esc(t)}</a></h2>
+        <h2><a href="/a/${cat.slug}/${encodeURIComponent(a.slug)}">${esc(t)}</a></h2>
         <p>${esc(a.public_summary || '')}</p>
         <div class="pub-card-meta">
           ${a.published_at ? `<span>${esc(faDate(a.published_at))}</span>` : ''}

@@ -3,7 +3,7 @@ import { db } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { uniqueSlug, metaDescription } from '../services/seo.js';
 import { audit } from '../db.js';
-import { parseTags, readTags, listCategories } from '../services/categories.js';
+import { parseTags, readTags, listCategories, categoryPathFor } from '../services/categories.js';
 
 export const router = express.Router();
 router.use(requireAuth);
@@ -214,7 +214,8 @@ router.post('/:id/publish', (req, res) => {
            category_id, seo_title, h1, tags, views
     FROM analyses WHERE id = ?`).get(row.id);
 
-  res.json({ ok: true, isPublic: true, url: `/a/${encodeURIComponent(slug)}`,
+  res.json({ ok: true, isPublic: true,
+             url: `/a/${categoryPathFor(out)}/${encodeURIComponent(slug)}`,
              ...out, tags: readTags(out.tags) });
 });
 
