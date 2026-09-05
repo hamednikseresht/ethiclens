@@ -6,6 +6,7 @@ import Login from '@/pages/Login';
 import Analyze from '@/pages/Analyze';
 import Result from '@/pages/Result';
 import History from '@/pages/History';
+import Guide from '@/pages/Guide';
 
 /**
  * Shell and routing.
@@ -63,11 +64,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<AnalyzeOrResult meta={meta} />} />
           <Route path="/history" element={<History />} />
-          {/* The public and guide pages are still served the old way; sending
-              people there keeps the tab useful instead of dead until they
-              are ported. */}
+          <Route path="/guide" element={<Guide />} />
+          {/* The public page is still served the old way; sending people
+              there keeps the tab useful instead of dead until it is ported. */}
           <Route path="/explore" element={<Leave to="/explore" />} />
-          <Route path="/guide"   element={<Leave to="/guide" />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
