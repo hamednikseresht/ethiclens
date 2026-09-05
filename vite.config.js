@@ -17,8 +17,10 @@ import path from 'node:path';
 export default defineConfig({
   root: 'client',
 
-  // The app is the site now, so assets are requested from the domain root.
-  base: '/',
+  // The application is served from /app, so its asset URLs carry that
+  // prefix. The root belongs to the homepage and the pages a visitor reads
+  // before signing in.
+  base: '/app/',
 
   plugins: [react(), tailwindcss()],
 

@@ -193,7 +193,7 @@ check('تگ تکراری حذف شد', new Set(tags.map(t => t.toLowerCase())).s
 /* ================= The published page ================= */
 section('صفحه منتشرشده');
 
-const pageRes = await fetch(`${BASE}/a/${encodeURIComponent(stored.slug)}`);
+const pageRes = await fetch(`${BASE}/analysis/${stored.category_slug || 'public'}/${encodeURIComponent(stored.slug)}`);
 const html = await pageRes.text();
 check('صفحه سرو می‌شود', pageRes.status === 200, `status ${pageRes.status}`);
 check('عنوان سئو در تگ title است', /<title>عنوان سئوی متفاوت<\/title>/.test(html));
@@ -214,7 +214,7 @@ check('تحلیل منتشرشده فهرست شده', catHtml.includes(stored.s
 check('CollectionPage اعلام شده', catHtml.includes('"@type":"CollectionPage"'));
 
 const sm = await (await fetch(`${BASE}/sitemap.xml`)).text();
-check('دسته در نقشه سایت آمده', sm.includes(`/c/${cat.slug}`));
+check('دسته در نقشه سایت آمده', sm.includes(`/category/${cat.slug}`));
 
 const missing = await fetch(`${BASE}/c/does-not-exist-${stamp}`);
 check('دسته ناموجود ۴۰۴ می‌دهد', missing.status === 404, `status ${missing.status}`);

@@ -24,7 +24,7 @@ export default function Dashboard({ user }) {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-xl px-5 py-10">
+      <div className="mx-auto max-w-xl md:max-w-4xl px-5 py-10">
         <p className="rounded-xl border border-destructive/30 bg-destructive-soft p-4 text-sm text-destructive">
           {error}
         </p>
@@ -33,7 +33,7 @@ export default function Dashboard({ user }) {
   }
 
   return (
-    <div className="mx-auto max-w-xl px-5 pb-6 pt-6">
+    <div className="mx-auto max-w-xl md:max-w-4xl px-5 pb-6 pt-6">
       <h1 className="display mb-1 text-[30px] font-semibold leading-tight">
         سلام {user?.name?.split(' ')[0] || ''}
       </h1>

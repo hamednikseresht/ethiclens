@@ -120,11 +120,11 @@ export async function loadSession() {
 /** Redirect to the login page when the user is not signed in */
 export function requireUser(adminOnly = false) {
   if (!state.user) {
-    location.replace('/login?next=' + encodeURIComponent(location.pathname + location.search));
+    location.replace('/app/login?next=' + encodeURIComponent(location.pathname + location.search));
     return false;
   }
   if (adminOnly && state.user.role !== 'admin') {
-    location.replace('/dashboard');
+    location.replace('/app/dashboard');
     return false;
   }
   return true;
@@ -184,9 +184,9 @@ export function md(src) {
 
 /* ---------------- Page shell (top bar) ---------------- */
 const NAV = [
-  { href: '/',          label: 'تحلیل تازه' },
-  { href: '/dashboard', label: 'داشبورد' },
-  { href: '/history',   label: 'تاریخچه' },
+  { href: '/app',           label: 'تحلیل تازه' },
+  { href: '/app/dashboard', label: 'داشبورد' },
+  { href: '/app/history',   label: 'تاریخچه' },
   { href: '/explore',   label: 'تحلیل‌های عمومی' },
   { href: '/guide',     label: 'دانشنامه' },
   { href: '/about',     label: 'درباره ما' }
@@ -202,8 +202,8 @@ const NAV = [
  * get a login form instead of the page they were promised.
  */
 const PUBLIC_NAV = [
-  { href: '/p',     label: 'تحلیل‌های عمومی' },
-  { href: '/g',     label: 'دانشنامه' },
+  { href: '/explore', label: 'تحلیل‌های عمومی' },
+  { href: '/guide',   label: 'دانشنامه' },
   { href: '/about', label: 'درباره ما' }
 ];
 
@@ -284,7 +284,7 @@ export function renderTopbar(activePath) {
   ).join('');
 
   const adminLink = u?.role === 'admin'
-    ? `<a href="/admin" class="${path === '/admin' ? 'active' : ''}">مدیریت</a>` : '';
+    ? `<a href="/app/admin" class="${path === '/app/admin' ? 'active' : ''}">مدیریت</a>` : '';
 
   const right = u
     ? `${approved ? '' : '<span class="badge badge-warn tb-pending">در انتظار تأیید</span>'}
@@ -327,8 +327,8 @@ export function renderTopbar(activePath) {
           <strong>${esc(u.name)}</strong>
           <span>${esc(u.email)}</span>
         </div>
-        <a href="/settings">⚙️ تنظیمات حساب</a>
-        ${u.role === 'admin' ? '<a href="/admin">🛡️ پنل مدیریت</a>' : ''}
+        <a href="/app/settings">⚙️ تنظیمات حساب</a>
+        ${u.role === 'admin' ? '<a href="/app/admin">🛡️ پنل مدیریت</a>' : ''}
         <button id="logoutBtn">↩️ خروج از حساب</button>`;
       umBtn.parentElement.appendChild(pop);
       umBtn.setAttribute('aria-expanded', 'true');

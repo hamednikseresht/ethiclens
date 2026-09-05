@@ -34,13 +34,13 @@ export default function AdminLayout({ user }) {
 
   return (
     <div className="pb-6">
-      <header className="mx-auto max-w-xl px-5 pt-6">
+      <header className="mx-auto max-w-xl md:max-w-4xl px-5 pt-6">
         <h1 className="display text-[30px] font-semibold leading-tight">پنل مدیریت</h1>
       </header>
 
       <nav className="sticky z-10 mt-4 border-y border-border bg-background/95 backdrop-blur"
            style={{ top: 'calc(56px + env(safe-area-inset-top, 0px))' }}>
-        <div className="mx-auto flex max-w-xl gap-1.5 overflow-x-auto px-5 py-2
+        <div className="mx-auto flex max-w-xl md:max-w-4xl gap-1.5 overflow-x-auto px-5 py-2
                         [-ms-overflow-style:none] [scrollbar-width:none]
                         [&::-webkit-scrollbar]:hidden">
           {SECTIONS.map(s => (
@@ -59,7 +59,7 @@ export default function AdminLayout({ user }) {
           chunk, and suspending here keeps the heading and the section strip
           on screen while one loads. A boundary further out would blank the
           whole panel and make switching sections feel like a page load. */}
-      <div className="mx-auto max-w-xl px-5 pt-5">
+      <div className="mx-auto max-w-xl md:max-w-4xl px-5 pt-5">
         <LazyRoute>
           <Outlet />
         </LazyRoute>

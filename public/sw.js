@@ -19,10 +19,11 @@
       document, and replaying one from a cache would repeat it.
    ========================================================================== */
 
-// v3: the app moved from /v2/ to the root, so every path this worker had
-// cached — the shell, the offline page, every asset — points at an address
-// that now only redirects. Bumping the key is what makes activate drop them.
-const VERSION = 'v3';
+// v4: the app moved again — root to /app — so every cached path points
+// somewhere that now redirects, and the second typeface was dropped, so the
+// cache is also holding two font files nothing asks for. Bumping the key is
+// what makes activate drop the lot.
+const VERSION = 'v4';
 const SHELL = `ethiclens-shell-${VERSION}`;
 const ASSETS = `ethiclens-assets-${VERSION}`;
 
@@ -47,21 +48,19 @@ const MAX_ASSETS = 60;
  * an installed app look like itself while offline.
  */
 const PRECACHE = [
-  // All six faces, because the offline page and the app share them and a
+  // All four weights, because the offline page and the app share them and a
   // missing weight is synthesised by the browser — which on Persian text
   // looks like a different typeface, not like a slightly lighter one.
   '/fonts/Shabnam-Light.woff2',
   '/fonts/Shabnam.woff2',
   '/fonts/Shabnam-Medium.woff2',
   '/fonts/Shabnam-Bold.woff2',
-  '/fonts/MarkaziText-arabic.woff2',
-  '/fonts/MarkaziText-latin.woff2',
   // The offline page is plain HTML outside the bundle, so it carries its own
   // stylesheet; without this it renders in a fallback face at the one moment
   // the product is trying to look deliberate rather than broken.
   '/css/fonts.css',
   '/icons/icon-192.png',
-  '/offline.html'
+  '/app/offline.html'
 ];
 
 self.addEventListener('install', (event) => {
@@ -105,7 +104,7 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).catch(async () =>
-        (await caches.match('/offline.html')) ||
+        (await caches.match('/app/offline.html')) ||
         new Response('آفلاین', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
       )
     );
@@ -114,7 +113,7 @@ self.addEventListener('fetch', (event) => {
 
   // Build assets carry a content hash in the filename, so a hit is always the
   // right file and can be served from cache without checking the network.
-  const immutable = url.pathname.startsWith('/assets/') ||
+  const immutable = url.pathname.startsWith('/app/assets/') ||
                     url.pathname.startsWith('/fonts/') ||
                     url.pathname.startsWith('/icons/');
 

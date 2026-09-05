@@ -27,7 +27,7 @@ export default function Settings({ user, onUserChanged }) {
   }, []);
 
   return (
-    <div className="mx-auto max-w-xl px-5 pb-6 pt-6">
+    <div className="mx-auto max-w-xl md:max-w-4xl px-5 pb-6 pt-6">
       <h1 className="display mb-5 text-[30px] font-semibold leading-tight">تنظیمات حساب</h1>
 
       <div className="space-y-3">

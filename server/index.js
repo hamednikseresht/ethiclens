@@ -159,7 +159,10 @@ const noCache = (res) => res.setHeader('Cache-Control', 'no-cache');
  */
 app.get(/^\/v2(\/.*)?$/, (req, res) => {
   const rest = req.originalUrl.slice('/v2'.length);
-  res.redirect(301, rest || '/');
+  // Into the app, not the root — /v2 was the application, and the root is the
+  // homepage now. Sending it to / would land people on marketing copy when
+  // they asked for the screen they had bookmarked.
+  res.redirect(301, '/app' + (rest === '/' ? '' : rest));
 });
 
 /**
@@ -169,7 +172,7 @@ app.get(/^\/v2(\/.*)?$/, (req, res) => {
  * mean a different file — a year, never revalidated. They are mounted from
  * client-dist rather than public/ so each one has exactly one address.
  */
-app.use('/assets', express.static(path.join(CLIENT, 'assets'), {
+app.use('/app/assets', express.static(path.join(CLIENT, 'assets'), {
   index: false,
   immutable: process.env.NODE_ENV === 'production',
   maxAge: process.env.NODE_ENV === 'production' ? '365d' : 0
@@ -192,39 +195,67 @@ app.use(express.static(PUBLIC, {
 
 // Ships with the bundle, so it is not under public/ — but the worker asks for
 // it by an absolute path, so it needs one here.
-app.get('/offline.html', (_req, res) => {
+app.get('/app/offline.html', (_req, res) => {
   noCache(res);
   res.sendFile(path.join(CLIENT, 'offline.html'));
 });
 
-// Addresses the old product used for screens the app now owns.
-app.get(['/app', '/analysis'], (_req, res) => res.redirect(301, '/'));
+/**
+ * Addresses that moved, kept working.
+ *
+ * Two rounds of renaming produced these: the app went to the root and back
+ * out to /app, and the public pages went to single letters and back to names
+ * that say what they are. Every one of them has been live at some point, so
+ * every one of them redirects rather than 404s.
+ */
+const MOVED = {
+  '/intro': '/',              // the landing page is the root again
+  '/g': '/guide',             // single letters, briefly
+  '/p': '/explore',
+  // Screens the application owns, at the addresses the old product used.
+  '/login': '/app/login',
+  '/history': '/app/history',
+  '/dashboard': '/app/dashboard',
+  '/settings': '/app/settings',
+  '/admin': '/app/admin',
+  '/verify': '/app/verify'
+};
+
+for (const [from, to] of Object.entries(MOVED)) {
+  app.get(from, (req, res) => res.redirect(301, to + (req.url.slice(from.length) || '')));
+}
+
+// Prefixes, where the rest of the path is carried across.
+for (const [from, to] of [['/a', '/analysis'], ['/c', '/category']]) {
+  app.get(new RegExp(`^\\${from}/(.+)`), (req, res) =>
+    res.redirect(301, `${to}/${req.params[0]}`));
+}
+
+// Anything under the old admin or verify addresses, and the app's own
+// sub-paths, follow their parent.
+app.get(/^\/(admin|history|settings|dashboard)\/(.*)$/, (req, res) =>
+  res.redirect(301, `/app/${req.params[0]}/${req.params[1]}`));
 
 /**
- * The application's own routes.
+ * Everything under /app is the application.
  *
- * The React app routes in the browser, so /history exists only once its
+ * The React app routes in the browser, so /app/history exists only once its
  * JavaScript is running — a reload or a shared link has to be answered with
  * the shell or it lands on the 404 page. That is the classic single-page-app
  * deployment bug and it only shows up after someone refreshes.
  *
- * Listed explicitly rather than served by a catch-all. A catch-all answers
- * *everything* with the shell, which quietly turns two things into lies: an
- * unpublished analysis at /a/<slug> stops being a 404 and starts being the
- * app, and so does every mistyped address. Both were caught by the tests the
- * moment the catch-all went in.
- *
- * The cost is that this list has to grow when a route is added to the router.
- * That is a small, visible coupling, and the alternative is a site with no
- * 404s at all.
+ * One prefix rather than a list of routes. While the app owned the root, the
+ * two had to be enumerated and kept in step — a route added to the router and
+ * not to the list worked when clicked and 404'd when reloaded. Giving the app
+ * a prefix of its own removes the coupling: anything the router adds is
+ * already covered, and everything outside it still reaches a real 404.
  */
-const APP_ROUTES = [
-  '/login', '/history', '/explore', '/guide', '/dashboard', '/settings', '/admin', '/verify'
-];
-
 function isAppRoute(pathname) {
-  if (pathname === '/') return true;
-  return APP_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
+  // A missing bundle file must fail as a 404. Without this it reaches the
+  // fallback and comes back as HTML, which the browser then refuses as a
+  // script — a blank page whose only clue is a MIME-type error.
+  if (pathname.startsWith('/app/assets/')) return false;
+  return pathname === '/app' || pathname.startsWith('/app/');
 }
 
 app.get('*', (req, res, next) => {

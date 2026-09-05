@@ -43,7 +43,7 @@ export default function History() {
   }, [load, q]);
 
   return (
-    <div className="mx-auto max-w-xl px-5 pb-6 pt-6">
+    <div className="mx-auto max-w-xl md:max-w-4xl px-5 pb-6 pt-6">
       <h1 className="display mb-4 text-[30px] font-semibold leading-tight">تاریخچه</h1>
 
       <div className="relative mb-3">

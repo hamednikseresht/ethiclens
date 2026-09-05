@@ -60,7 +60,12 @@ router.get('/stats', (req, res) => {
 });
 
 router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM analyses WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
+  // Joined for the category slug: the result page links to the public
+  // address, and that carries the category as a path segment.
+  const row = db.prepare(`
+    SELECT a.*, c.slug AS category_slug
+    FROM analyses a LEFT JOIN categories c ON c.id = a.category_id
+    WHERE a.id = ? AND a.user_id = ?`).get(req.params.id, req.user.id);
   if (!row) return res.status(404).json({ error: 'تحلیل یافت نشد.' });
   res.json({
     ...row,
@@ -215,7 +220,7 @@ router.post('/:id/publish', (req, res) => {
     FROM analyses WHERE id = ?`).get(row.id);
 
   res.json({ ok: true, isPublic: true,
-             url: `/a/${categoryPathFor(out)}/${encodeURIComponent(slug)}`,
+             url: `/analysis/${categoryPathFor(out)}/${encodeURIComponent(slug)}`,
              ...out, tags: readTags(out.tags) });
 });
 
@@ -235,7 +240,12 @@ router.delete('/:id', (req, res) => {
 });
 
 router.get('/:id/export', (req, res) => {
-  const row = db.prepare('SELECT * FROM analyses WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
+  // Joined for the category slug: the result page links to the public
+  // address, and that carries the category as a path segment.
+  const row = db.prepare(`
+    SELECT a.*, c.slug AS category_slug
+    FROM analyses a LEFT JOIN categories c ON c.id = a.category_id
+    WHERE a.id = ? AND a.user_id = ?`).get(req.params.id, req.user.id);
   if (!row) return res.status(404).json({ error: 'تحلیل یافت نشد.' });
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="analysis-${row.id}.md"`);
