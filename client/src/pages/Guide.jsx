@@ -335,7 +335,15 @@ function LensCard({ lens, open, onToggle }) {
                   <div key={i} className="rounded-lg bg-subtle p-3">
                     <dt className="mb-0.5 text-[12.5px] font-bold">
                       {c.name}
-                      {c.term && <span className="ltr ms-1.5 text-[10.5px] font-normal text-text-5">{c.term}</span>}
+                      {/* The Latin term gets its own line rather than trailing
+                          the Persian one. Set inline, a bidi run of Latin at
+                          the end of a Persian phrase reads as part of it, and
+                          the two names run together. */}
+                      {c.term && (
+                        <span className="ltr mt-0.5 block text-[10.5px] font-normal text-text-5">
+                          {c.term}
+                        </span>
+                      )}
                     </dt>
                     <dd className="text-justify text-[12.5px] leading-relaxed text-text-3">{c.desc}</dd>
                   </div>
