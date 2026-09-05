@@ -114,9 +114,9 @@ function publicNav() {
 function siteFooter() {
   return `<footer class="site pub-footer">
     <p><strong>Ethic Lens</strong> — دستیار تصمیم‌گیری اخلاقی ·
-       <a href="/about">درباره ما</a> · <a href="/guide">دانشنامه</a> · <a href="/explore">تحلیل‌های عمومی</a></explore>
+       <a href="/about">درباره ما</a> · <a href="/guide">دانشنامه</a> · <a href="/explore">تحلیل‌های عمومی</a></p>
     <p>تحلیل‌ها با کمک مدل‌های زبانی تولید می‌شوند و می‌توانند خطا داشته باشند.<br>
-       این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</explore>
+       این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</p>
   </footer>`;
 }
 
@@ -315,8 +315,8 @@ ${publicNav()}
 
   <aside class="pub-cta">
     <h2>دوراهی خودتان را تحلیل کنید</h2>
-    <p>Ethic Lens موقعیت شما را از هشت منظر فلسفه اخلاق می‌سنجد، تعارض‌ها را نشان می‌دهد و مسیری موجه پیشنهاد می‌کند.</explore>
-    <a class="btn btn-primary btn-lg" href="/login?mode=register">شروع رایگان</a>
+    <p>Ethic Lens موقعیت شما را از هشت منظر فلسفه اخلاق می‌سنجد، تعارض‌ها را نشان می‌دهد و مسیری موجه پیشنهاد می‌کند.</p>
+    <a class="btn btn-primary btn-lg" href="/app/login?mode=register">شروع رایگان</a>
     <a class="btn btn-lg" href="/explore">تحلیل‌های دیگر</a>
   </aside>
 </main>
@@ -368,7 +368,7 @@ router.get('/explore', (req, res) => {
     return `
       <article class="pub-card">
         <a class="pub-card-title" href="/analysis/${it.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIComponent(it.slug)}">${esc(it.public_title || it.title)}</a>
-        <p class="pub-card-sum">${esc(summary)}</explore>
+        <p class="pub-card-sum">${esc(summary)}</p>
         <div class="pub-card-foot">
           ${ctx.domain ? `<span class="badge">${esc(ctx.domain)}</span>` : ''}
           ${it.published_at ? `<span>${esc(faDate(it.published_at))}</span>` : ''}
@@ -379,7 +379,7 @@ router.get('/explore', (req, res) => {
     <div class="card"><div class="empty">
       <div class="empty-icon">🌱</div>
       <h3>هنوز تحلیلی منتشر نشده است</h3>
-      <p>کاربران می‌توانند تحلیل‌هایشان را به‌صورت عمومی منتشر کنند. اولین نفر باشید.</explore>
+      <p>کاربران می‌توانند تحلیل‌هایشان را به‌صورت عمومی منتشر کنند. اولین نفر باشید.</p>
       <a class="btn btn-primary" href="/">شروع تحلیل</a>
     </div></div>`;
 
@@ -416,8 +416,8 @@ ${publicNav()}
     <p>
       دوراهی‌های واقعی که کاربران Ethic Lens تحلیل کرده و برای استفاده دیگران منتشر کرده‌اند.
       هر تحلیل موقعیت را از هشت منظر فلسفه اخلاق می‌سنجد و از پنج دروازه تصمیم می‌گذراند.
-    </explore>
-    ${total ? `<p class="hint">${faNum(total)} تحلیل منتشرشده</explore>` : ''}
+    </p>
+    ${total ? `<p class="hint">${faNum(total)} تحلیل منتشرشده</p>` : ''}
   </div>
 
   ${shelfCards}
@@ -646,7 +646,7 @@ router.get('/category/:slug', (req, res, next) => {
     return `
       <article class="pub-card">
         <h2><a href="/analysis/${cat.slug}/${encodeURIComponent(a.slug)}">${esc(t)}</a></h2>
-        <p>${esc(a.public_summary || '')}</explore>
+        <p>${esc(a.public_summary || '')}</p>
         <div class="pub-card-meta">
           ${a.published_at ? `<span>${esc(faDate(a.published_at))}</span>` : ''}
           ${a.public_author ? `<span>${esc(a.public_author)}</span>` : '<span>ناشناس</span>'}
@@ -671,7 +671,7 @@ ${publicNav()}
   </nav>
   <div class="pub-head">
     <h1>${esc(cat.title)}</h1>
-    <p>${esc(description)}</explore>
+    <p>${esc(description)}</p>
   </div>
   ${items.length
     ? `<div class="pub-grid">${cards}</div>${pager}`
