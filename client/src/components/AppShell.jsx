@@ -10,11 +10,16 @@ import { fa } from '@/lib/fa';
  * The app frame: a header with the account button, and a four-tab bar pinned
  * to the bottom.
  *
- * The bar replaces the old top navigation, which broke on phones — seven
- * links totalling 591px were squeezed into a 24px scroller, leaving four of
- * them unreachable. Four tabs at the bottom sit inside thumb reach and cannot
- * overflow, and everything that is not a primary destination — settings,
- * admin, signing out — moves into a sheet behind the avatar.
+ * The four destinations appear twice and only one is ever visible. Below
+ * 768px they are a bar pinned to the bottom, inside thumb reach; above it
+ * they sit in the header and the bottom bar is gone, because a navigation bar
+ * stuck to the bottom of a desktop window is nowhere near the pointer and
+ * wastes the width the screen actually has.
+ *
+ * The bottom bar exists at all because the old top navigation broke on
+ * phones: seven links totalling 591px squeezed into a 24px scroller, four of
+ * them unreachable. Everything that is not a primary destination — settings,
+ * admin, signing out — is behind the avatar in both layouts.
  */
 
 const TABS = [
@@ -38,11 +43,31 @@ export function AppShell({ user, children, onSignedOut }) {
       <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur"
               style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <OfflineBar />
-        <div className="mx-auto flex h-14 max-w-xl items-center gap-3 px-5">
-          <span className="grid size-8 place-items-center rounded-sm bg-primary text-[11px] font-bold text-primary-foreground">
-            EL
-          </span>
-          <span className="grow font-bold">دیدگاه اخلاق</span>
+        <div className="mx-auto flex h-14 max-w-xl md:max-w-4xl items-center gap-3 px-5">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="grid size-8 place-items-center rounded-sm bg-primary text-[11px] font-bold text-primary-foreground">
+              EL
+            </span>
+            <span className="font-bold">دیدگاه اخلاق</span>
+          </Link>
+
+          {/* The desktop navigation. Hidden on phones, where the same four
+              destinations are the bottom bar instead. */}
+          <nav className="hidden grow items-center gap-1 md:flex">
+            {TABS.map(t => (
+              <NavLink key={t.to} to={t.to} end={t.to === '/'}
+                       className={({ isActive }) =>
+                         `flex items-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-bold
+                          transition-colors ${isActive
+                            ? 'bg-primary-soft text-primary'
+                            : 'text-text-4 hover:bg-muted'}`}>
+                <t.icon className="size-4" />
+                {t.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <span className="grow md:hidden" />
           <button onClick={() => setSheet(true)}
                   className="relative grid size-9 place-items-center rounded-full bg-muted text-xs font-bold"
                   aria-label={pendingUsers
@@ -59,12 +84,13 @@ export function AppShell({ user, children, onSignedOut }) {
         </div>
       </header>
 
-      <main className="pb-20">{children}</main>
+      {/* The bottom padding clears the tab bar, which only exists on phones. */}
+      <main className="pb-20 md:pb-8">{children}</main>
 
       {!immersive && (
-        <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card"
+        <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card md:hidden"
              style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-          <div className="mx-auto flex max-w-xl">
+          <div className="mx-auto flex max-w-xl md:max-w-4xl">
             {TABS.map(t => (
               <NavLink key={t.to} to={t.to} end={t.to === '/'}
                        className={({ isActive }) =>

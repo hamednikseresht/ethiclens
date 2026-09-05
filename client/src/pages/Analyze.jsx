@@ -59,7 +59,7 @@ export default function Analyze({ onDone }) {
   }
 
   return (
-    <div className="mx-auto max-w-xl px-5 pb-24 pt-6">
+    <div className="mx-auto max-w-xl md:max-w-2xl px-5 pb-24 pt-6">
       <StepHeader step={step} />
 
       {error && <Alert variant="destructive" className="mb-4">{error}</Alert>}
@@ -237,7 +237,7 @@ function Waiting({ form, meta, onDone, onCancel, onError }) {
   const secs = elapsed % 60;
 
   return (
-    <div className="mx-auto flex min-h-[80vh] max-w-xl flex-col justify-between px-5 pb-24 pt-8">
+    <div className="mx-auto flex min-h-[80vh] max-w-xl md:max-w-2xl flex-col justify-between px-5 pb-24 pt-8">
       <div className="space-y-6">
         <div className="space-y-3">
           <div className="flex items-baseline justify-between">

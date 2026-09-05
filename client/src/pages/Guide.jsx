@@ -70,7 +70,7 @@ export default function Guide() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-xl px-5 py-10">
+      <div className="mx-auto max-w-xl md:max-w-2xl px-5 py-10">
         <p className="rounded-xl border border-destructive/30 bg-destructive-soft p-4 text-sm text-destructive">
           {error}
         </p>
@@ -91,7 +91,7 @@ export default function Guide() {
   return (
     <div className="pb-6">
       {/* ---------------- Hero ---------------- */}
-      <header className="mx-auto max-w-xl px-5 pt-7">
+      <header className="mx-auto max-w-xl md:max-w-2xl px-5 pt-7">
         {P.hero?.subtitle && (
           <span className="mb-2.5 inline-block rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-bold text-primary">
             {P.hero.subtitle}
@@ -106,7 +106,7 @@ export default function Guide() {
       {/* ---------------- Section chips ---------------- */}
       <nav className="sticky z-10 mt-5 border-y border-border bg-background/95 backdrop-blur"
            style={{ top: belowHeader }}>
-        <div className="mx-auto flex max-w-xl gap-1.5 overflow-x-auto px-5 py-2
+        <div className="mx-auto flex max-w-xl md:max-w-2xl gap-1.5 overflow-x-auto px-5 py-2
                         [-ms-overflow-style:none] [scrollbar-width:none]
                         [&::-webkit-scrollbar]:hidden">
           {sections.map(s => (
@@ -127,7 +127,7 @@ export default function Guide() {
         </div>
       </nav>
 
-      <div className="mx-auto max-w-xl px-5">
+      <div className="mx-auto max-w-xl md:max-w-2xl px-5">
         {/* ---------------- Five phases ---------------- */}
         <Section prose={P.framework}>
           <div className="space-y-3">
@@ -523,7 +523,7 @@ function useActiveSection(ids) {
 
 function Skeleton() {
   return (
-    <div className="mx-auto max-w-xl space-y-3 px-5 pt-7">
+    <div className="mx-auto max-w-xl md:max-w-2xl space-y-3 px-5 pt-7">
       <div className="h-9 w-2/3 animate-pulse rounded-lg bg-muted" />
       <div className="h-20 animate-pulse rounded-lg bg-muted" />
       {[0, 1, 2, 3].map(i => (

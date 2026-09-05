@@ -34,7 +34,7 @@ class ChunkBoundary extends Component {
     if (!this.state.failed) return this.props.children;
 
     return (
-      <div className="mx-auto max-w-xl px-5 py-10 text-center">
+      <div className="mx-auto max-w-xl md:max-w-4xl px-5 py-10 text-center">
         <p className="mb-1 text-sm font-bold">این بخش بارگذاری نشد</p>
         <p className="mb-4 text-justify text-[12.5px] leading-loose text-text-4">
           معمولاً وقتی پیش می‌آید که نسخه تازه‌ای از برنامه منتشر شده و صفحه‌ی باز شما

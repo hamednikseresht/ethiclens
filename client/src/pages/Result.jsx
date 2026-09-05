@@ -36,7 +36,7 @@ export default function Result({ analysis, meta, onNew, onUpdated }) {
   const rec = splitVerdict(sections.recommendation || '');
 
   return (
-    <div className="mx-auto max-w-xl px-5 pb-24 pt-6">
+    <div className="mx-auto max-w-xl md:max-w-2xl px-5 pb-24 pt-6">
       {incomplete && <Gaps c={completeness} onNew={onNew} />}
 
       <h1 className="mb-3 text-[15px] font-bold leading-relaxed">{analysis.title}</h1>
