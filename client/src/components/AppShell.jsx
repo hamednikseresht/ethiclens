@@ -1,8 +1,10 @@
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { useAdminNotifications } from '@/lib/notifications';
 import { OfflineBar } from '@/components/OfflineBar';
 import { Compass, Clock, Globe, BookOpen, X, LogOut, Settings, Shield, LayoutDashboard } from 'lucide-react';
+import { fa } from '@/lib/fa';
 
 /**
  * The app frame: a header with the account button, and a four-tab bar pinned
@@ -25,6 +27,7 @@ const TABS = [
 export function AppShell({ user, children, onSignedOut }) {
   const [sheet, setSheet] = useState(false);
   const { pathname } = useLocation();
+  const { pendingUsers } = useAdminNotifications(user?.role === 'admin');
 
   // The result view takes over the screen; a tab bar under it would compete
   // with the analysis for attention.
@@ -41,9 +44,17 @@ export function AppShell({ user, children, onSignedOut }) {
           </span>
           <span className="grow font-bold">دیدگاه اخلاق</span>
           <button onClick={() => setSheet(true)}
-                  className="grid size-9 place-items-center rounded-full bg-muted text-xs font-bold"
-                  aria-label="حساب کاربری">
+                  className="relative grid size-9 place-items-center rounded-full bg-muted text-xs font-bold"
+                  aria-label={pendingUsers
+                    ? `حساب کاربری — ${fa(pendingUsers)} کاربر منتظر تأیید`
+                    : 'حساب کاربری'}>
             {(user?.name || user?.email || '؟')[0]}
+            {pendingUsers > 0 && (
+              // A dot rather than a number: at this size a count is unreadable,
+              // and the exact figure is one tap away in the sheet.
+              <span className="absolute -end-0.5 -top-0.5 size-2.5 rounded-full
+                               bg-destructive ring-2 ring-card" />
+            )}
           </button>
         </div>
       </header>
@@ -71,7 +82,8 @@ export function AppShell({ user, children, onSignedOut }) {
         </nav>
       )}
 
-      {sheet && <AccountSheet user={user} onClose={() => setSheet(false)} onSignedOut={onSignedOut} />}
+      {sheet && <AccountSheet user={user} pendingUsers={pendingUsers}
+                              onClose={() => setSheet(false)} onSignedOut={onSignedOut} />}
     </div>
   );
 }
@@ -83,7 +95,7 @@ export function AppShell({ user, children, onSignedOut }) {
  * corner opens away from the thumb, and this one holds destructive actions
  * that should not be reached by accident.
  */
-function AccountSheet({ user, onClose, onSignedOut }) {
+function AccountSheet({ user, pendingUsers, onClose, onSignedOut }) {
   const [busy, setBusy] = useState(false);
 
   const signOut = async () => {
@@ -116,7 +128,8 @@ function AccountSheet({ user, onClose, onSignedOut }) {
           <SheetLink icon={LayoutDashboard} label="داشبورد" to="/dashboard" onGo={onClose} />
           <SheetLink icon={Settings} label="تنظیمات حساب" to="/settings" onGo={onClose} />
           {user?.role === 'admin' && (
-            <SheetLink icon={Shield} label="پنل مدیریت" to="/admin" onGo={onClose} />
+            <SheetLink icon={Shield} label="پنل مدیریت" to="/admin" onGo={onClose}
+                       badge={pendingUsers} />
           )}
           <button onClick={signOut} disabled={busy}
                   className="flex w-full items-center gap-3 rounded-md p-3 text-sm text-destructive hover:bg-muted disabled:opacity-50">
@@ -133,12 +146,18 @@ function AccountSheet({ user, onClose, onSignedOut }) {
  * Closes the sheet as it navigates. Left open, it would still be covering the
  * page the person just asked for when they arrive.
  */
-function SheetLink({ icon: Icon, label, to, onGo }) {
+function SheetLink({ icon: Icon, label, to, onGo, badge }) {
   return (
     <Link to={to} onClick={onGo}
           className="flex items-center gap-3 rounded-md p-3 text-sm hover:bg-muted">
       <Icon className="size-4 text-text-4" />
-      {label}
+      <span className="grow">{label}</span>
+      {badge > 0 && (
+        <span className="nums rounded-full bg-destructive px-2 py-0.5 text-[10px]
+                         font-bold text-destructive-foreground">
+          {fa(badge)}
+        </span>
+      )}
     </Link>
   );
 }

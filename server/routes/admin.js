@@ -24,6 +24,22 @@ router.use(requireAdmin);
 
 const MASK = '••••••••••••';
 
+/**
+ * What is waiting for an admin's decision.
+ *
+ * Separate from /overview, which runs seven aggregate queries and is fetched
+ * only when the panel is opened. This one is polled from the app shell on
+ * every screen, so it stays a single count — the point is that a membership
+ * request should not sit unseen because nobody happened to open the panel.
+ */
+router.get('/notifications', (req, res) => {
+  const pendingUsers = db.prepare(
+    "SELECT COUNT(*) c FROM users WHERE status = 'pending'").get().c;
+
+  res.set('Cache-Control', 'no-store');
+  res.json({ pendingUsers });
+});
+
 /* ---------------- Dashboard ---------------- */
 router.get('/overview', (req, res) => {
   const users = db.prepare(`SELECT COUNT(*) total,
