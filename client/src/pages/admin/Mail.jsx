@@ -9,10 +9,9 @@ import { Send } from 'lucide-react';
 /**
  * Outgoing mail, and the account rules that depend on it.
  *
- * Verification and password recovery are grouped here rather than under site
- * settings because both stop working the moment mail does. Requiring
- * verification with no mail provider configured locks every new account out
- * with no way back, so that switch is disabled until mail works.
+ * The account rules that need mail are grouped here rather than under site
+ * settings, because they all stop working the moment mail does — which is why
+ * each of them is disabled until it works.
  *
  * Secrets are never sent back by the server — only whether one is stored. An
  * empty field therefore means "keep what is there", which every such field
@@ -38,8 +37,6 @@ export default function Mail() {
       smtp_user: data.smtp_user || '',
       smtp_pass: '',
       smtp_secure: data.smtp_secure === '1',
-      require_verification: data.require_verification === '1',
-      verification_gate: data.verification_gate || 'analysis',
       signup_code: data.signup_code === '1'
     });
   }, [data]);
@@ -52,7 +49,6 @@ export default function Mail() {
   const save = () => act.run(() => api.post('/api/admin/settings', {
     ...form,
     smtp_secure: form.smtp_secure ? '1' : '0',
-    require_verification: form.require_verification ? '1' : '0',
     signup_code: form.signup_code ? '1' : '0',
     // Blank means "unchanged"; sending it would wipe a stored secret.
     brevo_api_key: form.brevo_api_key || undefined,
@@ -129,23 +125,12 @@ export default function Mail() {
       </Panel>
 
       <Panel title="تأیید حساب">
-        <Toggle label="تأیید ایمیل اجباری باشد"
-                hint={data.mailConfigured
-                  ? 'کاربر تا تأیید ایمیل نمی‌تواند از سامانه استفاده کند.'
-                  : 'تا وقتی سرویس ایمیل تنظیم نشده این گزینه در دسترس نیست — روشن کردنش همه حساب‌های تازه را بی‌راه‌حل قفل می‌کند.'}
-                disabled={!data.mailConfigured}
-                checked={form.require_verification}
-                onChange={set('require_verification')} />
-
-        {form.require_verification && (
-          <SelectField label="کجا سد شود" id="m-gate" value={form.verification_gate}
-                       onChange={set('verification_gate')}
-                       options={[
-                         { value: 'analysis', label: 'هنگام تحلیل' },
-                         { value: 'login', label: 'هنگام ورود' }
-                       ]} />
-        )}
-
+        {/* There was a "require email verification" switch here, and a
+            follow-up choosing where it applied. Nothing on the server ever
+            read either one: they were written to settings, reported back, and
+            enforced nowhere. A control that looks like a security policy and
+            is not one is worse than an absent feature, because it gets
+            switched on and then trusted. Removed until something enforces it. */}
         <Toggle label="ورود با کد یک‌بارمصرف"
                 hint={data.mailConfigured
                   ? 'در صفحه ورود، گزینه دریافت کد به‌جای رمز نشان داده می‌شود.'

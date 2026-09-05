@@ -214,7 +214,7 @@ const PUBLIC_SETTINGS = [
   'site_title', 'site_tagline', 'site_url', 'og_image', 'default_model',
   'temperature', 'top_p', 'max_tokens', 'reasoning_headroom', 'active_prompt_key',
   'allow_registration', 'default_daily_quota',
-  'signup_code', 'require_verification', 'verification_gate',
+  'signup_code',
   'smtp_host', 'smtp_port', 'smtp_user', 'smtp_secure',
   'mail_provider', 'mailgun_domain', 'mailgun_base_url', 'mail_from_name', 'mail_from_email'
 ];
@@ -245,7 +245,7 @@ const ALLOWED_SETTINGS = new Set([
   'site_title', 'site_tagline', 'site_url', 'og_image', 'default_model',
   'temperature', 'top_p', 'max_tokens', 'reasoning_headroom', 'active_prompt_key',
   'allow_registration', 'default_daily_quota',
-  'signup_code', 'require_verification', 'verification_gate',
+  'signup_code',
   'smtp_host', 'smtp_port', 'smtp_user', 'smtp_secure',
   'mail_provider', 'brevo_api_key', 'smtp_pass',
   'mailgun_api_key', 'mailgun_domain', 'mailgun_base_url', 'mail_from_name', 'mail_from_email'

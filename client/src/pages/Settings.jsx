@@ -125,9 +125,12 @@ function EmailCard({ user, verification, onChanged }) {
         <p className="text-[12px] text-ok">این ایمیل تأیید شده است.</p>
       ) : (
         <>
+          {/* This used to add "you cannot run an analysis until you verify"
+              when a setting said verification was required. Nothing enforced
+              it, so the sentence was simply untrue. */}
           <p className="mb-3 text-justify text-[12.5px] leading-loose text-text-3">
-            ایمیل شما هنوز تأیید نشده است.
-            {verification?.required && ' تا وقتی تأیید نشود امکان تحلیل ندارید.'}
+            ایمیل شما هنوز تأیید نشده است. تأیید آن باعث می‌شود بازیابی رمز و
+            اطلاع‌رسانی‌ها به دستتان برسد.
           </p>
           {verification && !verification.mailEnabled ? (
             <p className="text-[12px] text-text-4">

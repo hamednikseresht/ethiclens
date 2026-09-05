@@ -240,13 +240,20 @@ router.post('/profile', requireAuth, (req, res) => {
    Email verification
    ========================================================================== */
 
-/** Verification status, and whether the system sends mail at all */
+/**
+ * Verification status, and whether the system sends mail at all.
+ *
+ * This used to also report `required` and `gate`, read from settings an admin
+ * could switch. No code anywhere acted on them — nothing blocked an
+ * unverified account from signing in or running an analysis — so the fields
+ * told the client a policy was in force that was not. They are gone along
+ * with the switch that set them; if verification is ever enforced, the
+ * enforcement comes first and the reporting follows it.
+ */
 router.get('/verification', requireAuth, (req, res) => {
   const wait = Math.max(0, 60 - secondsSinceLastToken(req.user.id, 'verify'));
   res.json({
     verified: !!req.user.email_verified,
-    required: getSetting('require_verification') === '1',
-    gate: getSetting('verification_gate') || 'analysis',
     mailEnabled: mailConfigured(),
     email: req.user.email,
     resendInSeconds: wait

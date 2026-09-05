@@ -1326,25 +1326,6 @@ loaders.mail = async () => {
             تأیید مدیر می‌ماند. روشن‌کردنش یک مرحله <em>پیش از</em> آن صف اضافه می‌کند و
             جای تأیید مدیر را نمی‌گیرد. برای کار کردن، مسیر ارسال ایمیل باید تنظیم شده باشد.
           </p>
-        <label class="switch" style="margin-bottom:1.1rem">
-          <input type="checkbox" id="vr-req" ${s.require_verification === '1' ? 'checked' : ''}>
-          تأیید ایمیل الزامی باشد
-        </label>
-        <div class="field">
-          <label for="vr-gate">تا وقتی تأیید نشده، چه چیزی بسته باشد؟</label>
-          <select class="select" id="vr-gate">
-            <option value="analysis" ${(s.verification_gate || 'analysis') === 'analysis' ? 'selected' : ''}>
-              فقط اجرای تحلیل — کاربر وارد می‌شود و می‌گردد (پیشنهادی)
-            </option>
-            <option value="login" ${s.verification_gate === 'login' ? 'selected' : ''}>
-              کل سامانه — تا تأیید نکند هیچ کاری نمی‌تواند بکند
-            </option>
-          </select>
-          <span class="hint">
-            گزینه اول ریسک واقعی را می‌بندد (سوزاندن اعتبار API با حساب‌های جعلی)
-            بدون اینکه کاربری که ایمیلش را اشتباه تایپ کرده کاملاً بیرون بماند.
-          </span>
-        </div>
         <button class="btn btn-primary" id="saveGate">ذخیره سیاست</button>
       </div>
     </div>`;
@@ -1397,9 +1378,7 @@ loaders.mail = async () => {
   $('#saveGate').onclick = async () => {
     try {
       await api.post('/api/admin/settings', {
-        signup_code: $('#vr-code').checked ? '1' : '0',
-        require_verification: $('#vr-req').checked ? '1' : '0',
-        verification_gate: $('#vr-gate').value
+        signup_code: $('#vr-code').checked ? '1' : '0'
       });
       toast('سیاست تأیید ذخیره شد.', 'ok');
     } catch (e) { toast(e.message, 'err'); }
