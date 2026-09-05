@@ -88,7 +88,7 @@ function CategoryRow({ cat, onChanged }) {
               className="flex w-full items-center gap-2 p-3 text-start">
         <span className="grow">
           <span className="block text-[13px] font-bold">{cat.title}</span>
-          <span className="ltr mt-0.5 block text-[10.5px] text-text-5">/c/{cat.slug}</span>
+          <span className="ltr mt-0.5 block text-[10.5px] text-text-5">/category/{cat.slug}</span>
         </span>
         {cat.published > 0 && <Pill tone="info">{fa(cat.published)} منتشرشده</Pill>}
         <ChevronDown className={`size-4 shrink-0 text-text-4 transition-transform ${open ? 'rotate-180' : ''}`} />

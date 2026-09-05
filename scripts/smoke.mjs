@@ -64,10 +64,10 @@ async function solveCaptcha() {
 
 console.log('\n── صفحات ──');
 for (const [path, needle] of [
-  ['/', 'id="root"'],
-  ['/intro', 'Ethic Lens'],
-  ['/login', 'id="root"'],
-  ['/g', 'دانشنامه'],
+  ['/', 'Ethic Lens'],
+  ['/app', 'id="root"'],
+  ['/app/login', 'id="root"'],
+  ['/guide', 'دانشنامه'],
   ['/about', 'علی مهبودی'],
   ['/css/app.css', '--bg-body'],
   ['/js/core.js', 'export'],
@@ -404,7 +404,8 @@ console.log('\n── انتشار عمومی و SEO ──');
     check('صفحه عمومی بدون ورود در دسترس است', page.status === 200);
     check('عنوان صفحه از عنوان عمومی می‌آید', /<title>عنوان آزمایشی انتشار/.test(html));
     check('توضیح متا درج شده', /<meta name="description" content="خلاصه آزمایشی/.test(html));
-    check('نشانی canonical مطلق است', /<link rel="canonical" href="https:\/\/smoke\.test\/a\//.test(html));
+    check('نشانی canonical مطلق است',
+          html.includes('<link rel="canonical" href="https://smoke.test/analysis/'));
     check('صفحه ایندکس‌شونده است', /content="index, follow/.test(html));
     check('OpenGraph از نوع article', /property="og:type" content="article"/.test(html));
     check('داده ساختاریافته Article', /"@type":"Article"/.test(html));
@@ -412,9 +413,9 @@ console.log('\n── انتشار عمومی و SEO ──');
     check('محتوای تحلیل در HTML اولیه است', /class="stage-title"/.test(html));
     check('دقیقاً یک h1 دارد', (html.match(/<h1[ >]/g) || []).length === 1);
 
-    const explore = await req('/p');
-    check('/p کار می‌کند', explore.status === 200 && /pub-card-title/.test(String(explore.data)));
-    check('/p داده ItemList دارد', /"@type":"ItemList"/.test(String(explore.data)));
+    const explore = await req('/explore');
+    check('/explore کار می‌کند', explore.status === 200 && /pub-card-title/.test(String(explore.data)));
+    check('/explore داده ItemList دارد', /"@type":"ItemList"/.test(String(explore.data)));
 
     const sm = await req('/sitemap.xml');
     check('نقشه سایت ساخته می‌شود', sm.status === 200 && /sitemaps\.org\/schemas\/sitemap/.test(String(sm.data)));
@@ -425,7 +426,7 @@ console.log('\n── انتشار عمومی و SEO ──');
     const off = await req(`/api/history/${target.id}/publish`, { method: 'POST', csrf, body: { publish: false } });
     check('لغو انتشار', off.status === 200 && off.data.isPublic === false);
 
-    const gone = await req(`/a/${encodeURIComponent(slug)}`);
+    const gone = await req(`/analysis/public/${encodeURIComponent(slug)}`);
     check('پس از لغو انتشار صفحه ۴۰۴ می‌شود', gone.status === 404, `status=${gone.status}`);
 
     const again = await req(`/api/history/${target.id}/publish`, { method: 'POST', csrf, body: { publish: true } });
@@ -446,13 +447,13 @@ console.log('\n── انتشار عمومی و SEO ──');
     /Disallow: \/admin/.test(String(rb.data)) && /Disallow: \/api\//.test(String(rb.data)));
   check('robots نقشه سایت را معرفی می‌کند', /Sitemap: https:\/\/smoke\.test/.test(String(rb.data)));
 
-  const missing = await req('/a/این-نشانی-وجود-ندارد');
+  const missing = await req('/analysis/public/این-نشانی-وجود-ندارد');
   check('نشانی ناموجود ۴۰۴ می‌دهد', missing.status === 404, `status=${missing.status}`);
 }
 
 /* ---------------- noindex on private pages ---------------- */
 console.log('\n── noindex صفحه‌های درون‌برنامه‌ای ──');
-for (const p of ['/', '/dashboard', '/history', '/admin', '/login', '/settings']) {
+for (const p of ['/app', '/app/dashboard', '/app/history', '/app/admin', '/app/login', '/app/settings']) {
   const r = await req(p);
   check(`${p} با noindex علامت خورده`, /noindex/.test(String(r.data)), `status=${r.status}`);
 }
@@ -508,9 +509,9 @@ console.log('\n── تأیید ایمیل ──');
   const noToken = await req('/api/auth/verify', { method: 'POST', csrf, body: {} });
   check('توکن خالی رد می‌شود', noToken.status === 400 && noToken.data.reason === 'missing');
 
-  const page = await req('/verify');
-  check('صفحه /verify سرو می‌شود', page.status === 200 && /id="root"/.test(String(page.data)));
-  check('صفحه /verify نباید ایندکس شود', /noindex/.test(String(page.data)));
+  const page = await req('/app/verify');
+  check('صفحه /app/verify سرو می‌شود', page.status === 200 && /id="root"/.test(String(page.data)));
+  check('صفحه /app/verify نباید ایندکس شود', /noindex/.test(String(page.data)));
 }
 
 
@@ -574,38 +575,8 @@ console.log('\n── نشان‌کردن و تغییر عنوان ──');
   }
 }
 
-/* ---------------- the app route list ---------------- */
-console.log('\n── هم‌خوانی مسیرهای اپ ──');
-{
-  // server/index.js keeps an explicit list of paths that get the SPA shell,
-  // and the React router keeps its own. They have to agree: a route added to
-  // one and not the other is a page that works when clicked and 404s when
-  // reloaded — which nobody notices until someone shares a link.
-  const server = await import('node:fs')
-    .then(m => m.readFileSync('server/index.js', 'utf8'));
-  const app = await import('node:fs')
-    .then(m => m.readFileSync('client/src/App.jsx', 'utf8'));
-
-  const listed = (server.match(/const APP_ROUTES = \[([\s\S]*?)\]/)?.[1] || '')
-    .match(/'([^']+)'/g)?.map(s => s.slice(1, -1)) || [];
-
-  // Top-level router paths only; nested admin sections live under /admin.
-  const routed = [...app.matchAll(/<Route path="(\/[^"]*)"/g)]
-    .map(m => m[1])
-    .filter(p => p !== '/' && p !== '*')
-    .filter(p => !p.startsWith('/admin/'));
-
-  const missing = routed.filter(r => !listed.some(l => r === l || r.startsWith(l + '/')));
-  check('هر مسیر روتر در فهرست سرور هست', missing.length === 0,
-        `جا مانده: ${missing.join(', ')}`);
-
-  // /login is served by the shell but is not a router path: signed out, the
-  // app renders the login screen for whatever address was asked for, and
-  // core.js on the server-rendered pages still sends people there by name.
-  const OUTSIDE_ROUTER = ['/login'];
-  const extra = listed.filter(l => !routed.includes(l) && !OUTSIDE_ROUTER.includes(l));
-  check('فهرست سرور مسیر اضافه ندارد', extra.length === 0, `اضافه: ${extra.join(', ')}`);
-}
+/* The server's app-route list is gone: everything under /app reaches the
+   shell, so there is no second list to drift out of step with the router. */
 
 console.log(`\n${'═'.repeat(46)}`);
 console.log(`  موفق: ${pass}   ناموفق: ${fail}`);

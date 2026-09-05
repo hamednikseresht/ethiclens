@@ -9,7 +9,7 @@ import { Search, Globe, Eye, ExternalLink } from 'lucide-react';
 /**
  * Analyses other people have published.
  *
- * Each card leaves the app for /a/<category>/<slug>, the server-rendered
+ * Each card leaves the app for /analysis/<category>/<slug>, the
  * page. That is deliberate: those pages are the ones search engines read,
  * they render without JavaScript, and they are already the canonical address
  * anyone would share. Re-implementing them inside the bundle would produce a
@@ -44,7 +44,7 @@ export default function Explore() {
   const filtering = Boolean(q.trim() || category);
 
   return (
-    <div className="mx-auto max-w-xl px-5 pb-6 pt-6">
+    <div className="mx-auto max-w-xl md:max-w-4xl px-5 pb-6 pt-6">
       <h1 className="display mb-1.5 text-[30px] font-semibold leading-tight">تحلیل‌های عمومی</h1>
       <p className="mb-4 text-justify text-[13px] leading-loose text-text-3">
         دوراهی‌های واقعی که کاربران تحلیل کرده و برای استفاده دیگران منتشر کرده‌اند.
@@ -152,7 +152,7 @@ function Chip({ active, onClick, children }) {
  */
 function Card({ item }) {
   return (
-    <a href={`/a/${item.category?.slug || 'public'}/${encodeURIComponent(item.slug)}`}
+    <a href={`/analysis/${item.category?.slug || 'public'}/${encodeURIComponent(item.slug)}`}
        className="block rounded-xl border border-border bg-card p-4 transition-colors hover:bg-subtle">
       {item.category && (
         <span className="mb-2 inline-block rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold text-primary">

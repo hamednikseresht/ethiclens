@@ -74,7 +74,7 @@ export function AnalysisActions({ analysis, onUpdated }) {
       {error && <p className="mt-2 text-[12px] text-destructive">{error}</p>}
 
       {published && analysis.slug && (
-        <a href={`/a/${encodeURIComponent(analysis.slug)}`}
+        <a href={`/analysis/${analysis.category_slug || 'public'}/${encodeURIComponent(analysis.slug)}`}
            className="mt-2 flex items-center gap-1.5 text-[11px] text-primary">
           <ExternalLink className="size-3" />
           دیدن صفحه عمومی

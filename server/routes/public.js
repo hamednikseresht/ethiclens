@@ -28,7 +28,7 @@ router.get('/api/guide', (_req, res) => {
 /**
  * The published analyses, as JSON, for the in-app list.
  *
- * The crawled /p page stays exactly where it is and keeps rendering on
+ * The crawled /explore page stays exactly where it is and keeps rendering on
  * the server — that is the copy search engines read, and serving it from the
  * app bundle instead would hand them an empty div. This endpoint feeds the
  * signed-in list, which can search and filter in a way a static page cannot.
@@ -114,9 +114,9 @@ function publicNav() {
 function siteFooter() {
   return `<footer class="site pub-footer">
     <p><strong>Ethic Lens</strong> — دستیار تصمیم‌گیری اخلاقی ·
-       <a href="/about">درباره ما</a> · <a href="/g">دانشنامه</a> · <a href="/p">تحلیل‌های عمومی</a></p>
+       <a href="/about">درباره ما</a> · <a href="/guide">دانشنامه</a> · <a href="/explore">تحلیل‌های عمومی</a></explore>
     <p>تحلیل‌ها با کمک مدل‌های زبانی تولید می‌شوند و می‌توانند خطا داشته باشند.<br>
-       این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</p>
+       این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</explore>
   </footer>`;
 }
 
@@ -168,14 +168,14 @@ function countView(id, req) {
  * The address published analyses used before the category went into the path.
  * Anything already shared points here, so it moves rather than breaking.
  */
-router.get('/a/:slug', (req, res, next) => {
+router.get('/analysis/:slug', (req, res, next) => {
   const row = findBySlug(req.params.slug);
   if (!row) return next();
-  res.redirect(301, `/a/${categoryPathFor(row)}/${encodeURIComponent(row.slug)}`);
+  res.redirect(301, `/analysis/${categoryPathFor(row)}/${encodeURIComponent(row.slug)}`);
 });
 
 /**
- * A published analysis, at /a/<category>/<slug>.
+ * A published analysis, at /analysis/<category>/<slug>.
  *
  * The category is in the path because a reader seeing the address should be
  * able to tell what kind of thing it is, and because it gives every article a
@@ -185,7 +185,7 @@ router.get('/a/:slug', (req, res, next) => {
  * members' shelf, so every article has a category segment and there is no
  * second shape of address to handle.
  */
-router.get('/a/:category/:slug', (req, res, next) => {
+router.get('/analysis/:category/:slug', (req, res, next) => {
   const row = findBySlug(req.params.slug);
   if (!row) return next();
 
@@ -195,7 +195,7 @@ router.get('/a/:category/:slug', (req, res, next) => {
   // at two addresses.
   const correct = categoryPathFor(row);
   if (req.params.category !== correct) {
-    return res.redirect(301, `/a/${correct}/${encodeURIComponent(row.slug)}`);
+    return res.redirect(301, `/analysis/${correct}/${encodeURIComponent(row.slug)}`);
   }
 
   let sections = {};
@@ -211,7 +211,7 @@ router.get('/a/:category/:slug', (req, res, next) => {
   const description = row.public_summary?.trim()
     || metaDescription(sections.reframe || row.dilemma);
   const author = row.public_author?.trim() || '';
-  const path = `/a/${categoryPathFor(row)}/${encodeURIComponent(row.slug)}`;
+  const path = `/analysis/${categoryPathFor(row)}/${encodeURIComponent(row.slug)}`;
   const url = absoluteUrl(req, path);
 
   countView(row.id, req);
@@ -244,10 +244,10 @@ router.get('/a/:category/:slug', (req, res, next) => {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'خانه', item: absoluteUrl(req, '/intro') },
-      { '@type': 'ListItem', position: 2, name: 'تحلیل‌های عمومی', item: absoluteUrl(req, '/p') },
+      { '@type': 'ListItem', position: 1, name: 'خانه', item: absoluteUrl(req, '/') },
+      { '@type': 'ListItem', position: 2, name: 'تحلیل‌های عمومی', item: absoluteUrl(req, '/explore') },
       ...(category
-        ? [{ '@type': 'ListItem', position: 3, name: category.title, item: absoluteUrl(req, `/c/${category.slug}`) }]
+        ? [{ '@type': 'ListItem', position: 3, name: category.title, item: absoluteUrl(req, `/category/${category.slug}`) }]
         : []),
       { '@type': 'ListItem', position: category ? 4 : 3, name: title, item: url }
     ]
@@ -284,11 +284,11 @@ ${publicNav()}
   <article>
     <div class="result-head">
       <nav class="pub-crumbs" aria-label="مسیر">
-        <a href="/intro">خانه</a> ‹ <a href="/p">تحلیل‌های عمومی</a>
-        ${category ? `‹ <a href="/c/${esc(category.slug)}">${esc(category.title)}</a>` : ''}
+        <a href="/intro">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a>
+        ${category ? `‹ <a href="/category/${esc(category.slug)}">${esc(category.title)}</a>` : ''}
         ‹ <span>${esc(title)}</span>
       </nav>
-      ${category ? `<a class="cat-badge" href="/c/${esc(category.slug)}">${esc(category.title)}</a>` : ''}
+      ${category ? `<a class="cat-badge" href="/category/${esc(category.slug)}">${esc(category.title)}</a>` : ''}
       <h1>${esc(heading)}</h1>
       <div class="meta-row">
         ${row.published_at ? `<span class="badge">منتشرشده در ${esc(faDate(row.published_at))}</span>` : ''}
@@ -315,9 +315,9 @@ ${publicNav()}
 
   <aside class="pub-cta">
     <h2>دوراهی خودتان را تحلیل کنید</h2>
-    <p>Ethic Lens موقعیت شما را از هشت منظر فلسفه اخلاق می‌سنجد، تعارض‌ها را نشان می‌دهد و مسیری موجه پیشنهاد می‌کند.</p>
+    <p>Ethic Lens موقعیت شما را از هشت منظر فلسفه اخلاق می‌سنجد، تعارض‌ها را نشان می‌دهد و مسیری موجه پیشنهاد می‌کند.</explore>
     <a class="btn btn-primary btn-lg" href="/login?mode=register">شروع رایگان</a>
-    <a class="btn btn-lg" href="/p">تحلیل‌های دیگر</a>
+    <a class="btn btn-lg" href="/explore">تحلیل‌های دیگر</a>
   </aside>
 </main>
 ${siteFooter()}`;
@@ -329,14 +329,14 @@ ${siteFooter()}`;
 /* ==========================================================================
    Public analyses index
    ========================================================================== */
-router.get('/p', (req, res) => {
+router.get('/explore', (req, res) => {
   const perPage = 12;
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const total = publishedCount();
   const pages = Math.max(1, Math.ceil(total / perPage));
   const items = publishedAnalyses({ limit: perPage, offset: (page - 1) * perPage });
 
-  const path = page > 1 ? `/p?page=${page}` : '/p';
+  const path = page > 1 ? `/explore?page=${page}` : '/explore';
   const description = total
     ? `${total} تحلیل اخلاقی منتشرشده — دوراهی‌های واقعی بررسی‌شده از منظر هشت مکتب فلسفه اخلاق: فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، خیر مشترک، قراردادگرایی، اخلاق مراقبت و بیشتر.`
     : 'تحلیل‌های اخلاقی منتشرشده در دیدگاه اخلاق.';
@@ -347,7 +347,7 @@ router.get('/p', (req, res) => {
     itemListElement: items.map((it, i) => ({
       '@type': 'ListItem',
       position: (page - 1) * perPage + i + 1,
-      url: absoluteUrl(req, `/a/${it.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIComponent(it.slug)}`),
+      url: absoluteUrl(req, `/analysis/${it.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIComponent(it.slug)}`),
       name: (it.public_title || it.title).slice(0, 110)
     }))
   } : null;
@@ -357,8 +357,8 @@ router.get('/p', (req, res) => {
       req, title: page > 1 ? `تحلیل‌های عمومی — صفحه ${page} | Ethic Lens` : 'تحلیل‌های اخلاقی عمومی | Ethic Lens',
       description, path
     }),
-    page > 1 ? `<link rel="prev" href="${esc(absoluteUrl(req, page === 2 ? '/p' : `/p?page=${page - 1}`))}">` : '',
-    page < pages ? `<link rel="next" href="${esc(absoluteUrl(req, `/p?page=${page + 1}`))}">` : '',
+    page > 1 ? `<link rel="prev" href="${esc(absoluteUrl(req, page === 2 ? '/explore' : `/explore?page=${page - 1}`))}">` : '',
+    page < pages ? `<link rel="next" href="${esc(absoluteUrl(req, `/explore?page=${page + 1}`))}">` : '',
     listLd ? `<script type="application/ld+json">${jsonLd(listLd)}</script>` : ''
   ].filter(Boolean).join('\n');
 
@@ -367,8 +367,8 @@ router.get('/p', (req, res) => {
     let ctx = {}; try { ctx = JSON.parse(it.context || '{}'); } catch {}
     return `
       <article class="pub-card">
-        <a class="pub-card-title" href="/a/${it.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIComponent(it.slug)}">${esc(it.public_title || it.title)}</a>
-        <p class="pub-card-sum">${esc(summary)}</p>
+        <a class="pub-card-title" href="/analysis/${it.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIComponent(it.slug)}">${esc(it.public_title || it.title)}</a>
+        <p class="pub-card-sum">${esc(summary)}</explore>
         <div class="pub-card-foot">
           ${ctx.domain ? `<span class="badge">${esc(ctx.domain)}</span>` : ''}
           ${it.published_at ? `<span>${esc(faDate(it.published_at))}</span>` : ''}
@@ -379,15 +379,15 @@ router.get('/p', (req, res) => {
     <div class="card"><div class="empty">
       <div class="empty-icon">🌱</div>
       <h3>هنوز تحلیلی منتشر نشده است</h3>
-      <p>کاربران می‌توانند تحلیل‌هایشان را به‌صورت عمومی منتشر کنند. اولین نفر باشید.</p>
+      <p>کاربران می‌توانند تحلیل‌هایشان را به‌صورت عمومی منتشر کنند. اولین نفر باشید.</explore>
       <a class="btn btn-primary" href="/">شروع تحلیل</a>
     </div></div>`;
 
   const pager = pages > 1 ? `
     <nav class="pager" aria-label="صفحه‌بندی">
-      ${page > 1 ? `<a class="btn btn-sm" rel="prev" href="${page === 2 ? '/p' : `/p?page=${page - 1}`}">قبلی</a>` : ''}
+      ${page > 1 ? `<a class="btn btn-sm" rel="prev" href="${page === 2 ? '/explore' : `/explore?page=${page - 1}`}">قبلی</a>` : ''}
       <span class="hint">صفحه ${faNum(page)} از ${faNum(pages)}</span>
-      ${page < pages ? `<a class="btn btn-sm" rel="next" href="/p?page=${page + 1}">بعدی</a>` : ''}
+      ${page < pages ? `<a class="btn btn-sm" rel="next" href="/explore?page=${page + 1}">بعدی</a>` : ''}
     </nav>` : '';
 
   /* ---- The shelves ----
@@ -401,7 +401,7 @@ router.get('/p', (req, res) => {
   const shelfCards = page === 1 && shelves.length ? `
     <nav class="cat-grid" aria-label="دسته‌بندی‌ها">
       ${shelves.map(c => `
-        <a class="cat-card" href="/c/${esc(c.slug)}">
+        <a class="cat-card" href="/category/${esc(c.slug)}">
           <span class="cat-card-title">${esc(c.title)}</span>
           ${c.description ? `<span class="cat-card-desc">${esc(c.description)}</span>` : ''}
           <span class="cat-card-count">${faNum(c.published)} تحلیل</span>
@@ -416,8 +416,8 @@ ${publicNav()}
     <p>
       دوراهی‌های واقعی که کاربران Ethic Lens تحلیل کرده و برای استفاده دیگران منتشر کرده‌اند.
       هر تحلیل موقعیت را از هشت منظر فلسفه اخلاق می‌سنجد و از پنج دروازه تصمیم می‌گذراند.
-    </p>
-    ${total ? `<p class="hint">${faNum(total)} تحلیل منتشرشده</p>` : ''}
+    </explore>
+    ${total ? `<p class="hint">${faNum(total)} تحلیل منتشرشده</explore>` : ''}
   </div>
 
   ${shelfCards}
@@ -444,10 +444,10 @@ router.get('/robots.txt', (req, res) => {
 `User-agent: *
 Allow: /intro
 Allow: /about
-Allow: /g
-Allow: /p
-Allow: /a/
-Allow: /c/
+Allow: /guide
+Allow: /explore
+Allow: /analysis/
+Allow: /category/
 
 # صفحه‌های خصوصی و درون‌برنامه‌ای نباید ایندکس شوند
 Disallow: /$
@@ -469,9 +469,9 @@ router.get('/sitemap.xml', (req, res) => {
     .send('نشانی سایت تنظیم نشده است. در پنل مدیریت «آدرس سایت» را وارد کنید.');
 
   const statics = [
-    { loc: '/intro',   priority: '1.0', freq: 'weekly' },
-    { loc: '/p', priority: '0.9', freq: 'daily'  },
-    { loc: '/g',   priority: '0.8', freq: 'monthly'},
+    { loc: '/',   priority: '1.0', freq: 'weekly' },
+    { loc: '/explore', priority: '0.9', freq: 'daily'  },
+    { loc: '/guide',   priority: '0.8', freq: 'monthly'},
     { loc: '/about',   priority: '0.5', freq: 'yearly' }
   ];
 
@@ -496,8 +496,8 @@ router.get('/sitemap.xml', (req, res) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${statics.map(s => url(s.loc, null, s.freq, s.priority)).join('\n')}
-${cats.map(c => url('/c/' + c.slug, null, 'weekly', '0.8')).join('\n')}
-${posts.map(p => url(`/a/${p.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIComponent(p.slug)}`,
+${cats.map(c => url('/category/' + c.slug, null, 'weekly', '0.8')).join('\n')}
+${posts.map(p => url(`/analysis/${p.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIComponent(p.slug)}`,
     isoDate(p.published_at || p.created_at), 'monthly', '0.7')).join('\n')}
 </urlset>`;
 
@@ -508,7 +508,7 @@ ${posts.map(p => url(`/a/${p.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIC
    Landing and reference pages
    --------------------------------------------------------------------------
    These are static files, which means they cannot know the site's own
-   address — so they shipped without a canonical link, and /g had no
+   address — so they shipped without a canonical link, and /guide had no
    OpenGraph or robots tag at all. Serving them through here lets the same
    metaTags() that produces the published pages produce theirs too, so all
    public pages stay consistent, and it adds the site-level structured data
@@ -521,7 +521,7 @@ ${posts.map(p => url(`/a/${p.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIC
 const PUBLIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public');
 
 const SEO_PAGES = {
-  '/intro': {
+  '/': {
     file: 'index.html',
     title: () => getSetting('site_title') || 'دیدگاه اخلاق — Ethic Lens',
     description: () => getSetting('site_tagline') ||
@@ -529,14 +529,14 @@ const SEO_PAGES = {
     trail: null,
     extra: req => siteJsonLd(req)
   },
-  '/g': {
+  '/guide': {
     file: 'pages/guide.html',
     footer: true,
     title: () => 'دانشنامه لنزهای اخلاقی — راهنمای هشت مکتب فلسفه اخلاق',
     description: () => 'راهنمای هشت لنز فلسفه اخلاق و فرایند پنج‌فازی تصمیم‌گیری: ' +
       'فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، خیر مشترک، قراردادگرایی، اخلاق مراقبت، ' +
       'اگزیستانسیالیسم و تبارشناسی — با ارجاع به منابع اصلی.',
-    trail: [{ name: 'خانه', path: '/intro' }, { name: 'دانشنامه', path: '/g' }],
+    trail: [{ name: 'خانه', path: '/' }, { name: 'دانشنامه', path: '/guide' }],
     extra: req => [{
       '@context': 'https://schema.org',
       '@type': 'Article',
@@ -544,7 +544,7 @@ const SEO_PAGES = {
       inLanguage: 'fa-IR',
       author: { '@type': 'Organization', name: getSetting('site_title') || 'Ethic Lens' },
       publisher: { '@type': 'Organization', name: getSetting('site_title') || 'Ethic Lens' },
-      mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(req, '/g') }
+      mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(req, '/guide') }
     }]
   },
   '/about': {
@@ -553,7 +553,7 @@ const SEO_PAGES = {
     title: () => 'درباره دیدگاه اخلاق',
     description: () => 'Ethic Lens حاصل همکاری یک دانش‌آموخته فلسفه و یک مهندس نرم‌افزار است؛ ' +
       'ابزاری برای مستدل و قابل‌دفاع کردن تصمیم‌های اخلاقی روزمره.',
-    trail: [{ name: 'خانه', path: '/intro' }, { name: 'درباره ما', path: '/about' }],
+    trail: [{ name: 'خانه', path: '/' }, { name: 'درباره ما', path: '/about' }],
     extra: () => []
   }
 };
@@ -590,10 +590,10 @@ for (const [route, page] of Object.entries(SEO_PAGES)) {
    Category listing
    --------------------------------------------------------------------------
    A shelf of published analyses under one heading. Worth having as a real
-   page rather than a filter on /p: it gives each subject a stable
+   page rather than a filter on /explore: it gives each subject a stable
    address that can be linked to and indexed on its own.
    ========================================================================== */
-router.get('/c/:slug', (req, res, next) => {
+router.get('/category/:slug', (req, res, next) => {
   const cat = resolveCategory(req.params.slug);
   if (!cat) return next();
 
@@ -603,7 +603,7 @@ router.get('/c/:slug', (req, res, next) => {
   const pages = Math.max(1, Math.ceil(total / perPage));
   const items = analysesInCategory(cat.id, { limit: perPage, offset: (page - 1) * perPage });
 
-  const path = page > 1 ? `/c/${cat.slug}?page=${page}` : `/c/${cat.slug}`;
+  const path = page > 1 ? `/category/${cat.slug}?page=${page}` : `/category/${cat.slug}`;
   const description = cat.description?.trim()
     || `${total} تحلیل اخلاقی منتشرشده در دسته «${cat.title}» — بررسی‌شده از منظر هشت مکتب فلسفه اخلاق.`;
 
@@ -614,9 +614,9 @@ router.get('/c/:slug', (req, res, next) => {
       description, path
     }),
     `<script type="application/ld+json">${jsonLd(breadcrumbJsonLd(req, [
-      { name: 'خانه', path: '/intro' },
-      { name: 'تحلیل‌های عمومی', path: '/p' },
-      { name: cat.title, path: `/c/${cat.slug}` }
+      { name: 'خانه', path: '/' },
+      { name: 'تحلیل‌های عمومی', path: '/explore' },
+      { name: cat.title, path: `/category/${cat.slug}` }
     ]))}</script>`,
     // An ItemList tells Google this is a collection rather than an article,
     // which is what keeps a category page out of the "thin content" bucket.
@@ -626,7 +626,7 @@ router.get('/c/:slug', (req, res, next) => {
       name: cat.title,
       description,
       inLanguage: 'fa-IR',
-      ...(siteUrl(req) ? { url: absoluteUrl(req, `/c/${cat.slug}`) } : {}),
+      ...(siteUrl(req) ? { url: absoluteUrl(req, `/category/${cat.slug}`) } : {}),
       mainEntity: {
         '@type': 'ItemList',
         numberOfItems: total,
@@ -634,7 +634,7 @@ router.get('/c/:slug', (req, res, next) => {
           '@type': 'ListItem',
           position: (page - 1) * perPage + i + 1,
           name: a.h1?.trim() || a.public_title?.trim() || a.title,
-          url: absoluteUrl(req, `/a/${cat.slug}/${encodeURIComponent(a.slug)}`)
+          url: absoluteUrl(req, `/analysis/${cat.slug}/${encodeURIComponent(a.slug)}`)
         }))
       }
     })}</script>`
@@ -645,8 +645,8 @@ router.get('/c/:slug', (req, res, next) => {
     const tags = readTags(a.tags);
     return `
       <article class="pub-card">
-        <h2><a href="/a/${cat.slug}/${encodeURIComponent(a.slug)}">${esc(t)}</a></h2>
-        <p>${esc(a.public_summary || '')}</p>
+        <h2><a href="/analysis/${cat.slug}/${encodeURIComponent(a.slug)}">${esc(t)}</a></h2>
+        <p>${esc(a.public_summary || '')}</explore>
         <div class="pub-card-meta">
           ${a.published_at ? `<span>${esc(faDate(a.published_at))}</span>` : ''}
           ${a.public_author ? `<span>${esc(a.public_author)}</span>` : '<span>ناشناس</span>'}
@@ -658,24 +658,24 @@ router.get('/c/:slug', (req, res, next) => {
 
   const pager = pages > 1 ? `
     <nav class="pub-pager" aria-label="صفحه‌بندی">
-      ${page > 1 ? `<a class="btn btn-sm" href="/c/${esc(cat.slug)}?page=${page - 1}">→ قبلی</a>` : ''}
+      ${page > 1 ? `<a class="btn btn-sm" href="/category/${esc(cat.slug)}?page=${page - 1}">→ قبلی</a>` : ''}
       <span class="hint">صفحه ${faNum(page)} از ${faNum(pages)}</span>
-      ${page < pages ? `<a class="btn btn-sm" href="/c/${esc(cat.slug)}?page=${page + 1}">بعدی ←</a>` : ''}
+      ${page < pages ? `<a class="btn btn-sm" href="/category/${esc(cat.slug)}?page=${page + 1}">بعدی ←</a>` : ''}
     </nav>` : '';
 
   const body = `
 ${publicNav()}
 <main class="wrap" id="main">
   <nav class="pub-crumbs" aria-label="مسیر">
-    <a href="/intro">خانه</a> ‹ <a href="/p">تحلیل‌های عمومی</a> ‹ <span>${esc(cat.title)}</span>
+    <a href="/intro">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a> ‹ <span>${esc(cat.title)}</span>
   </nav>
   <div class="pub-head">
     <h1>${esc(cat.title)}</h1>
-    <p>${esc(description)}</p>
+    <p>${esc(description)}</explore>
   </div>
   ${items.length
     ? `<div class="pub-grid">${cards}</div>${pager}`
-    : '<div class="empty"><div class="empty-icon">📂</div><h3>هنوز تحلیلی در این دسته منتشر نشده</h3><a class="btn" href="/p">دیدن همه تحلیل‌ها</a></div>'}
+    : '<div class="empty"><div class="empty-icon">📂</div><h3>هنوز تحلیلی در این دسته منتشر نشده</h3><a class="btn" href="/explore">دیدن همه تحلیل‌ها</a></div>'}
 </main>
 ${siteFooter()}`;
 

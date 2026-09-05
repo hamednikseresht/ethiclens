@@ -41,9 +41,9 @@ const AdminAudit      = lazy(() => import('@/pages/admin/Audit'));
 /**
  * Shell and routing.
  *
- * No basename: the application is served from the domain root now. The pages
- * that stay server-rendered — the landing page, the encyclopedia, the
- * published analyses — have their own addresses and never reach the router.
+ * basename is /app. The root is the homepage, and the pages a visitor reads
+ * without signing in — the encyclopedia, the published analyses — are
+ * server-rendered at their own addresses and never reach this router.
  */
 export default function App() {
   const [state, setState] = useState({ loading: true, user: null });
@@ -80,9 +80,9 @@ export default function App() {
    * Checked here rather than as a route because the gate below returns
    * before any router exists.
    */
-  if (location.pathname === '/verify') {
+  if (location.pathname === '/app/verify') {
     return (
-      <BrowserRouter>
+      <BrowserRouter basename="/app">
         <PageViews />
         <Routes>
           <Route path="/verify" element={<Verify onSignedIn={signIn} />} />
@@ -111,7 +111,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/app">
       <PageViews />
       <AppShell user={state.user} onSignedOut={() => setState({ loading: false, user: null })}>
         <Routes>
