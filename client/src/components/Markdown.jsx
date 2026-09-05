@@ -52,10 +52,14 @@ export function Markdown({ children, className = '' }) {
   let para = [];
   let n = 0;
 
+  // Justified, which is how Persian body text is set: the eye follows a
+  // straight left edge down the column instead of a ragged one. Applied to
+  // paragraphs only — a justified list item or table cell is short enough
+  // that stretching it opens gaps rather than closing an edge.
   const flushPara = () => {
     if (!para.length) return;
     blocks.push(
-      <p key={`p${n++}`} className="mb-3 leading-[2] last:mb-0">
+      <p key={`p${n++}`} className="mb-3 text-justify leading-[2] last:mb-0">
         {inline(para.join(' '), `p${n}`)}
       </p>
     );
