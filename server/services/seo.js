@@ -158,20 +158,58 @@ export function faDate(sqliteDate) {
 }
 
 /** List of published analyses */
-export function publishedAnalyses({ limit = 50, offset = 0 } = {}) {
-  return db.prepare(`
-    SELECT id, slug, title, public_title, public_summary, public_author,
-           dilemma, context, published_at, created_at, views
-    FROM analyses
-    WHERE is_public = 1 AND slug IS NOT NULL AND status IN ('done','partial')
-    ORDER BY published_at DESC
-    LIMIT ? OFFSET ?`).all(limit, offset);
+/**
+ * The published set, optionally narrowed.
+ *
+ * `q` and `categoryId` are both optional and both default to off, so the
+ * server-rendered /explore page keeps calling this exactly as before and gets
+ * exactly what it got before. The filters exist for the in-app list, which
+ * can search where a crawled page cannot.
+ */
+/**
+ * The WHERE clause shared by the listing and its count, written against a
+ * caller-supplied table alias so the two queries — one joined, one not — can
+ * use the same definition of "published" without either restating it.
+ */
+function publishedFilter({ q, categoryId } = {}, t = '') {
+  const col = name => `${t ? t + '.' : ''}${name}`;
+  const where = [
+    `${col('is_public')} = 1`,
+    `${col('slug')} IS NOT NULL`,
+    `${col('status')} IN ('done','partial')`
+  ];
+  const params = [];
+
+  if (categoryId) { where.push(`${col('category_id')} = ?`); params.push(categoryId); }
+
+  // The dilemma is searched alongside the titles: someone looking for a topic
+  // remembers the situation, not the headline an editor gave it.
+  if (q && String(q).trim()) {
+    where.push(`(${col('title')} LIKE ? OR ${col('public_title')} LIKE ? OR ` +
+               `${col('public_summary')} LIKE ? OR ${col('dilemma')} LIKE ?)`);
+    const like = `%${String(q).trim()}%`;
+    params.push(like, like, like, like);
+  }
+
+  return { sql: where.join(' AND '), params };
 }
 
-export function publishedCount() {
-  return db.prepare(
-    "SELECT COUNT(*) c FROM analyses WHERE is_public = 1 AND slug IS NOT NULL AND status IN ('done','partial')"
-  ).get().c;
+export function publishedAnalyses({ limit = 50, offset = 0, q, categoryId } = {}) {
+  const { sql, params } = publishedFilter({ q, categoryId }, 'a');
+  return db.prepare(`
+    SELECT a.id, a.slug, a.title, a.public_title, a.public_summary, a.public_author,
+           a.dilemma, a.context, a.published_at, a.created_at, a.views,
+           a.category_id, c.title AS category_title, c.slug AS category_slug
+    FROM analyses a
+    LEFT JOIN categories c ON c.id = a.category_id
+    WHERE ${sql}
+    ORDER BY a.published_at DESC
+    LIMIT ? OFFSET ?`).all(...params, limit, offset);
+}
+
+export function publishedCount({ q, categoryId } = {}) {
+  const { sql, params } = publishedFilter({ q, categoryId });
+  return db.prepare(`SELECT COUNT(*) c FROM analyses WHERE ${sql}`).get(...params).c;
 }
 
 export function findBySlug(slug) {

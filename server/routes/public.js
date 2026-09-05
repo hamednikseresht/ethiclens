@@ -24,6 +24,59 @@ router.get('/api/guide', (_req, res) => {
   res.json(guideContent());
 });
 
+/**
+ * The published analyses, as JSON, for the in-app list.
+ *
+ * The crawled /explore page stays exactly where it is and keeps rendering on
+ * the server — that is the copy search engines read, and serving it from the
+ * app bundle instead would hand them an empty div. This endpoint feeds the
+ * signed-in list, which can search and filter in a way a static page cannot.
+ *
+ * It carries no private fields: everything here is already on a public page.
+ */
+const EXPLORE_PER_PAGE = 12;
+
+router.get('/api/explore', (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const q = String(req.query.q || '').slice(0, 120);
+  const catSlug = String(req.query.category || '').slice(0, 80);
+  const category = catSlug ? getCategoryBySlug(catSlug) : null;
+
+  // An unknown slug filters to nothing rather than silently listing
+  // everything, which would look like the filter had been ignored.
+  const categoryId = catSlug ? (category?.id ?? -1) : undefined;
+
+  const total = publishedCount({ q, categoryId });
+  const pages = Math.max(1, Math.ceil(total / EXPLORE_PER_PAGE));
+
+  const items = publishedAnalyses({
+    q, categoryId,
+    limit: EXPLORE_PER_PAGE,
+    offset: (page - 1) * EXPLORE_PER_PAGE
+  }).map(it => {
+    let ctx = {};
+    try { ctx = JSON.parse(it.context || '{}'); } catch { ctx = {}; }
+    return {
+      slug: it.slug,
+      title: it.public_title || it.title,
+      summary: it.public_summary?.trim() || metaDescription(it.dilemma, { max: 170 }),
+      author: it.public_author || null,
+      domain: ctx.domain || null,
+      publishedAt: it.published_at,
+      views: it.views,
+      category: it.category_slug ? { slug: it.category_slug, title: it.category_title } : null
+    };
+  });
+
+  res.set('Cache-Control', 'private, max-age=30');
+  res.json({
+    items, total, page, pages,
+    categories: listCategories()
+      .filter(c => c.published > 0)
+      .map(c => ({ slug: c.slug, title: c.title, count: c.published }))
+  });
+});
+
 const FONTS = `<link rel="stylesheet" href="/css/fonts.css">`;
 
 function shell({ head, body, bodyClass = '' }) {
