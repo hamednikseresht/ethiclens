@@ -9,6 +9,18 @@ import History from '@/pages/History';
 import Explore from '@/pages/Explore';
 import Guide from '@/pages/Guide';
 import Settings from '@/pages/Settings';
+import AdminLayout from '@/pages/admin/AdminLayout';
+import AdminOverview from '@/pages/admin/Overview';
+import AdminAi from '@/pages/admin/Ai';
+import AdminPrompts from '@/pages/admin/Prompts';
+import AdminUsers from '@/pages/admin/Users';
+import AdminTiers from '@/pages/admin/Tiers';
+import AdminAnalyses from '@/pages/admin/Analyses';
+import AdminMail from '@/pages/admin/Mail';
+import AdminCategories from '@/pages/admin/Categories';
+import AdminGuide from '@/pages/admin/GuideAdmin';
+import AdminSite from '@/pages/admin/Site';
+import AdminAudit from '@/pages/admin/Audit';
 
 /**
  * Shell and routing.
@@ -72,6 +84,22 @@ export default function App() {
             <Settings user={state.user}
                       onUserChanged={(user) => setState(s => ({ ...s, user }))} />
           } />
+          {/* Nested so every section is its own address: /admin/users is a
+              link one admin can send another, and each section fetches only
+              when it is opened rather than all eleven on arrival. */}
+          <Route path="/admin" element={<AdminLayout user={state.user} />}>
+            <Route index element={<AdminOverview />} />
+            <Route path="ai" element={<AdminAi />} />
+            <Route path="prompts" element={<AdminPrompts />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="tiers" element={<AdminTiers />} />
+            <Route path="analyses" element={<AdminAnalyses />} />
+            <Route path="mail" element={<AdminMail />} />
+            <Route path="categories" element={<AdminCategories />} />
+            <Route path="guide" element={<AdminGuide />} />
+            <Route path="site" element={<AdminSite />} />
+            <Route path="audit" element={<AdminAudit />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
