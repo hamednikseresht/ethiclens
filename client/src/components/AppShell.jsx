@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { Compass, Clock, Globe, BookOpen, X, LogOut, Settings, Shield } from 'lucide-react';
@@ -111,8 +111,10 @@ function AccountSheet({ user, onClose, onSignedOut }) {
         </div>
 
         <div className="space-y-1">
-          <SheetLink icon={Settings} label="تنظیمات حساب" href="/settings" />
-          {user?.role === 'admin' && <SheetLink icon={Shield} label="پنل مدیریت" href="/admin" />}
+          <SheetLink icon={Settings} label="تنظیمات حساب" to="/settings" onGo={onClose} />
+          {user?.role === 'admin' && (
+            <SheetLink icon={Shield} label="پنل مدیریت" to="/admin" onGo={onClose} />
+          )}
           <button onClick={signOut} disabled={busy}
                   className="flex w-full items-center gap-3 rounded-md p-3 text-sm text-destructive hover:bg-muted disabled:opacity-50">
             <LogOut className="size-4" />
@@ -125,15 +127,15 @@ function AccountSheet({ user, onClose, onSignedOut }) {
 }
 
 /**
- * Settings and admin are still the pages that exist today, so these are plain
- * links out of the React app rather than routes. They move in when their turn
- * comes; until then a dead tab would be worse than a working link.
+ * Closes the sheet as it navigates. Left open, it would still be covering the
+ * page the person just asked for when they arrive.
  */
-function SheetLink({ icon: Icon, label, href }) {
+function SheetLink({ icon: Icon, label, to, onGo }) {
   return (
-    <a href={href} className="flex items-center gap-3 rounded-md p-3 text-sm hover:bg-muted">
+    <Link to={to} onClick={onGo}
+          className="flex items-center gap-3 rounded-md p-3 text-sm hover:bg-muted">
       <Icon className="size-4 text-text-4" />
       {label}
-    </a>
+    </Link>
   );
 }

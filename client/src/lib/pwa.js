@@ -37,17 +37,28 @@ export function registerServiceWorker() {
 export function watchInstallPrompt(onAvailable) {
   let deferred = null;
 
-  window.addEventListener('beforeinstallprompt', (e) => {
+  const show = async () => {
+    if (!deferred) return null;
+    deferred.prompt();
+    const { outcome } = await deferred.userChoice;
+    deferred = null;
+    return outcome;
+  };
+
+  const onPrompt = (e) => {
     e.preventDefault();
     deferred = e;
-    onAvailable?.(async () => {
-      if (!deferred) return null;
-      deferred.prompt();
-      const { outcome } = await deferred.userChoice;
-      deferred = null;
-      return outcome;
-    });
-  });
+    onAvailable?.(show);
+  };
+  const onInstalled = () => { deferred = null; onAvailable?.(null); };
 
-  window.addEventListener('appinstalled', () => { deferred = null; });
+  window.addEventListener('beforeinstallprompt', onPrompt);
+  window.addEventListener('appinstalled', onInstalled);
+
+  // Returned so a component can stop listening when it unmounts; without it,
+  // navigating away and back stacks a second listener onto the same event.
+  return () => {
+    window.removeEventListener('beforeinstallprompt', onPrompt);
+    window.removeEventListener('appinstalled', onInstalled);
+  };
 }
