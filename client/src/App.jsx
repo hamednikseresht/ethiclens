@@ -6,7 +6,9 @@ import Login from '@/pages/Login';
 import Analyze from '@/pages/Analyze';
 import Result from '@/pages/Result';
 import History from '@/pages/History';
+import Explore from '@/pages/Explore';
 import Guide from '@/pages/Guide';
+import Settings from '@/pages/Settings';
 
 /**
  * Shell and routing.
@@ -65,9 +67,11 @@ export default function App() {
           <Route path="/" element={<AnalyzeOrResult meta={meta} />} />
           <Route path="/history" element={<History />} />
           <Route path="/guide" element={<Guide />} />
-          {/* The public page is still served the old way; sending people
-              there keeps the tab useful instead of dead until it is ported. */}
-          <Route path="/explore" element={<Leave to="/explore" />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/settings" element={
+            <Settings user={state.user}
+                      onUserChanged={(user) => setState(s => ({ ...s, user }))} />
+          } />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
@@ -104,7 +108,3 @@ function AnalyzeOrResult({ meta }) {
   return <Analyze onDone={(r) => setParams({ id: String(r.analysisId) })} />;
 }
 
-function Leave({ to }) {
-  useEffect(() => { location.href = to; }, [to]);
-  return null;
-}

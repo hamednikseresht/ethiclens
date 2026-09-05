@@ -24,6 +24,29 @@ export function faCount(n) {
   return fa(Number(n).toLocaleString('en-US'));
 }
 
+/**
+ * A SQLite timestamp as a Persian calendar date.
+ *
+ * The column is written by SQLite's datetime('now'), which is UTC but has no
+ * zone marker, so `new Date` on it would be read as local time and drift the
+ * day across midnight. The 'Z' is added before parsing.
+ *
+ * Intl carries the calendar conversion and the numerals both; the fallback is
+ * for the rare environment without the fa-IR locale data.
+ */
+export function faDate(sqlDate) {
+  if (!sqlDate) return '';
+  const raw = String(sqlDate);
+  const iso = raw.includes('T') ? raw : raw.replace(' ', 'T') + 'Z';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  try {
+    return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }).format(d);
+  } catch {
+    return fa(iso.slice(0, 10));
+  }
+}
+
 /** Seconds as m:ss, already converted. */
 export function faDuration(totalSeconds) {
   const s = Math.max(0, Math.floor(totalSeconds));

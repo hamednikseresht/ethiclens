@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { fa } from '@/lib/fa';
+import { fa, faDate } from '@/lib/fa';
 import { Search, Star, NotebookPen, Globe, TriangleAlert, Clock } from 'lucide-react';
 
 /**
@@ -175,14 +175,3 @@ function parseCompleteness(raw) {
   try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { return null; }
 }
 
-function faDate(sqlDate) {
-  if (!sqlDate) return '';
-  const iso = String(sqlDate).includes('T') ? sqlDate : String(sqlDate).replace(' ', 'T') + 'Z';
-  const d = new Date(iso);
-  if (isNaN(d)) return '';
-  try {
-    return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }).format(d);
-  } catch {
-    return fa(iso.slice(0, 10));
-  }
-}
