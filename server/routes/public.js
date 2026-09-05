@@ -404,6 +404,10 @@ for (const [route, page] of Object.entries(SEO_PAGES)) {
       ...page.extra(req).map(o => `<script type="application/ld+json">${jsonLd(o)}</script>`)
     ];
 
+    // Identical for every visitor — no session data is injected — so this can
+    // be cached publicly. Kept short because an admin's edit to the guide
+    // should show up in minutes, not hours.
+    res.set('Cache-Control', 'public, max-age=300');
     res.type('html').send(injectHead(html, blocks.join('\n')));
   });
 }

@@ -91,7 +91,47 @@ app.use('/', publicRouter);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'مسیر API یافت نشد.' }));
 
 // ---- Static files and page routes ----
-app.use(express.static(PUBLIC, { extensions: ['html'], maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0 }));
+/**
+ * How long each kind of file may be held.
+ *
+ * A single max-age for everything is wrong in both directions at once. The
+ * shell carries the current bundle's filename, so caching it for an hour
+ * means an hour of people running the previous deploy; the bundle filenames
+ * carry a content hash, so revalidating them every hour wastes the hash
+ * entirely. They need opposite answers.
+ *
+ * The service worker is the one that bites hardest: a stale copy keeps
+ * serving its own cached assets and cannot be replaced by a deploy, so it is
+ * never cached.
+ */
+function cacheHeaders(res, filePath) {
+  const rel = path.relative(PUBLIC, filePath).replace(/\\/g, '/');
+
+  // Vite writes a content hash into every filename here, so a given URL can
+  // never mean a different file. Safe to keep for a year and never revalidate.
+  if (rel.startsWith('v2/assets/')) {
+    return res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+
+  // Names are stable but the content can be replaced by a deploy, so these
+  // are cached for a while and revalidated rather than trusted outright.
+  if (rel.startsWith('fonts/') || rel.startsWith('icons/')) {
+    return res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+  }
+
+  if (rel === 'sw.js' || rel === 'manifest.webmanifest' || rel.endsWith('.html')) {
+    return res.setHeader('Cache-Control', 'no-cache');
+  }
+
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+}
+
+app.use(express.static(PUBLIC, {
+  extensions: ['html'],
+  setHeaders: process.env.NODE_ENV === 'production'
+    ? cacheHeaders
+    : (res) => res.setHeader('Cache-Control', 'no-store')
+}));
 
 const PAGES = {
   '/': 'index.html',
@@ -107,7 +147,10 @@ const PAGES = {
   '/verify': 'pages/verify.html'
 };
 for (const [route, file] of Object.entries(PAGES)) {
-  app.get(route, (_req, res) => res.sendFile(path.join(PUBLIC, file)));
+  app.get(route, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(PUBLIC, file));
+  });
 }
 
 /**
@@ -127,6 +170,9 @@ app.get(/^\/v2(\/.*)?$/, (req, res, next) => {
   if (req.path.startsWith('/v2/assets/')) return next();
   const shell = path.join(PUBLIC, 'v2', 'index.html');
   if (!fs.existsSync(shell)) return next();
+  // sendFile does not run the static middleware's header hook, so the shell
+  // would otherwise go out with no policy at all and be heuristically cached.
+  res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(shell);
 });
 
