@@ -13,13 +13,44 @@ import { escapeHtml as esc } from './seo.js';
 const SCHOOL = Object.fromEntries(SCHOOLS.map(s => [s.key, s]));
 
 /* ---------------- Lightweight markdown ---------------- */
+
+/**
+ * Turn `[text](url)` into an anchor.
+ *
+ * Editorial content cites sources — Aristotle, Kant, the Stanford
+ * Encyclopedia — and without this the brackets rendered literally, so an
+ * editor writing a citation got visible punctuation and no link. Linking out
+ * to the work you are describing is also the thing Google asks for by name.
+ *
+ * Applied before the emphasis rules so a URL containing an asterisk cannot be
+ * eaten by them, and run on already-escaped text so the href is safe by
+ * construction.
+ *
+ * Only http, https, a site-relative path and a fragment are accepted.
+ * Anything else — javascript:, data: — is left as plain text rather than
+ * dropped, so a mistake is visible in the page instead of silently vanishing.
+ */
+function link(escaped) {
+  return escaped.replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, (whole, text, href) => {
+    const safe = /^(https?:\/\/|\/(?!\/)|#)/i.test(href);
+    if (!safe) return whole;
+
+    // rel="noopener" on anything leaving the site: it costs nothing and closes
+    // the window.opener hole. No nofollow — these are citations the editor
+    // chose, and telling Google not to follow the source you are quoting is
+    // the opposite of what the link is for.
+    const external = /^https?:\/\//i.test(href);
+    return `<a href="${href}"${external ? ' target="_blank" rel="noopener"' : ''}>${text}</a>`;
+  });
+}
+
 export function md(src) {
   if (!src) return '';
   const lines = String(src).replace(/\r/g, '').split('\n');
   const out = [];
   let list = null, para = [];
 
-  const inline = t => esc(t)
+  const inline = t => link(esc(t))
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>')
     .replace(/`([^`\n]+)`/g, '<code>$1</code>');

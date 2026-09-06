@@ -11,17 +11,40 @@ import { Fragment } from 'react';
  * model writes.
  */
 
-/** Split one line into bold / italic / code runs. */
+/**
+ * Which link targets are allowed to become anchors.
+ *
+ * http, https, a site-relative path and a fragment. Anything else —
+ * javascript:, data:, a protocol-relative //host — falls through and is
+ * rendered as the literal text it was written as, so a mistake shows on the
+ * page instead of turning into something that runs.
+ */
+const SAFE_HREF = /^(https?:\/\/|\/(?!\/)|#)/i;
+
+/** Split one line into link / bold / italic / code runs. */
 function inline(text, keyBase) {
   const parts = [];
-  const pattern = /(\*\*[^*]+\*\*|`[^`]+`|(?:^|[\s(])\*[^*\n]+\*)/g;
+  const pattern = /(\[[^\]\n]+\]\([^)\s]+\)|\*\*[^*]+\*\*|`[^`]+`|(?:^|[\s(])\*[^*\n]+\*)/g;
   let last = 0, m, i = 0;
 
   while ((m = pattern.exec(text)) !== null) {
     if (m.index > last) parts.push(text.slice(last, m.index));
     const token = m[0];
 
-    if (token.startsWith('**')) {
+    if (token.startsWith('[')) {
+      const [, label, href] = token.match(/^\[([^\]\n]+)\]\(([^)\s]+)\)$/);
+      if (!SAFE_HREF.test(href)) {
+        parts.push(token);
+      } else {
+        const external = /^https?:\/\//i.test(href);
+        parts.push(
+          <a key={`${keyBase}-a${i++}`} href={href} className="text-primary underline"
+             {...(external ? { target: '_blank', rel: 'noopener' } : {})}>
+            {label}
+          </a>
+        );
+      }
+    } else if (token.startsWith('**')) {
       parts.push(<strong key={`${keyBase}-b${i++}`} className="font-bold">{token.slice(2, -2)}</strong>);
     } else if (token.startsWith('`')) {
       parts.push(
