@@ -300,7 +300,8 @@ export function renderTopbar(activePath) {
   host.innerHTML = `
     <div class="topbar-inner">
       <a class="brand" href="/">
-        <span class="brand-mark">EL</span><span class="brand-text">دیدگاه اخلاق</span>
+        <img class="brand-mark" src="/icons/mark.svg" width="32" height="32" alt="">
+        <span class="brand-text">دیدگاه اخلاق</span>
       </a>
       <nav class="nav-links" id="navPanel">${links}${adminLink}</nav>
       <div class="grow"></div>
@@ -378,6 +379,70 @@ export function mountBackToTop() {
 }
 
 /* ---------------- Page bootstrap ---------------- */
+/* ---------------- Install the app ----------------
+   The install card used to live only in the app's settings page, which is
+   behind a sign-in and three taps deep — so someone arriving at the homepage
+   on a phone had no way to reach it and the product looked like it could not
+   be installed at all. These pages are now inside the manifest's scope, so
+   the browser fires the event here too and there is somewhere to put it. */
+
+/**
+ * A button in the top bar, shown only when installing is actually possible.
+ *
+ * The event is captured rather than left alone so the browser does not raise
+ * its own banner at a moment of its choosing — mid-read on an analysis, most
+ * likely. iOS never fires it at all and installs by hand, so it gets a short
+ * instruction instead of a button that could not work.
+ */
+export function mountInstall() {
+  const standalone = matchMedia('(display-mode: standalone)').matches
+    || navigator.standalone === true;
+  if (standalone) return;
+
+  const host = $('#topbar');
+  if (!host) return;
+
+  const button = (label, onClick) => {
+    const b = document.createElement('button');
+    b.className = 'btn btn-sm btn-primary install-btn';
+    b.textContent = label;
+    b.onclick = onClick;
+    $('#themeBtn', host)?.insertAdjacentElement('beforebegin', b);
+    return b;
+  };
+
+  // iPadOS reports itself as a Mac, so touch points are what separate them.
+  const ua = navigator.userAgent;
+  const iOS = /iPad|iPhone|iPod/.test(ua)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  // Chrome and Firefox on iOS wrap WebKit but cannot add to the home screen.
+  if (iOS && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua)) {
+    button('نصب اپ', () => toast(
+      'در نوار پایین Safari دکمه اشتراک‌گذاری را بزنید و «Add to Home Screen» را انتخاب کنید.'
+    ));
+    return;
+  }
+
+  let deferred = null;
+  let btn = null;
+
+  addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferred = e;
+    if (btn) return;
+    btn = button('نصب اپ', async () => {
+      if (!deferred) return;
+      deferred.prompt();
+      await deferred.userChoice;
+      deferred = null;
+      btn?.remove();
+      btn = null;
+    });
+  });
+
+  addEventListener('appinstalled', () => { deferred = null; btn?.remove(); btn = null; });
+}
+
 export async function boot({ auth = true, admin = false } = {}) {
   try {
     await loadSession();
@@ -388,5 +453,6 @@ export async function boot({ auth = true, admin = false } = {}) {
   renderTopbar();
   mountBackToTop();
   mountStatusBanner();
+  mountInstall();
   return true;
 }
