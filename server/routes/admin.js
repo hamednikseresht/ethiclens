@@ -674,10 +674,70 @@ router.get('/analyses', (req, res) => {
   const perPage = 20;
   const total = db.prepare('SELECT COUNT(*) c FROM analyses').get().c;
   const items = db.prepare(
-    `SELECT a.id, a.title, a.model, a.status, a.duration_ms, a.created_at, u.email, u.name
-     FROM analyses a JOIN users u ON u.id = a.user_id
+    `SELECT a.id, a.title, a.model, a.status, a.duration_ms, a.created_at,
+            a.is_public, a.slug, a.views, c.slug AS category_slug,
+            u.email, u.name
+     FROM analyses a
+     JOIN users u ON u.id = a.user_id
+     LEFT JOIN categories c ON c.id = a.category_id
      ORDER BY a.created_at DESC LIMIT ? OFFSET ?`).all(perPage, (page - 1) * perPage);
   res.json({ items, total, page, pages: Math.ceil(total / perPage) || 1 });
+});
+
+/**
+ * Delete any analysis.
+ *
+ * An owner can already delete their own from the history list. This is the
+ * moderation version of that, and it is a different thing: the row belongs to
+ * someone else, it is gone for good, and the dilemma text in it is personal —
+ * so it is written to the audit log with the owner's address, which the
+ * owner's own delete is not.
+ *
+ * A published analysis takes a second confirmation. Its address is public and
+ * may be linked or indexed; deleting it turns that address into a 404 for
+ * everyone holding the link, and that is worth being told before rather than
+ * discovering after. The unpublish route is right there and is usually what
+ * was meant.
+ */
+router.delete('/analyses/:id', (req, res) => {
+  const row = db.prepare(`
+    SELECT a.id, a.title, a.is_public, a.slug, a.views, a.user_id,
+           c.slug AS category_slug, u.email
+    FROM analyses a
+    JOIN users u ON u.id = a.user_id
+    LEFT JOIN categories c ON c.id = a.category_id
+    WHERE a.id = ?`).get(req.params.id);
+
+  if (!row) return res.status(404).json({ error: 'تحلیل یافت نشد.' });
+
+  if (row.is_public && !req.query.force) {
+    return res.status(400).json({
+      error: 'این تحلیل منتشر شده است. با حذف آن، نشانی عمومی‌اش برای هرکس که ' +
+             'لینک را دارد و برای موتورهای جست‌وجو ۴۰۴ می‌شود. اگر فقط می‌خواهید ' +
+             'از دید عموم خارج شود، به‌جای حذف آن را از انتشار درآورید.',
+      needsForce: true,
+      publicPath: `/analysis/${row.category_slug || 'public'}/${encodeURIComponent(row.slug || '')}`,
+      views: row.views
+    });
+  }
+
+  db.prepare('DELETE FROM analyses WHERE id = ?').run(row.id);
+  audit(req.user.id, 'analysis_delete',
+        { id: row.id, title: row.title, owner: row.email, wasPublic: Boolean(row.is_public) },
+        req.ip);
+
+  res.json({ ok: true });
+});
+
+/** Take a published analysis off the public site without deleting it. */
+router.post('/analyses/:id/unpublish', (req, res) => {
+  const row = db.prepare('SELECT id, title, slug, is_public FROM analyses WHERE id = ?')
+                .get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'تحلیل یافت نشد.' });
+
+  db.prepare('UPDATE analyses SET is_public = 0 WHERE id = ?').run(row.id);
+  audit(req.user.id, 'analysis_unpublish', { id: row.id, slug: row.slug, by: 'admin' }, req.ip);
+  res.json({ ok: true });
 });
 
 router.get('/audit', (req, res) => {
