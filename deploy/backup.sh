@@ -40,9 +40,9 @@ else
   DB="$APP_DIR/data/ethiclens.db"
 fi
 
-command -v sqlite3 >/dev/null || die "sqlite3 نصب نیست:  sudo apt install -y sqlite3"
-[ -f "$DB" ] || die "پایگاه داده پیدا نشد: $DB"
-echo "  پایگاه داده: $DB"
+command -v sqlite3 >/dev/null || die "sqlite3 is not installed:  sudo apt install -y sqlite3"
+[ -f "$DB" ] || die "database not found: $DB"
+echo "  database: $DB"
 
 install -d -o "$APP_USER" -g "$APP_USER" -m 750 "$DEST"
 
@@ -56,7 +56,7 @@ sudo -u "$APP_USER" sqlite3 "$DB" ".backup '$OUT'"
 # A backup that cannot be opened is worse than none, because it is trusted.
 # Checked here rather than on the day it is needed.
 sudo -u "$APP_USER" sqlite3 "$OUT" 'PRAGMA integrity_check;' | grep -qx 'ok' \
-  || die "پشتیبان ساخته شد ولی سالم نیست: $OUT"
+  || die "the backup was written but failed its integrity check: $OUT"
 
 gzip -f "$OUT"
 echo "  ✓ $OUT.gz  ($(du -h "$OUT.gz" | cut -f1))"
@@ -64,6 +64,6 @@ echo "  ✓ $OUT.gz  ($(du -h "$OUT.gz" | cut -f1))"
 # Old copies are removed after the retention window. -mtime only ever matches
 # files this script made, because the name pattern is ours.
 find "$DEST" -name 'ethiclens-*.db.gz' -type f -mtime "+$KEEP_DAYS" -print -delete \
-  | sed 's/^/  - حذف پشتیبان قدیمی: /'
+  | sed 's/^/  - removed old backup: /'
 
-echo "  ✓ $(find "$DEST" -name 'ethiclens-*.db.gz' | wc -l) پشتیبان نگهداری می‌شود (‌$KEEP_DAYS روز)"
+echo "  ✓ $(find "$DEST" -name 'ethiclens-*.db.gz' | wc -l) backup(s) kept ($KEEP_DAYS days)"

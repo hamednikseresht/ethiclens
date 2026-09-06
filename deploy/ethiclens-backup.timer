@@ -1,5 +1,5 @@
 [Unit]
-Description=Ethic Lens — پشتیبان‌گیری روزانه
+Description=Ethic Lens daily database backup
 
 [Timer]
 # Nightly, at a minute nobody else picks. Persistent so a machine that was

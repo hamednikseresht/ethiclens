@@ -1,5 +1,5 @@
 [Unit]
-Description=Ethic Lens — پشتیبان‌گیری از پایگاه داده
+Description=Ethic Lens database backup
 Documentation=file:///opt/ethiclens/deploy/DEPLOY.md
 
 [Service]
