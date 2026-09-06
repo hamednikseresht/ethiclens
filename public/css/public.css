@@ -109,7 +109,10 @@
   background:var(--bg-surface);border:1px solid var(--border);
   border-radius:var(--r-sm);text-decoration:none;transition:border-color .15s}
 .cat-card:hover{border-color:var(--primary)}
+.cat-card-head{display:flex;align-items:center;gap:.5rem}
+.cat-card-icon{font-size:1.25rem;line-height:1;flex-shrink:0}
 .cat-card-title{font-size:1rem;font-weight:800;color:var(--text)}
+.pub-head-icon{font-size:.9em;line-height:1}
 .cat-card-desc{font-size:.82rem;line-height:1.9;color:var(--text-muted);text-align:justify}
 .cat-card-count{font-size:.74rem;font-weight:700;color:var(--primary);margin-top:.2rem}
 

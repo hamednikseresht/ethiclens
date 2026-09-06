@@ -419,7 +419,10 @@ router.get('/explore', (req, res) => {
     <nav class="cat-grid" aria-label="دسته‌بندی‌ها">
       ${shelves.map(c => `
         <a class="cat-card" href="/category/${esc(c.slug)}">
-          <span class="cat-card-title">${esc(c.title)}</span>
+          <span class="cat-card-head">
+            ${c.icon ? `<span class="cat-card-icon" aria-hidden="true">${esc(c.icon)}</span>` : ''}
+            <span class="cat-card-title">${esc(c.title)}</span>
+          </span>
           ${c.description ? `<span class="cat-card-desc">${esc(c.description)}</span>` : ''}
           <span class="cat-card-count">${faNum(c.published)} تحلیل</span>
         </a>`).join('')}
@@ -682,7 +685,7 @@ ${publicNav()}
     <a href="/intro">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a> ‹ <span>${esc(cat.title)}</span>
   </nav>
   <div class="pub-head">
-    <h1>${esc(cat.title)}</h1>
+    <h1>${cat.icon ? `<span class="pub-head-icon" aria-hidden="true">${esc(cat.icon)}</span> ` : ''}${esc(cat.title)}</h1>
     <p>${esc(description)}</p>
   </div>
   ${items.length

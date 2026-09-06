@@ -42,8 +42,11 @@ export default function Categories() {
   );
 }
 
+/** Shown under the icon field so an admin has something to paste. */
+const ICON_HINT = 'یک ایموجی — روی کارت دسته و بالای صفحه آن دیده می‌شود. مثل 💼 🏥 🎓 🏛️';
+
 function AddCategory({ onDone }) {
-  const [form, setForm] = useState({ title: '', slug: '', description: '' });
+  const [form, setForm] = useState({ title: '', slug: '', description: '', icon: '' });
   const act = useAction(onDone);
 
   return (
@@ -55,7 +58,10 @@ function AddCategory({ onDone }) {
                  hint="مثل workplace — در آدرس صفحه دسته می‌آید."
                  onChange={(e) => setForm(f => ({ ...f, slug: e.target.value }))} />
       <TextField label="توضیح" id="c-desc" value={form.description}
+                 hint="یک تا دو جمله؛ روی کارت دسته و در توضیح متای صفحه آن می‌آید."
                  onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} />
+      <TextField label="آیکون" id="c-icon" value={form.icon} hint={ICON_HINT}
+                 onChange={(e) => setForm(f => ({ ...f, icon: e.target.value }))} />
       <Status msg={act.msg} error={act.error} className="mb-2" />
       <Button type="submit" size="sm" variant="primary" disabled={act.busy}>ساختن</Button>
     </form>
@@ -66,7 +72,8 @@ function CategoryRow({ cat, onChanged }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     title: cat.title, slug: cat.slug,
-    description: cat.description || '', sort_order: cat.sort_order
+    description: cat.description || '', icon: cat.icon || '',
+    sort_order: cat.sort_order
   });
   const [force, setForce] = useState(null);
   const act = useAction(onChanged);
@@ -86,6 +93,7 @@ function CategoryRow({ cat, onChanged }) {
     <div className="rounded-lg border border-border">
       <button onClick={() => setOpen(o => !o)} aria-expanded={open}
               className="flex w-full items-center gap-2 p-3 text-start">
+        {cat.icon && <span className="text-lg leading-none" aria-hidden="true">{cat.icon}</span>}
         <span className="grow">
           <span className="block text-[13px] font-bold">{cat.title}</span>
           <span className="ltr mt-0.5 block text-[10.5px] text-text-5">/category/{cat.slug}</span>
@@ -102,7 +110,10 @@ function CategoryRow({ cat, onChanged }) {
                      hint="عوض کردن این، نشانی صفحه دسته را تغییر می‌دهد و لینک‌های قبلی می‌شکنند."
                      onChange={(e) => setForm(f => ({ ...f, slug: e.target.value }))} />
           <TextField label="توضیح" id={`c-d-${cat.id}`} value={form.description}
+                     hint="یک تا دو جمله؛ روی کارت دسته و در توضیح متای صفحه آن می‌آید."
                      onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} />
+          <TextField label="آیکون" id={`c-i-${cat.id}`} value={form.icon} hint={ICON_HINT}
+                     onChange={(e) => setForm(f => ({ ...f, icon: e.target.value }))} />
           <TextField label="ترتیب" id={`c-o-${cat.id}`} type="number" value={form.sort_order}
                      onChange={(e) => setForm(f => ({ ...f, sort_order: e.target.value }))} />
 
