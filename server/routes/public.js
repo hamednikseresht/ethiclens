@@ -468,22 +468,17 @@ router.get('/robots.txt', (req, res) => {
 // crawlable pages are the ones listed here, and everything the app owns is
 // behind a login where there is nothing to index.
 `User-agent: *
-Allow: /intro
+Allow: /
 Allow: /about
 Allow: /guide
 Allow: /explore
 Allow: /analysis/
 Allow: /category/
 
-# صفحه‌های خصوصی و درون‌برنامه‌ای نباید ایندکس شوند
-Disallow: /$
-Disallow: /dashboard
-Disallow: /history
-Disallow: /explore
-Disallow: /guide
-Disallow: /settings
-Disallow: /admin
-Disallow: /login
+# The application and the API. Everything under /app is behind a sign-in and
+# already carries a noindex meta tag; this keeps crawlers from spending
+# requests on it at all.
+Disallow: /app/
 Disallow: /api/
 
 ${base ? `Sitemap: ${base}/sitemap.xml` : ''}`);
