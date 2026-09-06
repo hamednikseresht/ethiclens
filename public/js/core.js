@@ -138,7 +138,19 @@ export function md(src) {
   let list = null;   // 'ul' | 'ol' | null
   let para = [];
 
-  const inline = t => esc(t)
+  // Links first, so a URL containing an asterisk is not eaten by the emphasis
+  // rules below, and on already-escaped text so the href is safe by
+  // construction. Only http, https, a site-relative path and a fragment are
+  // accepted; anything else stays plain text, so a mistake is visible on the
+  // page rather than silently dropped. Mirrors md() in
+  // server/services/render-analysis.js.
+  const link = t => t.replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, (whole, text, href) => {
+    if (!/^(https?:\/\/|\/(?!\/)|#)/i.test(href)) return whole;
+    const external = /^https?:\/\//i.test(href);
+    return `<a href="${href}"${external ? ' target="_blank" rel="noopener"' : ''}>${text}</a>`;
+  });
+
+  const inline = t => link(esc(t))
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>')
     .replace(/`([^`\n]+)`/g, '<code>$1</code>');
