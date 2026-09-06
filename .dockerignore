@@ -1,0 +1,34 @@
+# Keeping the build context small is not only about speed: anything sent here
+# can end up in a layer, and .env holds API keys.
+.env
+.env.*
+!.env.example
+
+node_modules
+client-dist
+client-dist.next
+client-dist.prev
+
+# The live database and its backups. Copying these in would bake someone's
+# data into the image and then be shadowed by the volume anyway.
+data
+
+.git
+.gitignore
+.gitattributes
+.github
+.claude
+.vscode
+.idea
+
+*.log
+*.bak
+_*.mjs
+_*.js
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Design references and the original sketch: neither is served.
+design
+ethic_2.html
