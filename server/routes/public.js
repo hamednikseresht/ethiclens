@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import {
   metaTags, siteUrl, absoluteUrl, escapeHtml as esc, jsonLd, isoDate, faDate,
   metaDescription, publishedAnalyses, publishedCount, findBySlug,
-  siteJsonLd, breadcrumbJsonLd, injectHead, withNonce
+  siteJsonLd, breadcrumbJsonLd, injectHead, withNonce, relatedAnalyses
 } from '../services/seo.js';
 import { renderAnalysis, renderOptions, verdictChips, faNum, splitVerdict, md } from '../services/render-analysis.js';
 import { guideContent } from '../services/guide.js';
@@ -302,13 +302,31 @@ router.get('/analysis/:category/:slug', (req, res, next) => {
     ? `<div class="pub-lead"><strong>خلاصه پیشنهاد:</strong> ${esc(metaDescription(sections.recommendation, { max: 260 }))}</div>`
     : '';
 
+  /* ---- Where to go next ----
+     Without this the article is a dead end: the reader has finished and the
+     crawler that arrived from a search result finds no path deeper into the
+     site. Same category first, then the newest of anything else. */
+  const siblings = relatedAnalyses(row.id, row.category_id, 3);
+  const related = siblings.length ? `
+  <aside class="pub-related">
+    <h2 class="pub-sec">تحلیل‌های مرتبط</h2>
+    <div class="pub-grid">
+      ${siblings.map(s => `
+        <a class="pub-card" href="/analysis/${esc(s.category_slug || PUBLIC_CATEGORY.slug)}/${encodeURIComponent(s.slug)}">
+          <span class="pub-card-title">${esc(s.public_title || s.title)}</span>
+          <p class="pub-card-sum">${esc(s.public_summary?.trim() || metaDescription(s.dilemma, { max: 120 }))}</p>
+          ${s.published_at ? `<span class="pub-card-foot">${esc(faDate(s.published_at))}</span>` : ''}
+        </a>`).join('')}
+    </div>
+  </aside>` : '';
+
   const body = `
 ${publicNav()}
 <main class="wrap" id="main">
   <article>
     <div class="result-head">
       <nav class="pub-crumbs" aria-label="مسیر">
-        <a href="/intro">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a>
+        <a href="/">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a>
         ${category ? `‹ <a href="/category/${esc(category.slug)}">${esc(category.title)}</a>` : ''}
         ‹ <span>${esc(title)}</span>
       </nav>
@@ -336,6 +354,8 @@ ${publicNav()}
       دیدگاه اخلاق جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست و مسئولیت تصمیم با خود فرد است.
     </div>
   </article>
+
+  ${related}
 
   <aside class="pub-cta">
     <h2>دوراهی خودتان را تحلیل کنید</h2>
@@ -697,7 +717,7 @@ router.get('/category/:slug', (req, res, next) => {
 ${publicNav()}
 <main class="wrap" id="main">
   <nav class="pub-crumbs" aria-label="مسیر">
-    <a href="/intro">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a> ‹ <span>${esc(cat.title)}</span>
+    <a href="/">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a> ‹ <span>${esc(cat.title)}</span>
   </nav>
   <div class="pub-head">
     <h1>${cat.icon ? `<span class="pub-head-icon" aria-hidden="true">${esc(cat.icon)}</span> ` : ''}${esc(cat.title)}</h1>

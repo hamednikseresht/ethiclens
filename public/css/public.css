@@ -142,3 +142,13 @@
 .pub-head p,
 .result-dilemma,
 .disclaimer{text-align:justify}
+
+/* --------------------------------------------------------------------------
+   Related analyses
+   --------------------------------------------------------------------------
+   Every article used to end at the call to action, which made it a dead end
+   for a reader who had finished and for a crawler that arrived from a search
+   result. Reuses .pub-grid and .pub-card so it matches the index it links to.
+   -------------------------------------------------------------------------- */
+.pub-related{margin:2.5rem 0 1rem}
+.pub-related .pub-sec{margin-bottom:1rem}
