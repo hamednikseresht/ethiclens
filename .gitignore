@@ -2,15 +2,15 @@ node_modules/
 .env
 *.log
 
-# پایگاه داده و پشتیبان‌ها (در زمان اجرا ساخته می‌شود)
+# Database and backups (created at runtime)
 data/
 
-# فایل‌های موقت آزمون و اسکریپت‌های یک‌بارمصرف
+# Scratch test files and one-off scripts
 _*.mjs
 _*.js
 *.bak
 
-# ابزار محلی
+# Local tooling
 .claude/
 .vscode/
 .idea/
