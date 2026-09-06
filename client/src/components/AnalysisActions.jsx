@@ -211,6 +211,15 @@ function RenameSheet({ analysis, onClose, onUpdated }) {
    ========================================================================== */
 
 /**
+ * Where a search result stops showing the description.
+ *
+ * Not a cap — the whole summary is sent and the cards on /explore use all of
+ * it. Google simply renders about this much, so the counter tells an editor
+ * to put the sentence that matters first rather than trailing it.
+ */
+const META_LIMIT = 160;
+
+/**
  * Publishing is always explicit and never automatic — a dilemma is personal
  * and often carries identifying detail. The form therefore shows exactly what
  * will become public: a separate title, a summary, and a name the author can
@@ -306,6 +315,19 @@ function PublishSheet({ analysis, onClose, onUpdated }) {
                     className="mt-1 w-full rounded-md border border-input bg-card p-3 text-[13px]
                                leading-loose focus-visible:outline-none focus-visible:ring-2
                                focus-visible:ring-ring" />
+          {/* This text is the page's meta description. The whole of it is
+              sent, but a search result shows only the first ~۱۶۰ characters,
+              so the counter marks where the rest stops being read. */}
+          <p className="mt-1 flex justify-between text-[11px] text-text-5">
+            <span>
+              {form.public_summary.length > META_LIMIT
+                ? `در نتایج جست‌وجو حدود ${fa(META_LIMIT)} نویسه اول دیده می‌شود — مهم‌ترین جمله را اول بیاورید.`
+                : 'در نتایج جست‌وجو زیر عنوان صفحه می‌آید.'}
+            </span>
+            <span className={`nums shrink-0 ps-2 ${form.public_summary.length > META_LIMIT ? 'text-warn' : ''}`}>
+              {fa(form.public_summary.length)} / {fa(META_LIMIT)}
+            </span>
+          </p>
         </div>
 
         <div className="mb-3">

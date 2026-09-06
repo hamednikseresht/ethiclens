@@ -373,11 +373,18 @@ ${siteFooter()}`;
 /* ==========================================================================
    Public analyses index
    ========================================================================== */
-router.get('/explore', (req, res) => {
+router.get('/explore', (req, res, next) => {
   const perPage = 12;
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const total = publishedCount();
   const pages = Math.max(1, Math.ceil(total / perPage));
+
+  // A page past the end is not an empty page, it is not a page. Answering 200
+  // with an empty list hands a crawler unlimited addresses — ?page=99 works
+  // just as well as ?page=10 — each one indexable and each one thin. The
+  // shape only shows up once there is enough published to paginate at all.
+  if (page > pages) return next();
+
   const items = publishedAnalyses({ limit: perPage, offset: (page - 1) * perPage });
 
   const path = page > 1 ? `/explore?page=${page}` : '/explore';
@@ -651,6 +658,10 @@ router.get('/category/:slug', (req, res, next) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const total = countInCategory(cat.id);
   const pages = Math.max(1, Math.ceil(total / perPage));
+
+  // Same as /explore: past the last page is a 404, not an empty shelf.
+  if (page > pages) return next();
+
   const items = analysesInCategory(cat.id, { limit: perPage, offset: (page - 1) * perPage });
 
   const path = page > 1 ? `/category/${cat.slug}?page=${page}` : `/category/${cat.slug}`;
