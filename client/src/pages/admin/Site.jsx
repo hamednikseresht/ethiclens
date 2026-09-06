@@ -22,6 +22,8 @@ export default function Site() {
     if (!data) return;
     setForm({
       site_title: data.site_title || '',
+      site_name: data.site_name || '',
+      site_alternate_name: data.site_alternate_name || '',
       site_tagline: data.site_tagline || '',
       site_url: data.site_url || '',
       og_image: data.og_image || '',
@@ -53,7 +55,13 @@ export default function Site() {
   return (
     <div className="space-y-3">
       <Panel title="هویت سایت">
-        <TextField label="نام سایت" id="s-title" value={form.site_title} onChange={set('site_title')} />
+        <TextField label="عنوان صفحه" id="s-title" value={form.site_title} onChange={set('site_title')}
+                   hint="در تب مرورگر و به‌عنوان تیتر در نتایج جست‌وجو می‌آید؛ می‌تواند توضیح هم داشته باشد." />
+        <TextField label="نام برند" id="s-name" value={form.site_name} onChange={set('site_name')}
+                   hint="فقط نام، بدون توضیح — همین را گوگل بالای نتایج سایت نشان می‌دهد. خالی بماند، از بخش اول «عنوان صفحه» برداشته می‌شود." />
+        <TextField label="نام لاتین" id="s-alt" dir="ltr" value={form.site_alternate_name}
+                   onChange={set('site_alternate_name')}
+                   hint="نام دوم برند، برای جست‌وجوی لاتین. مثل Ethic Lens." />
         <TextField label="شعار" id="s-tag" value={form.site_tagline} onChange={set('site_tagline')} />
         <TextField label="آدرس سایت" id="s-url" dir="ltr" value={form.site_url}
                    onChange={set('site_url')}

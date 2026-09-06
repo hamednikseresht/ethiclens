@@ -4,6 +4,14 @@ import { DEFAULT_PROMPT, DEFAULT_PROMPT_KEY } from './default-prompt.js';
 const DEFAULTS = {
   site_title: 'دیدگاه اخلاق — Ethic Lens',
   site_tagline: 'دوراهی‌ات را از هشت منظر فلسفه اخلاق ببین',
+  // The brand on its own, for Google's site name and og:site_name.
+  //
+  // Separate from site_title because the two want different things: a <title>
+  // competes in a search result and carries a descriptor, while a site name
+  // has to be the bare brand or Google ignores it and picks its own. Left
+  // empty, it is derived from site_title — see siteName() in services/seo.js.
+  site_name: '',
+  site_alternate_name: 'Ethic Lens',
   site_url: '',                      // for canonical links and the sitemap — e.g. https://ethiclens.ir
   // Social preview image, 1200x630. Empty means the card degrades to a plain
   // text summary rather than promising a picture the site cannot supply.
