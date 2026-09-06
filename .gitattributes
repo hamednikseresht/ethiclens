@@ -1,8 +1,8 @@
-# پایان خط را قطعی می‌کند، مستقل از تنظیم core.autocrlf هر توسعه‌دهنده.
+# Pins line endings regardless of each developer's core.autocrlf setting.
 #
-# فایل‌های پوشه deploy روی سرور لینوکسی اجرا می‌شوند. اگر با پایان خط
-# ویندوزی (CRLF) آنجا برسند، bash روی کاراکتر \r گیر می‌کند و خطای
-# گنگی مثل «$'\r': command not found» می‌دهد.
+# The files under deploy/ run on a Linux server. Arriving there with Windows
+# line endings (CRLF), bash trips over the \r and reports something opaque
+# like: $'\r': command not found
 
 *                     text=auto eol=lf
 

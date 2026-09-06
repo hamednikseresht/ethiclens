@@ -447,7 +447,7 @@ export async function boot({ auth = true, admin = false } = {}) {
   try {
     await loadSession();
   } catch (e) {
-    console.error('نشست بارگذاری نشد', e);
+    console.error('[core] session failed to load', e);
   }
   if (auth && !requireUser(admin)) return false;
   renderTopbar();

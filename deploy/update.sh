@@ -2,7 +2,7 @@
 #
 # One command to update a deployed Ethic Lens.
 #
-#   sudo bash /opt/ethiclens/deploy/update.sh
+#   sudo BRANCH=<branch> bash /opt/ethiclens/deploy/update.sh
 #
 # Exists because running the four update steps by hand kept going wrong in two
 # specific ways, both of which look like success:
@@ -23,20 +23,25 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/opt/ethiclens}"
 APP_USER="${APP_USER:-ethiclens}"
 SERVICE="${SERVICE:-ethiclens}"
-BRANCH="${BRANCH:-main}"
 
-say()  { printf '\n\033[1m▸ %s\033[0m\n' "$*"; }
-ok()   { printf '  \033[32m✓\033[0m %s\n' "$*"; }
+# Defaults to the branch that is already checked out rather than to a fixed
+# name. Hard-coding "main" meant every deploy of a different branch had to
+# pass BRANCH= or hit a pull that cannot fast-forward, which fails safely but
+# reads like a broken script.
+BRANCH="${BRANCH:-$(git -C "${APP_DIR:-/opt/ethiclens}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)}"
+
+say()  { printf '\n\033[1m> %s\033[0m\n' "$*"; }
+ok()   { printf '  \033[32mOK\033[0m %s\n' "$*"; }
 warn() { printf '  \033[33m!\033[0m %s\n' "$*"; }
-die()  { printf '\n  \033[31m✗ %s\033[0m\n\n' "$*" >&2; exit 1; }
+die()  { printf '\n  \033[31mFAILED: %s\033[0m\n\n' "$*" >&2; exit 1; }
 
-[ "$(id -u)" -eq 0 ] || die "این اسکریپت را با sudo اجرا کنید."
-[ -d "$APP_DIR/.git" ] || die "$APP_DIR یک مخزن گیت نیست."
+[ "$(id -u)" -eq 0 ] || die "run this script with sudo."
+[ -d "$APP_DIR/.git" ] || die "$APP_DIR is not a git repository."
 
 cd "$APP_DIR"
 
 # ---------------------------------------------------------------------------
-say "بررسی نشانی مخزن"
+say "Checking the remote URL"
 
 REMOTE="$(sudo -u "$APP_USER" git remote get-url origin)"
 
@@ -49,9 +54,9 @@ REMOTE="$(sudo -u "$APP_USER" git remote get-url origin)"
 CLEAN="$(printf '%s' "$REMOTE" | sed -E 's#^(https://)[^/@:]+@#\1#')"
 
 if [ "$CLEAN" != "$REMOTE" ]; then
-  warn "نشانی نام کاربری داشت — همین باعث خطای ۴۰۱ می‌شد."
+  warn "the URL carried a username - that is what caused the 401."
   sudo -u "$APP_USER" git remote set-url origin "$CLEAN"
-  ok "اصلاح شد: $CLEAN"
+  ok "corrected: $CLEAN"
 else
   ok "$REMOTE"
 fi
@@ -61,12 +66,12 @@ fi
 # answer (it runs unattended under sudo).
 if ! curl -fsS -o /dev/null --max-time 15 \
      "$(printf '%s' "$CLEAN" | sed -E 's#^https://github\.com/#https://api.github.com/repos/#; s#\.git$##')" 2>/dev/null; then
-  warn "مخزن عمومی نیست یا گیت‌هاب در دسترس نبود."
-  warn "اگر خصوصی است، به‌جای رمز از Personal Access Token یا کلید SSH استفاده کنید."
+  warn "the repository is not public, or GitHub was unreachable."
+  warn "if it is private, use a personal access token or an SSH key, not a password."
 fi
 
 # ---------------------------------------------------------------------------
-say "دریافت کد از شاخه $BRANCH"
+say "Pulling branch $BRANCH"
 
 BEFORE="$(sudo -u "$APP_USER" git rev-parse --short HEAD)"
 
@@ -86,32 +91,32 @@ if ! pull; then
   # what fixed it, so the next run and every other repository on the machine
   # work too.
   if [ -z "$(git config --system --get http.version || true)" ]; then
-    warn "دریافت ناموفق بود — با HTTP/1.1 دوباره امتحان می‌کنم…"
+    warn "pull failed - retrying over HTTP/1.1..."
     if sudo -u "$APP_USER" env GIT_TERMINAL_PROMPT=0 \
          git -c http.version=HTTP/1.1 pull --ff-only origin "$BRANCH"; then
       git config --system http.version HTTP/1.1
-      ok "HTTP/1.1 مشکل را حل کرد — به‌صورت دائمی تنظیم شد"
+      ok "HTTP/1.1 fixed it - set permanently"
     else
-      die "دریافت کد ناموفق بود. اگر خطا ۴۰۱ است و مخزن عمومی است، شبکه سرور مشکل دارد؛ اگر خصوصی است توکن لازم است."
+      die "pull failed. A 401 on a public repository means the server's network; on a private one it means the token is missing."
     fi
   else
-    die "دریافت کد ناموفق بود — بالا را بخوانید."
+    die "pull failed - read the git output above."
   fi
 fi
 
 AFTER="$(sudo -u "$APP_USER" git rev-parse --short HEAD)"
 
 if [ "$BEFORE" = "$AFTER" ]; then
-  ok "از قبل به‌روز بود ($AFTER)"
+  ok "already up to date ($AFTER)"
 else
-  ok "$BEFORE → $AFTER"
+  ok "$BEFORE -> $AFTER"
   sudo -u "$APP_USER" git --no-pager log --oneline "$BEFORE..$AFTER" | sed 's/^/    /'
 fi
 
 # ---------------------------------------------------------------------------
-say "نصب وابستگی‌ها"
+say "Installing dependencies"
 
-[ -f package-lock.json ] || die "package-lock.json نیست — فایل‌ها ناقص کپی شده‌اند."
+[ -f package-lock.json ] || die "package-lock.json is missing - the files were copied incompletely."
 
 # The full install, not --omit=dev: the frontend is a Vite bundle that has to
 # be compiled here, and its toolchain lives in devDependencies.
@@ -122,20 +127,20 @@ say "نصب وابستگی‌ها"
 # app with no error anywhere. A build that fails here stops this script and
 # says so.
 sudo -u "$APP_USER" npm ci --no-audit --no-fund
-ok "نصب شد"
+ok "installed"
 
-say "ساخت رابط کاربری"
+say "Building the frontend"
 
 # vite builds into client-dist.next and the swap only happens on success, so a
 # failed build leaves the running app untouched instead of deleting it.
 if sudo -u "$APP_USER" npm run build; then
-  ok "ساخته شد"
+  ok "built"
 else
-  die "ساخت رابط کاربری ناموفق بود — نسخه قبلی دست‌نخورده ماند و همچنان سرو می‌شود."
+  die "the frontend build failed - the previous bundle is untouched and still being served."
 fi
 
 # ---------------------------------------------------------------------------
-say "راه‌اندازی دوباره سرویس"
+say "Restarting the service"
 
 systemctl restart "$SERVICE"
 
@@ -143,18 +148,18 @@ systemctl restart "$SERVICE"
 # worth catching, so wait a moment and check it is genuinely still running.
 sleep 3
 if systemctl is-active --quiet "$SERVICE"; then
-  ok "$SERVICE در حال اجراست"
+  ok "$SERVICE is running"
 else
   printf '\n'
   journalctl -u "$SERVICE" -n 25 --no-pager | sed 's/^/    /'
-  die "سرویس بالا نیامد — لاگ بالا را ببینید."
+  die "the service did not come up - see the log above."
 fi
 
 PORT="$(grep -oP '^\s*PORT\s*=\s*\K[0-9]+' "$APP_DIR/.env" 2>/dev/null || echo 3000)"
 if curl -fsS --max-time 10 "http://127.0.0.1:${PORT}/api/health" > /dev/null; then
-  ok "پاسخ سلامت گرفته شد"
+  ok "health check passed"
 else
-  warn "سرویس اجراست ولی به /api/health پاسخ نداد — لاگ را ببینید."
+  warn "the service is running but did not answer /api/health - check the log."
 fi
 
-printf '\n\033[32m  به‌روزرسانی کامل شد.\033[0m\n\n'
+printf '\n\033[32m  Update complete.\033[0m\n\n'

@@ -18,7 +18,7 @@ StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=ethiclens
 
-# --- سخت‌سازی ---
+# --- hardening ---
 NoNewPrivileges=true
 PrivateTmp=true
 PrivateDevices=true
@@ -32,7 +32,7 @@ RestrictNamespaces=true
 LockPersonality=true
 MemoryDenyWriteExecute=false
 RestrictRealtime=true
-# تنها مسیری که سرویس اجازه نوشتن دارد (پایگاه داده SQLite)
+# The only path the service may write to (the SQLite database)
 ReadWritePaths=/opt/ethiclens/data
 
 LimitNOFILE=65535

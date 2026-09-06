@@ -443,8 +443,15 @@ console.log('\n── انتشار عمومی و SEO ──');
 
   const rb = await req('/robots.txt');
   check('robots.txt سرو می‌شود', rb.status === 200 && /User-agent/.test(String(rb.data)));
+  // /app covers every signed-in screen now, including the admin panel, which
+  // used to sit at a bare /admin.
   check('robots صفحه‌های خصوصی را می‌بندد',
-    /Disallow: \/admin/.test(String(rb.data)) && /Disallow: \/api\//.test(String(rb.data)));
+    /Disallow: \/app\//.test(String(rb.data)) && /Disallow: \/api\//.test(String(rb.data)));
+
+  // The landing page moved back to the root, and the rule that used to block
+  // it — Disallow: /$ from when the app was mounted there — kept blocking the
+  // most important page on the site while the sitemap advertised it.
+  check('robots صفحه اصلی را نمی‌بندد', !/Disallow: \/\$/.test(String(rb.data)));
   check('robots نقشه سایت را معرفی می‌کند', /Sitemap: https:\/\/smoke\.test/.test(String(rb.data)));
 
   const missing = await req('/analysis/public/این-نشانی-وجود-ندارد');
