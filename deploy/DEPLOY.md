@@ -1,24 +1,22 @@
-# راهنمای استقرار روی سرور اوبونتو
+# Deploying on an Ubuntu server
 
-راهنمای گام‌به‌گام برای اجرای دیدگاه اخلاق روی Ubuntu 22.04 / 24.04، پشت
-nginx و کلادفلر، با گواهی Origin و حالت Full (strict).
+Step by step, for running Ethic Lens on Ubuntu 22.04 / 24.04 behind nginx and
+Cloudflare, with an Origin certificate and Full (strict) mode.
 
-شاخه استقرار `main` است.
-
-> **از قبل نصب کرده‌اید و فقط می‌خواهید به‌روز کنید؟** یک‌راست به
-> [«به‌روزرسانی نسخه»](#به‌روزرسانی-نسخه) بروید — یک دستور است:
+> **Already installed and only updating?** Go straight to
+> [Updating](#updating) — it is one command:
 > `sudo bash /opt/ethiclens/deploy/update.sh`
 
 ---
 
-## ۱. پیش‌نیازها
+## 1. Prerequisites
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y curl git nginx build-essential python3 sqlite3
 ```
 
-نصب Node.js نسخه ۲۲ (LTS):
+Install Node.js 22 (LTS):
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
@@ -26,11 +24,11 @@ sudo apt install -y nodejs
 node --version
 ```
 
-> **`build-essential` و `python3` واقعاً لازم‌اند — اختیاری نیستند.**
-> `better-sqlite3@13` هیچ باینری آماده‌ای منتشر نمی‌کند (ریلیزش صفر فایل
-> دارد)، پس روی هر ماشینی از منبع کامپایل می‌شود. اوبونتو `python3` را از
-> پیش دارد، ولی اگر ایمیج کم‌حجمی استفاده می‌کنید که ندارد، `npm ci` با
-> خطای `gyp ERR! find Python` شکست می‌خورد:
+> **`build-essential` and `python3` are genuinely required, not optional.**
+> `better-sqlite3@13` publishes no prebuilt binaries (its release has zero
+> files), so it compiles from source on every machine. Ubuntu ships `python3`
+> already, but on a slim image without it `npm ci` fails with
+> `gyp ERR! find Python`:
 >
 > ```bash
 > sudo apt install -y build-essential python3
@@ -38,7 +36,7 @@ node --version
 
 ---
 
-## ۲. ساخت کاربر سرویس
+## 2. Create the service user
 
 ```bash
 sudo useradd --system --create-home --home-dir /opt/ethiclens --shell /usr/sbin/nologin ethiclens
@@ -46,122 +44,124 @@ sudo useradd --system --create-home --home-dir /opt/ethiclens --shell /usr/sbin/
 
 ---
 
-## ۳. دریافت کد
+## 3. Get the code
 
-شاخه استقرار **`main`** است.
+Set `BRANCH` below to the branch you deploy.
 
-### پیش از هر چیز: گیت را روی HTTP/1.1 بگذارید
+### First of all: put git on HTTP/1.1
 
 ```bash
 sudo git config --system http.version HTTP/1.1
 ```
 
-> **چرا این خط لازم است.** روی بعضی شبکه‌ها — به‌ویژه پشت فایروال یا
-> واسطه‌ای که ترافیک را بازرسی می‌کند — درخواست‌های HTTP/2 گیت نیمه‌کاره
-> می‌رسند. الگویش گمراه‌کننده است:
+> **Why this line is needed.** On some networks — particularly behind a
+> firewall or a proxy that inspects traffic — git's HTTP/2 requests arrive
+> damaged. The pattern is misleading:
 >
 > ```
-> GET  /info/refs        → 200   (اتصال تازه، سالم می‌رسد)
-> POST /git-upload-pack  → 401   (روی همان اتصال، جریان دوم — خراب می‌رسد)
+> GET  /info/refs        -> 200   (fresh connection, arrives intact)
+> POST /git-upload-pack  -> 401   (second stream on the same connection, damaged)
 > ```
 >
-> گیت‌هاب درخواست ناقص را رد می‌کند، گیت آن ۴۰۱ را «رمز می‌خواهد» تعبیر
-> می‌کند و نام کاربری می‌پرسد. نتیجه این است که ساعت‌ها دنبال توکن و
-> اعتبارنامه می‌گردید در حالی که مسئله اصلاً دسترسی نیست — مخزن عمومی است
-> و `curl` همان نشانی را بی‌مشکل می‌گیرد.
+> GitHub rejects the malformed request, git reads that 401 as "wants a
+> password" and asks for a username. The result is hours spent hunting for
+> tokens and credentials when access was never the problem — the repository is
+> public and `curl` fetches the same URL without trouble.
 >
-> `--system` در `/etc/gitconfig` می‌نویسد، پس برای همه کاربران و همه
-> مخزن‌ها اعمال می‌شود. `--global` اینجا کار نمی‌کند: `sudo -u` متغیر
-> `HOME` را عوض نمی‌کند، پس تنظیم در خانه کاربر اشتباه می‌نشیند.
+> `--system` writes to `/etc/gitconfig`, so it applies to every user and every
+> repository. `--global` does not work here: `sudo -u` does not change `HOME`,
+> so the setting lands in the wrong home directory.
 >
-> اگر شبکه‌تان سالم است این خط ضرری ندارد — فقط HTTP/1.1 به‌جای HTTP/2.
+> On a healthy network this line costs nothing — just HTTP/1.1 over HTTP/2.
 
-گام قبل، `/opt/ethiclens` را به‌عنوان خانه کاربر سرویس ساخته است، پس این
-پوشه **خالی نیست** و `git clone` مستقیم روی آن شکست می‌خورد:
+The previous step created `/opt/ethiclens` as the service user's home, so the
+directory is **not empty** and `git clone` into it fails:
 
 ```
 fatal: destination path '/opt/ethiclens' already exists and is not an empty directory
 ```
 
-به‌جایش در پوشه موقت clone کنید و محتوا را بکشید داخل:
+Clone into a temporary directory and move the contents in instead:
 
 ```bash
-sudo -u ethiclens git clone -b main https://github.com/hamednikseresht/ethiclens.git /tmp/ethiclens-src
+BRANCH=main
+sudo -u ethiclens git clone -b "$BRANCH" https://github.com/hamednikseresht/ethiclens.git /tmp/ethiclens-src
 sudo -u ethiclens cp -a /tmp/ethiclens-src/. /opt/ethiclens/
 sudo -u ethiclens git -C /opt/ethiclens remote -v
 rm -rf /tmp/ethiclens-src
 ```
 
-سپس نصب وابستگی‌ها و ساخت رابط کاربری:
+Then install dependencies and build the frontend:
 
 ```bash
 cd /opt/ethiclens && sudo -u ethiclens npm ci && sudo -u ethiclens npm run build && sudo -u ethiclens mkdir -p /opt/ethiclens/data
 ```
 
-> **چرا `npm ci` کامل و نه `--omit=dev`:** رابط کاربری یک بسته React است
-> که باید همین‌جا ساخته شود، و ابزار ساختش در devDependencies است.
+> **Why the full `npm ci` and not `--omit=dev`:** the frontend is a React
+> bundle that has to be built here, and its toolchain lives in
+> devDependencies.
 >
-> ساختن روی سرور به‌جای کامیت‌کردن بسته آماده، یک انتخاب آگاهانه است. بسته
-> کامیت‌شده می‌تواند بی‌صدا از کد عقب بیفتد — کسی کد را پوش می‌کند بدون
-> اینکه دوباره بسازد، و سایت همچنان نسخه قدیمی را سرو می‌کند بی‌آنکه هیچ
-> خطایی جایی دیده شود. ساختی که اینجا شکست بخورد، اسکریپت را متوقف می‌کند
-> و می‌گوید.
+> Building on the server rather than committing a built bundle is a deliberate
+> choice. A committed bundle can fall silently out of step with the source —
+> someone pushes code without rebuilding, and the site keeps serving the old
+> app with no error anywhere. A build that fails here stops the script and
+> says so.
 >
-> ساخت در `client-dist.next` انجام می‌شود و فقط در صورت موفقیت جای نسخه
-> زنده را می‌گیرد، پس شکست وسط کار، نسخه در حال اجرا را از بین نمی‌برد.
+> The build goes to `client-dist.next` and only replaces the live bundle on
+> success, so a failure partway through does not destroy the running version.
 
-> **اگر `npm ci` گفت `package-lock.json` پیدا نشد**، یعنی مرحله بالا ناقص
-> انجام شده و فایل‌ها کامل کپی نشده‌اند. با `ls /opt/ethiclens` بررسی کنید
-> که `package.json`، `package-lock.json` و پوشه `server/` هر سه باشند.
+> **If `npm ci` says `package-lock.json` is missing**, the step above was
+> incomplete and the files were not fully copied. Check with
+> `ls /opt/ethiclens` that `package.json`, `package-lock.json` and the
+> `server/` directory are all present.
 >
-> به‌جای `npm ci` از `npm install` **استفاده نکنید**: نسخه‌ها را تازه حل
-> می‌کند و درختی متفاوت با آنچه آزموده شده نصب می‌شود. `better-sqlite3`
-> باینری بومی دارد و یک جهش خاموش نسخه در آن، هنگام اجرا خطا می‌دهد نه
-> هنگام نصب. فایل قفل را درست بیاورید و روی `npm ci` بمانید.
+> **Do not** use `npm install` instead of `npm ci`: it re-resolves versions and
+> installs a different tree from the one that was tested. `better-sqlite3` has
+> a native binary, and a silent version jump in it fails at runtime rather than
+> at install time. Get the lock file in place and stay on `npm ci`.
 
-> اگر `npm ci` به‌خاطر اسکریپت نصب `better-sqlite3` هشدار داد،
-> با `sudo -u ethiclens npm install --omit=dev --foreground-scripts` نصب کنید.
+> If `npm ci` warns about the `better-sqlite3` install script, install with
+> `sudo -u ethiclens npm install --omit=dev --foreground-scripts`.
 
 ---
 
-## ۴. تنظیم متغیرهای محیطی
+## 4. Environment variables
 
 ```bash
 sudo -u ethiclens cp /opt/ethiclens/.env.example /opt/ethiclens/.env
 sudo -u ethiclens nano /opt/ethiclens/.env
 ```
 
-مقادیری که **حتماً** باید عوض شوند:
+Values that **must** be changed:
 
-| متغیر | مقدار |
+| Variable | Value |
 |---|---|
-| `SESSION_SECRET` | خروجی `openssl rand -hex 32` |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | حساب مدیر اولیه |
-| `TRUST_PROXY` | `1` — وگرنه IP همه کاربران، IP خود nginx دیده می‌شود |
-| `SECURE_COOKIE` | `1` (چون پشت HTTPS هستید) |
+| `SESSION_SECRET` | the output of `openssl rand -hex 32` |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | the first admin account |
+| `TRUST_PROXY` | `1` — otherwise every user's IP looks like nginx's own |
+| `SECURE_COOKIE` | `1` (you are behind HTTPS) |
 | `NODE_ENV` | `production` |
 
-کلیدهای سرویس — دست‌کم یکی لازم است:
+Service keys — at least one is required:
 
-| متغیر | توضیح |
+| Variable | Meaning |
 |---|---|
-| `NVIDIA_API_KEY` | کلید `nvapi-…` |
-| `OPENAI_API_KEY` | کلید `sk-…` |
-| `BREVO_API_KEY` | سرویس ایمیل پیش‌فرض — برای ایمیل تأیید حساب |
-| `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` | فقط اگر به‌جای Brevo از میل‌گان استفاده می‌کنید |
-| `MAILGUN_BASE_URL` | حساب اروپایی: `https://api.eu.mailgun.net` |
+| `NVIDIA_API_KEY` | an `nvapi-…` key |
+| `OPENAI_API_KEY` | an `sk-…` key |
+| `BREVO_API_KEY` | the default mail service, for account verification email |
+| `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` | only if you use Mailgun instead of Brevo |
+| `MAILGUN_BASE_URL` | European account: `https://api.eu.mailgun.net` |
 
-> این متغیرها فقط برای **راه‌اندازی اولیه**اند. پس از بالا آمدن سرویس، همه
-> کلیدها و ارائه‌دهنده‌ها از پنل مدیریت قابل تنظیم‌اند و در پایگاه داده
-> ذخیره می‌شوند. ارائه‌دهنده‌ای که کلید نداشته باشد، ساخته ولی خاموش می‌ماند.
+> These are for **first boot only**. Once the service is up, every key and
+> provider is configurable from the admin panel and stored in the database. A
+> provider with no key is created but stays switched off.
 
-**نشانی سایت را فراموش نکنید.** پس از اولین ورود، در پنل مدیریت →
-تنظیمات سایت، `site_url` را روی `https://ethiclens.ir` بگذارید. پیوند
-ایمیل‌های تأیید، `canonical` صفحات عمومی و نقشه سایت همه از این ساخته
-می‌شوند؛ اگر خالی بماند از هدر `Host` استفاده می‌شود که پشت پراکسی
-می‌تواند اشتباه باشد.
+**Do not forget the site URL.** After the first sign-in, go to admin → site
+settings and set `site_url` to `https://ethiclens.ir`. Verification email
+links, the `canonical` on every public page and the sitemap are all built from
+it; left empty, the `Host` header is used, which behind a proxy can be wrong.
 
-سپس دسترسی فایل را محدود کنید — این فایل کلید API دارد:
+Then restrict the file — it holds API keys:
 
 ```bash
 sudo chmod 600 /opt/ethiclens/.env
@@ -170,7 +170,7 @@ sudo chown ethiclens:ethiclens /opt/ethiclens/.env
 
 ---
 
-## ۵. سرویس systemd
+## 5. The systemd service
 
 ```bash
 sudo cp /opt/ethiclens/deploy/ethiclens.service /etc/systemd/system/
@@ -179,7 +179,7 @@ sudo systemctl enable --now ethiclens
 sudo systemctl status ethiclens
 ```
 
-مشاهده لاگ زنده:
+Follow the log live:
 
 ```bash
 sudo journalctl -u ethiclens -f
@@ -187,72 +187,72 @@ sudo journalctl -u ethiclens -f
 
 ---
 
-## ۶. کلادفلر — DNS و SSL
+## 6. Cloudflare — DNS and SSL
 
-معماری نهایی سه حلقه دارد:
+The finished architecture has three hops:
 
 ```
-کاربر ──TLS عمومی──▶ کلادفلر ──TLS با گواهی Origin──▶ nginx ──HTTP محلی──▶ برنامه
+visitor ──public TLS──▶ Cloudflare ──Origin-cert TLS──▶ nginx ──local HTTP──▶ the app
 ```
 
-### ۶.۱ افزودن دامنه و رکوردها
+### 6.1 Add the domain and the records
 
-در پیشخان کلادفلر دامنه `ethiclens.ir` را اضافه کنید، سپس nameserverهایی
-که می‌دهد را در پنل ثبت‌کننده دامنه بگذارید. بعد دو رکورد بسازید:
+Add `ethiclens.ir` in the Cloudflare dashboard, then set the nameservers it
+gives you at your registrar. Create two records:
 
-| نوع | نام | مقدار | وضعیت |
+| Type | Name | Value | State |
 |---|---|---|---|
-| A | `ethiclens.ir` | نشانی IP سرور | ☁️ Proxied (نارنجی) |
-| A | `www` | نشانی IP سرور | ☁️ Proxied (نارنجی) |
+| A | `ethiclens.ir` | the server's IP | Proxied (orange) |
+| A | `www` | the server's IP | Proxied (orange) |
 
-ابر باید **نارنجی** باشد. اگر خاکستری بماند، کلادفلر فقط DNS می‌دهد و نه
-گواهی، نه محافظت، و نه پنهان‌کردن نشانی سرور.
+The cloud must be **orange**. Left grey, Cloudflare provides DNS only — no
+certificate, no protection, and the server's address is not hidden.
 
-### ۶.۲ گواهی Origin
+### 6.2 The Origin certificate
 
-در **SSL/TLS → Origin Server → Create Certificate** یک گواهی بسازید
-(پیش‌فرض‌ها خوب‌اند: RSA، اعتبار ۱۵ سال، شامل `ethiclens.ir` و `*.ethiclens.ir`).
-دو متن به شما می‌دهد. روی سرور:
+Under **SSL/TLS → Origin Server → Create Certificate**, create one (the
+defaults are fine: RSA, 15 years, covering `ethiclens.ir` and
+`*.ethiclens.ir`). It gives you two blocks of text. On the server:
 
 ```bash
 sudo mkdir -p /etc/ssl/cloudflare
-sudo nano /etc/ssl/cloudflare/ethiclens.ir.pem   # بخش Origin Certificate
-sudo nano /etc/ssl/cloudflare/ethiclens.ir.key   # بخش Private Key
+sudo nano /etc/ssl/cloudflare/ethiclens.ir.pem   # the Origin Certificate block
+sudo nano /etc/ssl/cloudflare/ethiclens.ir.key   # the Private Key block
 sudo chmod 600 /etc/ssl/cloudflare/ethiclens.ir.key
 sudo chmod 644 /etc/ssl/cloudflare/ethiclens.ir.pem
 ```
 
-> کلید خصوصی فقط همان یک بار نمایش داده می‌شود. اگر نبستیدش، باید گواهی
-> تازه بسازید.
+> The private key is shown once. If you close the page without saving it, you
+> have to create a new certificate.
 
-این گواهی را فقط کلادفلر معتبر می‌داند و همین کافی است، چون تنها کلادفلر
-مستقیم با سرور حرف می‌زند. اعتبارش ۱۵ سال است، پس برخلاف Let's Encrypt
-تمدید خودکار نمی‌خواهد.
+Only Cloudflare considers this certificate valid, which is enough, because only
+Cloudflare talks to the server directly. It lasts 15 years, so unlike Let's
+Encrypt it needs no renewal job.
 
-### ۶.۳ حالت SSL
+### 6.3 SSL mode
 
-در **SSL/TLS → Overview** حالت را روی **Full (strict)** بگذارید.
+Under **SSL/TLS → Overview**, set the mode to **Full (strict)**.
 
-| حالت | چه می‌کند | مناسب؟ |
+| Mode | What it does | Suitable? |
 |---|---|---|
-| Flexible | کلادفلر تا سرور رمزنگاری نمی‌کند | ❌ حلقه تغییر مسیر می‌سازد و ترافیک لخت می‌ماند |
-| Full | رمزنگاری می‌شود ولی گواهی بررسی نمی‌شود | ⚠️ در برابر حمله میانی باز است |
-| **Full (strict)** | رمزنگاری + بررسی گواهی | ✅ همین را انتخاب کنید |
+| Flexible | Cloudflare does not encrypt to the origin | No — creates a redirect loop and leaves traffic in the clear |
+| Full | encrypted, certificate not verified | Risky — open to a man in the middle |
+| **Full (strict)** | encrypted and verified | Yes — choose this |
 
-همچنین **Always Use HTTPS** را روشن کنید.
+Turn on **Always Use HTTPS** as well.
 
-### ۶.۴ قاعده کش برای مسیرهای API
+### 6.4 A cache rule for the API paths
 
-کلادفلر نباید پاسخ‌های API را کش کند. در **Caching → Cache Rules** یک
-قاعده بسازید:
+Cloudflare must not cache API responses. Under **Caching → Cache Rules**,
+create a rule:
 
-- **اگر** `URI Path` با `/api/` شروع شود
-- **آنگاه** `Bypass cache`
+- **If** `URI Path` starts with `/api/`
+- **Then** `Bypass cache`
 
-### ۶.۵ نصب پیکربندی nginx
+### 6.5 Install the nginx configuration
 
-**گواهی را پیش از این گام نصب کنید.** nginx اگر فایل گواهی را پیدا نکند
-اصلاً بالا نمی‌آید و کلادفلر خطای ۵۲۱ می‌دهد.
+**Install the certificate before this step.** If nginx cannot find the
+certificate file it will not start at all, and Cloudflare returns error 521.
 
 ```bash
 sudo cp /opt/ethiclens/deploy/cloudflare-realip.conf /etc/nginx/cloudflare-realip.conf
@@ -262,14 +262,14 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-> `ln -sf` می‌گذارد اجرای دوباره این گام بی‌خطر باشد؛ با `ln -s` ساده،
-> بار دوم خطای `File exists` می‌گیرید.
+> `ln -sf` makes re-running this step safe; with a plain `ln -s` the second run
+> fails with `File exists`.
 
-اگر `nginx -t` خطای `unknown directive "http2"` داد، نسخه nginx شما قدیمی‌تر
-از 1.25.1 است و فایل `deploy/nginx.conf` را از مخزن تازه نکرده‌اید — با
-`git pull origin main` به‌روزش کنید. نسخه را با `nginx -v` ببینید.
+If `nginx -t` reports `unknown directive "http2"`, your nginx is older than
+1.25.1 and you have not refreshed `deploy/nginx.conf` from the repository —
+update it with `git pull`. Check the version with `nginx -v`.
 
-بازه‌های کلادفلر را تازه کنید و ماهانه تکرارش کنید:
+Refresh the Cloudflare ranges, and repeat monthly:
 
 ```bash
 sudo bash /opt/ethiclens/deploy/update-cloudflare-ips.sh
@@ -279,25 +279,25 @@ sudo bash /opt/ethiclens/deploy/update-cloudflare-ips.sh
 17 4 1 * * bash /opt/ethiclens/deploy/update-cloudflare-ips.sh >> /var/log/cf-ips.log 2>&1
 ```
 
-> **چرا `cloudflare-realip.conf` اختیاری نیست:** بدون آن، nginx نشانی سرور
-> لبه کلادفلر را به‌عنوان نشانی کاربر می‌بیند. محدودکننده نرخ ورود در
-> `server/routes/auth.js` بر پایه `req.ip` کار می‌کند و سقفش ۲۰ تلاش ناموفق
-> در ۱۵ دقیقه است — یعنی بیست تلاش ناموفق از هر جای دنیا، ورود را برای
-> **همه کاربران** قفل می‌کند. همین برای سقف ثبت‌نام هم صادق است.
+> **Why `cloudflare-realip.conf` is not optional:** without it, nginx sees the
+> Cloudflare edge server's address as the visitor's. The sign-in rate limiter
+> in `server/routes/auth.js` keys on `req.ip` and allows 20 failures in 15
+> minutes — so twenty failed attempts from anywhere in the world would lock
+> sign-in for **every user**. The same applies to the registration limit.
 
-> **درباره استریم:** بلوک `location ~ ^/api/(v1/)?analyze` باید
-> `proxy_buffering off;` داشته باشد، وگرنه کاربر تا پایان تحلیل چیزی
-> نمی‌بیند. کلادفلر هم مهلت حدود ۱۰۰ ثانیه‌ای برای پاسخ مبدأ دارد
-> (خطای ۵۲۴)، ولی برنامه هر ۱۵ ثانیه یک ضربان روی استریم می‌فرستد و
-> سربرگ‌های `no-transform` و `X-Accel-Buffering: no` را می‌گذارد، پس
-> تحلیل‌های طولانی (تا ۳۴۰ ثانیه) بی‌مشکل رد می‌شوند.
+> **About streaming:** the `location ~ ^/api/(v1/)?analyze` block must have
+> `proxy_buffering off;`, or the user sees nothing until the analysis ends.
+> Cloudflare also has an origin response timeout of about 100 seconds (error
+> 524), but the app sends a heartbeat every 15 seconds on the stream and sets
+> `no-transform` and `X-Accel-Buffering: no`, so long analyses (up to 340
+> seconds) pass through without trouble.
 
 ---
 
-## ۷. فایروال — فقط کلادفلر
+## 7. Firewall — Cloudflare only
 
-اگر پورت ۴۴۳ برای همه باز باشد، هر کسی که نشانی IP سرور را پیدا کند
-می‌تواند کلادفلر را دور بزند. پس ورودی را به بازه‌های کلادفلر محدود کنید:
+If port 443 is open to everyone, anyone who finds the server's IP can bypass
+Cloudflare. Restrict inbound traffic to Cloudflare's ranges:
 
 ```bash
 sudo ufw allow OpenSSH
@@ -306,87 +306,86 @@ CF="$(curl -fsS --max-time 20 https://www.cloudflare.com/ips-v4; echo; curl -fsS
 COUNT="$(echo "$CF" | grep -c '/')"
 
 if [ "$COUNT" -lt 10 ]; then
-  echo "خطا: فقط $COUNT بازه گرفته شد. فایروال دست‌نخورده ماند."
+  echo "error: only $COUNT ranges fetched. The firewall was left untouched."
 else
   for ip in $CF; do sudo ufw allow proto tcp from "$ip" to any port 443; done
-  echo "$COUNT بازه اجازه گرفت."
+  echo "$COUNT ranges allowed."
 fi
 ```
 
-سپس بررسی کنید که قواعد ۴۴۳ واقعاً ساخته شده‌اند و بعد فایروال را روشن کنید:
+Then confirm the 443 rules really exist before enabling the firewall:
 
 ```bash
 sudo ufw status | grep -c 443
 sudo ufw enable
 ```
 
-> **این ترتیب مهم است.** اگر گرفتن بازه‌ها شکست بخورد — نبود دسترسی
-> خروجی، اشکال DNS، هر چیزی — حلقه هیچ قاعده‌ای نمی‌سازد ولی `ufw enable`
-> باز هم اجرا می‌شود و شما را با فایروالی رها می‌کند که فقط SSH را
-> می‌پذیرد. سایت بالا می‌ماند ولی کلادفلر به آن نمی‌رسد و خطای ۵۲۱
-> می‌دهد. شمارش پیش از روشن‌کردن، همین را می‌گیرد.
+> **This order matters.** If fetching the ranges fails — no outbound access, a
+> DNS problem, anything — the loop creates no rules, but `ufw enable` still
+> runs and leaves you with a firewall that accepts only SSH. The site stays up
+> but Cloudflare cannot reach it and returns 521. Counting before enabling
+> catches exactly that.
 
-> پیش از `ufw enable` مطمئن شوید `OpenSSH` اجازه دارد، وگرنه خودتان را
-> بیرون می‌گذارید.
+> Before `ufw enable`, make sure `OpenSSH` is allowed or you will lock
+> yourself out.
 
-پورت ۸۰ را می‌توانید بسته نگه دارید، چون کلادفلر با **Always Use HTTPS**
-خودش تغییر مسیر می‌دهد. پورت ۳۰۰۰ هرگز نباید از بیرون باز باشد — برنامه
-فقط از راه nginx در دسترس است.
+Port 80 can stay closed, because Cloudflare redirects with **Always Use
+HTTPS**. Port 3000 must never be reachable from outside — the app is available
+only through nginx.
 
-**لایه دوم (توصیه‌شده):** Authenticated Origin Pulls را روشن کنید تا nginx
-گواهی خود کلادفلر را هم بررسی کند. دستورش در بالای `deploy/nginx.conf`
-به‌صورت توضیح آمده است.
-
----
-
-## ۸. اولین ورود
-
-۱. به `https://ethiclens.ir/login` بروید.
-۲. با `ADMIN_EMAIL` و `ADMIN_PASSWORD` وارد شوید.
-۳. **فوراً** از «تنظیمات حساب» رمز را عوض کنید.
-۴. به `/admin` → «مدل و کلید» بروید و دکمه **آزمایش اتصال** را بزنید.
-
+**Second layer (recommended):** turn on Authenticated Origin Pulls so nginx
+verifies Cloudflare's own certificate too. The commands are commented at the
+top of `deploy/nginx.conf`.
 
 ---
 
-## ۹. ارسال ایمیل از سرور خودتان (اختیاری)
+## 8. First sign-in
 
-این بخش فقط وقتی لازم است که بخواهید ایمیل تأیید و بازیابی رمز را به‌جای
-Brevo از سرور خودتان بفرستید. تا وقتی سرویس ایمیل تنظیم نشده، ثبت‌نام و
-تأیید مدیر مثل همیشه کار می‌کنند؛ فقط کد ثبت‌نام و بازیابی رمز غیرفعال‌اند.
+1. Go to `https://ethiclens.ir/app/login`.
+2. Sign in with `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
+3. Change the password **immediately** under account settings.
+4. Go to `/app/admin` → models and keys, and press **test connection**.
 
-> **پیش از هر کاری این را بخوانید.** کد بخش آسان ماجراست. رساندن ایمیل از
-> یک سرور تازه به جی‌میل و اوت‌لوک به چهار چیز بستگی دارد که هیچ‌کدام در
-> این پروژه نیست: باز بودن پورت ۲۵ خروجی، رکورد معکوس (PTR)، امضای DKIM،
-> و اعتبار IP. اگر IP سرور در فهرست‌های سیاه باشد — که برای بازه‌های
-> ایرانی رایج است — ممکن است هیچ‌کدام از این کارها کافی نباشد.
+---
+
+## 9. Sending mail from your own server (optional)
+
+This section is only needed if you want verification and password-reset email
+to come from your own server rather than from Brevo. Until a mail service is
+configured, registration and admin approval work as usual; only the sign-up
+code and password reset are disabled.
+
+> **Read this before starting.** The code is the easy part. Getting mail from a
+> new server into Gmail and Outlook depends on four things, none of which live
+> in this project: outbound port 25 being open, a reverse record (PTR), a DKIM
+> signature, and IP reputation. If the server's IP is on blocklists — common
+> for Iranian ranges — none of this may be enough.
 >
-> اینها دقیقاً ایمیل‌هایی هستند که **باید** برسند. تا وقتی گام ۹.۷ سبز
-> نشده، کلید «کد تأیید ثبت‌نام» را در پنل مدیریت روشن نکنید.
+> These are precisely the messages that **must** arrive. Do not switch on the
+> "verification code at sign-up" setting until step 9.7 is green.
 
-### ۹.۱ اول از همه: آیا پورت ۲۵ اصلاً باز است؟
+### 9.1 First: is port 25 even open?
 
-بسیاری از ارائه‌دهندگان سرور، پورت ۲۵ خروجی را پیش‌فرض می‌بندند. اگر بسته
-باشد هیچ‌کدام از گام‌های بعدی فایده ندارد:
+Many hosting providers block outbound port 25 by default. If it is blocked,
+none of the following steps help:
 
 ```bash
-timeout 8 bash -c 'cat < /dev/null > /dev/tcp/gmail-smtp-in.l.google.com/25' && echo "باز است ✅" || echo "بسته است ❌"
+timeout 8 bash -c 'cat < /dev/null > /dev/tcp/gmail-smtp-in.l.google.com/25' && echo "open" || echo "blocked"
 ```
 
-اگر بسته بود، از پشتیبانی سرور بخواهید بازش کنند. بعضی ارائه‌دهندگان اصلاً
-باز نمی‌کنند؛ در آن صورت این مسیر برای شما بسته است و باید روی Brevo
-بمانید.
+If it is blocked, ask your provider to open it. Some never will; in that case
+this route is closed to you and you should stay on Brevo.
 
-### ۹.۲ نصب Postfix به‌صورت فقط‌ارسال
+### 9.2 Install Postfix as send-only
 
 ```bash
 sudo apt update && sudo apt install -y postfix mailutils
 ```
 
-در پرسش نصب، **Internet Site** را انتخاب کنید و برای «System mail name»
-مقدار `ethiclens.ir` را بگذارید.
+At the install prompt choose **Internet Site** and set the system mail name to
+`ethiclens.ir`.
 
-سپس آن را طوری تنظیم کنید که فقط از روی خود سرور قابل استفاده باشد:
+Then configure it to be usable only from the server itself:
 
 ```bash
 sudo postconf -e 'inet_interfaces = loopback-only'
@@ -397,60 +396,60 @@ sudo postconf -e 'smtpd_tls_security_level = may'
 sudo systemctl restart postfix
 ```
 
-> `inet_interfaces = loopback-only` مهم‌ترین خط اینجاست. بدون آن، Postfix
-> روی اینترنت گوش می‌دهد و اگر تنظیمات رله اشتباه باشد سرور شما تبدیل به
-> رله باز می‌شود — یعنی هرزنامه‌نویس‌ها از آن استفاده می‌کنند و IP شما
-> ظرف چند ساعت در فهرست سیاه می‌رود.
+> `inet_interfaces = loopback-only` is the most important line here. Without
+> it Postfix listens on the internet, and if the relay settings are wrong your
+> server becomes an open relay — spammers use it and your IP is blocklisted
+> within hours.
 
-آزمایش محلی:
+Local test:
 
 ```bash
-echo "متن آزمایشی" | mail -s "آزمون Postfix" your-address@gmail.com
+echo "test body" | mail -s "Postfix test" your-address@gmail.com
 sudo tail -f /var/log/mail.log
 ```
 
-### ۹.۳ رکورد معکوس (PTR)
+### 9.3 The reverse record (PTR)
 
-نام معکوس IP سرور باید با `myhostname` یکی باشد. این را **فقط ارائه‌دهنده
-سرور** می‌تواند تنظیم کند — در پنل مدیریت سرور دنبال «Reverse DNS» یا
-«PTR» بگردید و مقدار `mail.ethiclens.ir` را بگذارید.
+The reverse name of the server's IP must match `myhostname`. Only the **server
+provider** can set this — look for "Reverse DNS" or "PTR" in their control
+panel and set it to `mail.ethiclens.ir`.
 
-بررسی:
+Check:
 
 ```bash
 dig -x $(curl -fsS https://api.ipify.org) +short
 ```
 
-خروجی باید `mail.ethiclens.ir.` باشد. اگر نام ارائه‌دهنده را برگرداند،
-جی‌میل احتمال زیادی دارد پیام را رد کند.
+The output should be `mail.ethiclens.ir.`. If it returns the provider's own
+name, Gmail is very likely to reject the message.
 
-یک رکورد A هم برای همان نام لازم است. **این یکی باید ابر خاکستری باشد**،
-نه نارنجی — اگر از کلادفلر رد شود، IP واقعی سرور پنهان می‌ماند و PTR با
-آنچه گیرنده می‌بیند نمی‌خواند:
+That name also needs an A record. **This one must be a grey cloud**, not
+orange — proxied through Cloudflare it would hide the server's real IP and the
+PTR would not match what the recipient sees:
 
-| نوع | نام | مقدار | وضعیت |
+| Type | Name | Value | State |
 |---|---|---|---|
-| A | `mail` | IP سرور | ☁️ خاکستری (DNS only) |
+| A | `mail` | the server's IP | grey (DNS only) |
 
-### ۹.۴ رکورد SPF
+### 9.4 The SPF record
 
-اعلام می‌کند کدام سرورها حق دارند از طرف دامنه شما ایمیل بفرستند. در
-کلادفلر یک رکورد TXT روی دامنه اصلی بسازید:
-
-```
-v=spf1 ip4:<IP سرور> -all
-```
-
-`-all` یعنی «هیچ سرور دیگری مجاز نیست». اگر همزمان از Brevo هم استفاده
-می‌کنید، بخش آن را اضافه کنید وگرنه ایمیل‌های Brevo رد می‌شوند:
+Declares which servers may send mail for your domain. Create a TXT record on
+the apex in Cloudflare:
 
 ```
-v=spf1 ip4:<IP سرور> include:spf.brevo.com -all
+v=spf1 ip4:<server IP> -all
 ```
 
-### ۹.۵ امضای DKIM
+`-all` means "no other server is authorised". If you also use Brevo, include
+its section or Brevo's mail will be rejected:
 
-طولانی‌ترین گام، و همانی که بیشترین اثر را روی نرسیدن به اسپم دارد.
+```
+v=spf1 ip4:<server IP> include:spf.brevo.com -all
+```
+
+### 9.5 The DKIM signature
+
+The longest step, and the one with the greatest effect on staying out of spam.
 
 ```bash
 sudo apt install -y opendkim opendkim-tools
@@ -460,7 +459,7 @@ sudo chown -R opendkim:opendkim /etc/opendkim
 sudo chmod 600 /etc/opendkim/keys/ethiclens.ir/mail.private
 ```
 
-پیکربندی:
+Configuration:
 
 ```bash
 sudo tee -a /etc/opendkim.conf > /dev/null <<'CONF'
@@ -479,7 +478,7 @@ echo "*@ethiclens.ir mail._domainkey.ethiclens.ir" \
   | sudo tee /etc/opendkim/signing.table
 ```
 
-وصل‌کردن به Postfix:
+Wire it into Postfix:
 
 ```bash
 sudo postconf -e 'milter_protocol = 6'
@@ -489,188 +488,198 @@ sudo postconf -e 'non_smtpd_milters = inet:localhost:8891'
 sudo systemctl restart opendkim postfix
 ```
 
-حالا کلید عمومی را ببینید و در کلادفلر ثبت کنید:
+Now read the public key and publish it in Cloudflare:
 
 ```bash
 sudo cat /etc/opendkim/keys/ethiclens.ir/mail.txt
 ```
 
-رکورد TXT با نام `mail._domainkey` و مقداری که در پرانتزها آمده (بدون
-گیومه‌ها و بدون شکستگی خط).
+A TXT record named `mail._domainkey` with the value inside the parentheses (no
+quotes, no line breaks).
 
-### ۹.۶ رکورد DMARC
+### 9.6 The DMARC record
 
-رکورد TXT با نام `_dmarc`:
+A TXT record named `_dmarc`:
 
 ```
 v=DMARC1; p=none; rua=mailto:postmaster@ethiclens.ir
 ```
 
-با `p=none` شروع کنید. یعنی «فقط گزارش بده، چیزی را رد نکن» — تا وقتی
-مطمئن شوید SPF و DKIM درست کار می‌کنند. بعداً می‌توانید به `p=quarantine`
-و سپس `p=reject` برسید.
+Start with `p=none` — "report only, reject nothing" — until you are sure SPF
+and DKIM work. Later you can move to `p=quarantine` and then `p=reject`.
 
-### ۹.۷ آزمون واقعی — این گام را رد نکنید
+### 9.7 The real test — do not skip this step
 
-اول از پنل مدیریت تنظیم کنید:
+First, configure it in the admin panel:
 
-۱. پنل مدیریت ← **ایمیل و تأیید حساب**
-۲. ارائه‌دهنده: **SMTP — سرور ایمیل خودم**
-۳. نشانی سرور `localhost`، پورت `25`، نام کاربری و رمز خالی
-۴. ایمیل فرستنده: `no-reply@ethiclens.ir`
-۵. **ذخیره**، سپس **ارسال ایمیل آزمایشی**
+1. Admin panel → **email and account verification**
+2. Provider: **SMTP — my own mail server**
+3. Host `localhost`, port `25`, username and password empty
+4. Sender: `no-reply@ethiclens.ir`
+5. **Save**, then **send a test email**
 
-سپس کیفیت واقعی تحویل را بسنجید:
+Then measure real deliverability:
 
-- به <https://www.mail-tester.com> بروید، نشانی‌ای که می‌دهد را بردارید،
-  و از پنل مدیریت ایمیل آزمایشی به آن بفرستید. نمره زیر ۸ از ۱۰ یعنی
-  هنوز کاری مانده.
-- یک ثبت‌نام واقعی با یک آدرس جی‌میل انجام دهید و **پوشه اسپم را هم
-  ببینید**. رسیدن به اسپم یعنی هنوز آماده نیست.
-- بررسی فهرست سیاه: <https://mxtoolbox.com/blacklists.aspx>
+- Go to <https://www.mail-tester.com>, take the address it gives you, and send
+  a test message to it from the admin panel. Below 8 out of 10 means there is
+  still work to do.
+- Register for real with a Gmail address and **check the spam folder too**.
+  Landing in spam means it is not ready.
+- Blocklist check: <https://mxtoolbox.com/blacklists.aspx>
 
-فقط وقتی هر سه سبز شد، در پنل مدیریت کلید **«هنگام ثبت‌نام، کد تأیید به
-ایمیل فرستاده شود»** را روشن کنید.
+Only when all three are green, switch on **"send a verification code at
+sign-up"** in the admin panel.
 
-### ۹.۸ اگر جواب نداد
+### 9.8 If it does not work
 
-برگشتن به Brevo یک تغییر تنظیم است: پنل مدیریت ← ایمیل ← ارائه‌دهنده
-**Brevo** و وارد کردن کلید. هیچ چیز دیگری لازم نیست عوض شود.
+Going back to Brevo is one settings change: admin panel → email → provider
+**Brevo**, and enter the key. Nothing else needs to change.
 
-| نشانه | معنی |
+| Symptom | Meaning |
 |---|---|
-| `Connection refused` در آزمایش | Postfix اجرا نیست: `sudo systemctl status postfix` |
-| `Connection timed out` | پورت ۲۵ خروجی بسته است (گام ۹.۱) |
-| ایمیل می‌رود ولی به اسپم | DKIM یا PTR ناقص است؛ mail-tester چه می‌گوید؟ |
-| جی‌میل با `5.7.1` رد می‌کند | IP در فهرست سیاه است یا PTR نمی‌خواند |
-| `Helo command rejected` | `myhostname` با PTR یکی نیست |
-| هیچ لاگی نیست | `sudo tail -100 /var/log/mail.log` |
+| `Connection refused` in the test | Postfix is not running: `sudo systemctl status postfix` |
+| `Connection timed out` | outbound port 25 is blocked (step 9.1) |
+| Mail sends but lands in spam | DKIM or PTR is incomplete; what does mail-tester say? |
+| Gmail rejects with `5.7.1` | the IP is blocklisted, or the PTR does not match |
+| `Helo command rejected` | `myhostname` does not match the PTR |
+| No log at all | `sudo tail -100 /var/log/mail.log` |
 
 ---
 
-## به‌روزرسانی نسخه
+## Updating
 
-### گام یک‌باره — گرفتن اسکریپت
+### One-time step — fetch the script
 
-اسکریپت به‌روزرسانی خودش بخشی از مخزن است، پس بار اول باید یک بار به روش
-قدیمی بگیریدش. اگر نشانی مخزن نام کاربری دارد، همین‌جا هم اصلاحش کنید:
+The update script is itself part of the repository, so the first time you have
+to fetch it the old way. If the remote URL carries a username, fix that here
+too:
 
 ```bash
 cd /opt/ethiclens && sudo -u ethiclens git remote set-url origin https://github.com/hamednikseresht/ethiclens.git && sudo -u ethiclens git pull origin main
 ```
 
-از این پس دیگر لازم نیست این را بزنید.
+You will not need this again.
 
-### هر به‌روزرسانی بعدی
+### Every update after that
 
 ```bash
 sudo bash /opt/ethiclens/deploy/update.sh
 ```
 
-همین. اسکریپت نشانی مخزن را می‌سنجد و در صورت نیاز اصلاح می‌کند، کد را
-می‌گیرد، وابستگی‌ها را نصب می‌کند، سرویس را ری‌استارت می‌کند و در پایان
-بررسی می‌کند که واقعاً بالا آمده باشد. روی اولین خطا متوقف می‌شود.
+That is all. The script checks the remote URL and corrects it if needed, pulls
+the code, installs dependencies, builds the frontend, restarts the service and
+then verifies it really came up. It stops on the first failure.
 
-### خروجی موفق چه شکلی است
+`BRANCH` defaults to whatever branch is checked out on the server, so a
+deployment on a branch other than `main` needs no extra argument. To deploy a
+different branch, pass it explicitly:
 
-```
-▸ بررسی نشانی مخزن
-  ✓ https://github.com/hamednikseresht/ethiclens.git
-
-▸ دریافت کد از شاخه main
-  ✓ bda7095 → c4f1e28
-    c4f1e28 عنوان کامیت تازه
-
-▸ نصب وابستگی‌ها
-  ✓ نصب شد
-
-▸ راه‌اندازی دوباره سرویس
-  ✓ ethiclens در حال اجراست
-  ✓ پاسخ سلامت گرفته شد
-
-  به‌روزرسانی کامل شد.
+```bash
+sudo BRANCH=some-branch bash /opt/ethiclens/deploy/update.sh
 ```
 
-اگر «از قبل به‌روز بود» دیدید یعنی چیزی برای گرفتن نبود — نه خطا.
+### What a successful run looks like
 
-### اگر جایی متوقف شد
+```
+> Checking the remote URL
+  OK https://github.com/hamednikseresht/ethiclens.git
 
-| پیام | معنی و کار |
+> Pulling branch main
+  OK bda7095 -> c4f1e28
+    c4f1e28 the newest commit subject
+
+> Installing dependencies
+  OK installed
+
+> Building the frontend
+  OK built
+
+> Restarting the service
+  OK ethiclens is running
+  OK health check passed
+
+  Update complete.
+```
+
+"already up to date" means there was nothing to fetch — not an error.
+
+### If it stops somewhere
+
+| Message | Meaning and what to do |
 |---|---|
-| `HTTP 401` یا درخواست نام کاربری | معمولاً مشکل دسترسی نیست: HTTP/2 روی این شبکه خراب است. `sudo git config --system http.version HTTP/1.1` را بزنید. اگر مخزن واقعاً خصوصی است، Personal Access Token لازم دارید |
-| `دریافت کد ناموفق بود` با پیام تعارض | روی سرور تغییر محلی داده‌اید. با `sudo -u ethiclens git -C /opt/ethiclens status` ببینید چیست |
-| `package-lock.json نیست` | فایل‌ها ناقص کپی شده‌اند — بخش ۳ را دوباره ببینید |
-| `سرویس بالا نیامد` | اسکریپت ۲۵ خط آخر ژورنال را چاپ می‌کند؛ معمولاً خطای مهاجرت یا `.env` است |
-| `به /api/health پاسخ نداد` | سرویس اجراست ولی مشکلی دارد: `sudo journalctl -u ethiclens -n 50 --no-pager` |
+| `HTTP 401`, or a username prompt | usually not an access problem: HTTP/2 is broken on this network. Run `sudo git config --system http.version HTTP/1.1`. If the repository really is private, you need a personal access token |
+| `pull failed` with a conflict | you have local changes on the server. See what with `sudo -u ethiclens git -C /opt/ethiclens status` |
+| `package-lock.json is missing` | the files were copied incompletely — see section 3 again |
+| `the service did not come up` | the script prints the last 25 journal lines; usually a migration error or `.env` |
+| `did not answer /api/health` | the service runs but something is wrong: `sudo journalctl -u ethiclens -n 50 --no-pager` |
 
-### برگشت به نسخه قبل
+### Rolling back
 
-اگر به‌روزرسانی چیزی را شکست، به کامیت قبلی برگردید:
+If an update breaks something, go back to the previous commit:
 
 ```bash
 cd /opt/ethiclens && sudo -u ethiclens git log --oneline -5
 ```
 
-شناسه کامیت سالم را بردارید و:
+Take the id of a known-good commit and:
 
 ```bash
-cd /opt/ethiclens && sudo -u ethiclens git checkout <شناسه> && sudo -u ethiclens npm ci --omit=dev && sudo systemctl restart ethiclens
+cd /opt/ethiclens && sudo -u ethiclens git checkout <id> && sudo -u ethiclens npm ci && sudo -u ethiclens npm run build && sudo systemctl restart ethiclens
 ```
 
-برای برگشت به آخرین نسخه: `sudo -u ethiclens git checkout main`.
+To return to the latest version: `sudo -u ethiclens git checkout main`.
 
-> **پایگاه داده برنمی‌گردد.** جدول‌ها و ستون‌های تازه سرِ جایشان می‌مانند.
-> این معمولاً بی‌خطر است چون کد قدیمی ستون‌های تازه را نادیده می‌گیرد، ولی
-> پیش از هر به‌روزرسانی مهم، از پایگاه داده پشتیبان بگیرید (بخش بعدی).
+> **The database does not roll back.** New tables and columns stay where they
+> are. This is usually harmless, because older code ignores newer columns — but
+> take a backup before any significant update (next section).
 
-### نکته‌ها
+### Notes
 
-جدول‌ها با `CREATE TABLE IF NOT EXISTS` ساخته و ستون‌های تازه با `ALTER`
-افزوده می‌شوند، پس به‌روزرسانی داده‌ای را پاک نمی‌کند.
+Tables are created with `CREATE TABLE IF NOT EXISTS` and new columns added with
+`ALTER`, so an update never destroys data.
 
-تنظیماتی که از پنل مدیریت وارد کرده‌اید — کلیدهای API، سرویس ایمیل، متن
-دانشنامه، دسته‌بندی‌ها — در پایگاه داده‌اند نه در کد، پس به‌روزرسانی به
-آن‌ها دست نمی‌زند.
+Anything entered through the admin panel — API keys, the mail service, the
+encyclopedia text, categories — lives in the database rather than the code, so
+an update does not touch it.
 
-اگر ترجیح می‌دهید دستی بزنید، حتماً با `&&` زنجیر کنید تا شکست هر گام
-جلوی بقیه را بگیرد:
+If you prefer to run the steps by hand, chain them with `&&` so a failure stops
+the rest:
 
 ```bash
-cd /opt/ethiclens && sudo -u ethiclens git pull origin main && sudo -u ethiclens npm ci --omit=dev && sudo systemctl restart ethiclens
+cd /opt/ethiclens && sudo -u ethiclens git pull origin main && sudo -u ethiclens npm ci && sudo -u ethiclens npm run build && sudo systemctl restart ethiclens
 ```
 
-> **چرا زنجیرکردن مهم است:** اگر گام‌ها را در خطوط جدا بزنید، شکست
-> `git pull` جلوی `npm ci` و ری‌استارت را نمی‌گیرد. خروجی پر از پیام
-> موفقیت می‌شود — «۷۹ پکیج نصب شد»، «found 0 vulnerabilities» — در حالی
-> که کد اصلاً عوض نشده. این حالت دو بار پیش آمده و هر بار شبیه موفقیت
-> بوده است.
+> **Why chaining matters:** run on separate lines, a failed `git pull` does not
+> stop `npm ci` or the restart. The output fills with success messages — "79
+> packages installed", "found 0 vulnerabilities" — while the code has not
+> changed at all. This has happened twice, and each time it looked like
+> success.
 
 ---
 
-## پشتیبان‌گیری
+## Backups
 
-کل وضعیت برنامه در یک پوشه است: `/opt/ethiclens/data`.
+The whole application state is in one directory: `/opt/ethiclens/data`.
 
 ```bash
 sudo -u ethiclens sqlite3 /opt/ethiclens/data/ethiclens.db ".backup '/opt/ethiclens/data/backup-$(date +%F).db'"
 ```
 
-> اگر `sqlite3: command not found` گرفتید، در بخش ۱ نصبش نکرده‌اید:
+> If you get `sqlite3: command not found`, you skipped it in section 1:
 > `sudo apt install -y sqlite3`
 >
-> `.backup` عمداً به‌جای `cp` استفاده می‌شود. پایگاه داده در حالت WAL کار
-> می‌کند، یعنی بخشی از نوشته‌ها در فایل جانبی `-wal` است و کپی ساده فایل
-> اصلی می‌تواند نسخه‌ای نیم‌بند بدهد. `.backup` از API خود SQLite استفاده
-> می‌کند و روی پایگاه داده‌ای که سرویس در حال استفاده از آن است هم امن است
-> — لازم نیست سرویس را متوقف کنید.
+> `.backup` is used deliberately instead of `cp`. The database runs in WAL
+> mode, meaning some writes live in a side `-wal` file, and a plain copy of the
+> main file can produce a half-finished version. `.backup` uses SQLite's own
+> API and is safe against a database the service is actively using — there is
+> no need to stop the service.
 
-پشتیبان‌گیری روزانه. `deploy/backup.sh` را به‌جای یک دستور دستی اجرا کنید:
-خودش تشخیص می‌دهد کدام فایل پایگاه داده زنده است (server/db.js بین
-`ethica.db` و `ethiclens.db` انتخاب می‌کند)، پس از ساخت پشتیبان
-`integrity_check` می‌گیرد، فشرده می‌کند و نسخه‌های قدیمی‌تر از ۳۰ روز را
-پاک می‌کند.
+Daily backups. Run `deploy/backup.sh` rather than a hand-written command: it
+works out which database file is live (server/db.js chooses between
+`ethica.db` and `ethiclens.db`), runs `integrity_check` on the result,
+compresses it, and deletes copies older than 30 days.
 
-**راه پیشنهادی — تایمر systemd:**
+**Recommended — a systemd timer:**
 
 ```bash
 sudo cp /opt/ethiclens/deploy/ethiclens-backup.service /etc/systemd/system/
@@ -680,17 +689,17 @@ sudo systemctl enable --now ethiclens-backup.timer
 systemctl list-timers ethiclens-backup
 ```
 
-> تایمر با `Persistent=true` کار می‌کند، یعنی اگر سرور ساعت ۳:۴۰ خاموش
-> بوده باشد پشتیبان را هنگام بالا آمدن می‌گیرد نه اینکه آن روز را رد کند —
-> و همان روز است که بیشتر به پشتیبان نیاز دارید.
+> The timer uses `Persistent=true`, so if the server was down at 03:40 it takes
+> the backup when it comes back rather than skipping that day — and that is
+> exactly the day you are most likely to need one.
 
-یک بار هم دستی اجرا کنید تا مطمئن شوید کار می‌کند:
+Run it once by hand to confirm it works:
 
 ```bash
 sudo bash /opt/ethiclens/deploy/backup.sh
 ```
 
-**یا با cron، اگر systemd را ترجیح نمی‌دهید:**
+**Or with cron, if you would rather not use systemd:**
 
 ```bash
 sudo crontab -e
@@ -702,26 +711,26 @@ sudo crontab -e
 
 ---
 
-## عیب‌یابی
+## Troubleshooting
 
-| نشانه | بررسی کنید |
+| Symptom | Check |
 |---|---|
-| سرویس بالا نمی‌آید | `journalctl -u ethiclens -n 50` |
-| خطای «کلید API نامعتبر» | `/admin` → مدل و کلید → آزمایش اتصال |
-| تحلیل شروع می‌شود ولی متن نمی‌آید | `proxy_buffering off` در بلوک `/api/analyze/` |
-| بعد از ورود دوباره به صفحه ورود می‌رود | `SECURE_COOKIE=1` و `TRUST_PROXY=1` را بررسی کنید |
-| خطای `SQLITE_READONLY` | مالکیت پوشه: `sudo chown -R ethiclens:ethiclens /opt/ethiclens/data` |
-| مدل ۴۰۴ می‌دهد | شناسه مدل را با «دریافت فهرست مدل‌های حساب» بررسی کنید |
-| `npm ci` می‌گوید فایل قفل نیست | فایل‌ها کامل کپی نشده‌اند — گام ۳ را دوباره ببینید |
-| خطای ۵۲۱ کلادفلر | nginx بالا نیست یا فایروال بازه‌های کلادفلر را نمی‌پذیرد |
-| خطای ۵۲۶ کلادفلر | حالت Full (strict) است ولی گواهی Origin نصب نشده یا مسیرش غلط است |
-| خطای ۵۲۴ کلادفلر | پاسخ بیش از ۱۰۰ ثانیه ساکت مانده — سرویس را بررسی کنید |
-| حلقه بی‌پایان تغییر مسیر | حالت SSL روی Flexible است؛ باید Full (strict) باشد |
-| همه کاربران با هم قفل می‌شوند | `cloudflare-realip.conf` نصب یا `include` نشده است |
-| نشانی همه کاربران یکی دیده می‌شود | همان مورد بالا — با `tail /var/log/nginx/ethiclens.access.log` بررسی کنید |
-| کد تأیید ثبت‌نام نمی‌رسد | مسیر ارسال ایمیل تنظیم نشده — پنل مدیریت ← ایمیل، و بخش ۹ |
-| «رمزم را فراموش کرده‌ام» دیده نمی‌شود | همان مورد بالا؛ این پیوند فقط وقتی ایمیل تنظیم باشد نمایش داده می‌شود |
-| ایمیل به پوشه اسپم می‌رود | DKIM یا PTR ناقص است — بخش ۹.۵ و ۹.۳ |
-| `git pull` رمز می‌خواهد و ۴۰۱ می‌دهد | HTTP/2 روی شبکه سرور خراب است — `sudo git config --system http.version HTTP/1.1` (بخش ۳). `update.sh` خودش این را تشخیص می‌دهد |
-| به‌روزرسانی زدید ولی چیزی عوض نشد | گام‌ها را جدا زده‌اید و `git pull` بی‌صدا شکست خورده؛ از `update.sh` استفاده کنید |
-| `sqlite3: command not found` | در بخش ۱ نصب نشده — `sudo apt install -y sqlite3` |
+| The service will not start | `journalctl -u ethiclens -n 50` |
+| "invalid API key" error | `/app/admin` → models and keys → test connection |
+| An analysis starts but no text arrives | `proxy_buffering off` in the `/api/analyze/` block |
+| Signing in returns to the sign-in page | check `SECURE_COOKIE=1` and `TRUST_PROXY=1` |
+| `SQLITE_READONLY` | directory ownership: `sudo chown -R ethiclens:ethiclens /opt/ethiclens/data` |
+| A model returns 404 | check the model id with "fetch the account's model list" |
+| `npm ci` says there is no lock file | the files were copied incompletely — see step 3 |
+| Cloudflare 521 | nginx is down, or the firewall does not accept Cloudflare's ranges |
+| Cloudflare 526 | Full (strict) is on but the Origin certificate is missing or its path is wrong |
+| Cloudflare 524 | the response was silent for over 100 seconds — check the service |
+| An endless redirect loop | SSL mode is Flexible; it must be Full (strict) |
+| Every user gets locked out together | `cloudflare-realip.conf` is not installed or not included |
+| Every user appears to share one address | same as above — check with `tail /var/log/nginx/ethiclens.access.log` |
+| The sign-up code never arrives | no mail path configured — admin panel → email, and section 9 |
+| "I forgot my password" is not shown | same as above; the link appears only when mail is configured |
+| Mail lands in spam | DKIM or PTR is incomplete — sections 9.5 and 9.3 |
+| `git pull` asks for a password and returns 401 | HTTP/2 is broken on the server's network — `sudo git config --system http.version HTTP/1.1` (section 3). `update.sh` detects this itself |
+| You ran an update but nothing changed | the steps were run separately and `git pull` failed silently; use `update.sh` |
+| `sqlite3: command not found` | not installed in section 1 — `sudo apt install -y sqlite3` |

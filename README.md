@@ -1,248 +1,319 @@
-# دیدگاه اخلاق — Ethic Lens
+# Ethic Lens — دیدگاه اخلاق
 
-وب‌اپلیکیشنی که دوراهی‌های اخلاقی کاربر را از منظر **هشت مکتب بزرگ فلسفه اخلاق** تحلیل می‌کند و
-از یک **فلوچارت پالایش پنج‌مرحله‌ای** عبور می‌دهد تا به یک پیشنهاد عملی موجه برسد.
+A web application that analyses a real ethical dilemma through **eight schools
+of moral philosophy** and puts the result through a **five-stage refinement
+flowchart**, arriving at one defensible course of action.
 
-مبنای نظری در `/g` مستند شده است: هشت لنز، پنج دروازه و فرایند پنج‌فازی،
-با ارجاع به منابع اصلی. (`ethic_2.html` سند اولیه پروژه است و دیگر مبنای آن صفحه نیست.)
+The product is Persian and right-to-left throughout. This document, the code
+and the comments are English; Persian belongs to what a visitor reads.
 
----
-
-## قابلیت‌ها
-
-**برای کاربر**
-- شرح دوراهی + اطلاعات تکمیلی (ذی‌نفعان، گزینه‌ها، فوریت، ارزش‌ها)
-- تحلیل **استریمی** — نتیجه همزمان با تولید، در کارت‌ها می‌نشیند
-- هشت منظر: فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، خیر مشترک، قراردادگرایی، اخلاق مراقبت، اگزیستانسیالیسم، تبارشناسی نیچه
-- خروجی **مرحله‌به‌مرحله بر پایه فلوچارت**: کرامت (وتو) → عدالت (وتو) → فایده → مراقبت و فضیلت → اصالت — هر مرحله با پرسش، نتیجه و مکتبِ پشتیبانش
-- تعارض‌ها، مسیر پیشنهادی گام‌به‌گام، پرسش‌های خودکاوی، نقاط کور
-- **خروجی PDF** با یک کلیک (صفحه‌بندی A4، رنگ‌های چاپ‌بهینه، فارسی درست و قابل انتخاب)
-- خروجی HTML مستقل، فایل Markdown و کپی متن
-- تاریخچه با جست‌وجو، نشان‌کردن و تغییر نام
-- داشبورد آماری، حالت شب/روز، طراحی واکنش‌گرا و کامل RTL
-
-**برای مدیر**
-- **چند ارائه‌دهنده همزمان**: انویدیا، OpenAI، OpenRouter، Groq، Together، DeepSeek یا هر سرویس سازگار با OpenAI — هرکدام با آدرس پایه و کلید جداگانه
-- آزمایش اتصال هر ارائه‌دهنده و مرور فهرست مدل‌های حساب با افزودن گروهی
-- آزمایش دسته‌جمعی همه مدل‌ها برای یافتن مدل‌های از کار افتاده
-- مدیریت مدل‌های در دسترس کاربران و مدل پیش‌فرض
-- ویرایشگر **دستور تحلیل** با نسخه‌بندی، فعال‌سازی و بازگردانی متن کارخانه
-- تنظیم پارامترها: `temperature`، `top_p`، `max_tokens`
-- مدیریت کاربران: نقش، مسدودسازی، سهمیه روزانه، بازنشانی رمز
-- آمار مصرف به تفکیک مدل و کاربر، و گزارش رخدادها (audit log)
+The theory is documented at `/guide`: the eight lenses, the five gates and the
+five-phase process, each cited to a primary source. (`ethic_2.html` is the
+project's original sketch and no longer backs that page.)
 
 ---
 
-## پشته فناوری
+## What it does
 
-| لایه | انتخاب | چرا |
+**For a user**
+- Describe a dilemma, optionally with context: stakeholders, options already
+  considered, urgency, personal values
+- A **streamed** analysis — the result fills in as the model writes it
+- Eight lenses: virtue ethics, deontology, utilitarianism, the common good,
+  contractualism, the ethics of care, existentialism, Nietzschean genealogy
+- A **flowchart-ordered** verdict: dignity (veto) → justice (veto) → utility
+  and common good → care and virtue → authenticity, each stage with its
+  question, its finding and the lenses that argue for it
+- A comparison matrix scoring every option against all eight lenses
+- Tensions between the schools, a step-by-step recommendation, three decision
+  tests, self-examination questions and blind spots
+- Export as a standalone **HTML** file, as **PDF** through the browser's print
+  dialog, or as Markdown
+- History with search, starring and renaming; a stats dashboard; dark mode
+- Installable as a **PWA** from any page on the site
+
+**For an admin**
+- **Several providers at once**: NVIDIA, OpenAI, OpenRouter, Groq, Together,
+  DeepSeek or any OpenAI-compatible service, each with its own base URL and key
+- Test a provider's connection, browse the account's model list, add in bulk
+- Test every model at once to find the ones that have stopped working
+- Choose which models users can reach, and the default
+- A versioned editor for the **analysis prompt**, with activation and a reset
+  to the factory text
+- Tune `temperature`, `top_p`, `max_tokens`
+- Users: roles, blocking, daily quota, password reset, approval queue
+- Categories for published analyses, with a description and an icon
+- Delete or unpublish any analysis
+- Usage by model and by user, plus an audit log
+
+---
+
+## Stack
+
+| Layer | Choice | Why |
 |---|---|---|
-| سرور | Node.js + Express | بدون مرحله build |
-| پایگاه داده | SQLite (`better-sqlite3`) | تک‌فایل، استقرار و پشتیبان‌گیری ساده |
-| نشست | `express-session` + ذخیره‌ساز SQLite | کوکی HttpOnly، بقا پس از ری‌استارت |
-| رمز | `bcryptjs` | بدون وابستگی نیتیو |
-| کلاینت | HTML + CSS + ES Modules | بدون فریم‌ورک، بدون باندلر |
-| هوش مصنوعی | هر API سازگار با OpenAI | انویدیا، OpenAI، OpenRouter، Groq… — استریم SSE |
+| Server | Node.js + Express | no build step of its own |
+| Database | SQLite (`better-sqlite3`, WAL) | one file; simple to deploy and back up |
+| Session | `express-session` + SQLite store | HttpOnly cookie, survives a restart |
+| Passwords | `bcryptjs` | no native dependency |
+| App UI | React 19 + Vite + Tailwind v4 + Radix | mounted at `/app` |
+| Public pages | server-rendered HTML | crawlable in the first response |
+| Model | any OpenAI-compatible API | streamed over SSE |
+
+The site is deliberately two halves. Everything behind a sign-in is the React
+bundle under `/app`. Everything a search engine should read — the landing page,
+the encyclopedia, the published analyses — is rendered on the server, because a
+crawler handed an empty div indexes an empty div.
 
 ---
 
-## اجرای محلی
+## Running locally
 
 ```bash
 npm install
-cp .env.example .env      # SESSION_SECRET و NVIDIA_API_KEY را پر کنید
+cp .env.example .env      # fill in SESSION_SECRET and a provider key
 npm start
 ```
 
-سپس <http://localhost:3000>. حساب مدیر بار اول از `ADMIN_EMAIL` / `ADMIN_PASSWORD` ساخته می‌شود.
+Then <http://localhost:3000>. The first admin account is created from
+`ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
-آزمون‌ها:
-
-```bash
-npm run check
-```
+The frontend is built into `client-dist/`:
 
 ```bash
-npm run smoke
+npm run build
 ```
 
-`npm run check` نحو اسکریپت درون‌خطی همه صفحه‌ها و ماژول‌های کلاینت را می‌سنجد و به سرور
-نیاز ندارد. این آزمون صفحه‌ای را می‌گیرد که با کد ۲۰۰ سرو می‌شود ولی اسکریپتش خطای نحوی
-دارد و در نتیجه هیچ دکمه‌ای در آن کار نمی‌کند — حالتی که آزمون دود تشخیصش نمی‌دهد.
-`npm run smoke` مسیرهای API را با سرورِ در حال اجرا می‌آزماید و `npm test` هر دو را اجرا می‌کند.
+Vite builds into `client-dist.next` and the swap only happens on success, so a
+failed build leaves the running bundle untouched.
+
+### Tests
+
+```bash
+npm test
+```
+
+Runs six suites in order — 248 checks:
+
+| Suite | What it covers |
+|---|---|
+| `npm run check` | parses every inline script and client module; needs no server |
+| `npm run smoke` | API routes against a running server |
+| `npm run signup` | registration, approval, quota |
+| `npm run guide` | encyclopedia content and admin editing |
+| `npm run test:otp` | email codes and verification links |
+| `npm run test:cats` | categories, publishing, public pages |
+
+`check` exists to catch the page that serves 200 while its script has a syntax
+error, so no button on it works — which the smoke test cannot see.
+
+`node scripts/try-analysis.mjs` runs one real analysis end to end and reports
+how closely the model followed the requested block format. It costs a live API
+call, so it is not part of `npm test`.
 
 ---
 
-## متغیرهای محیطی
+## Environment
 
-| متغیر | پیش‌فرض | توضیح |
+| Variable | Default | Meaning |
 |---|---|---|
-| `PORT` | `3000` | پورت سرور |
-| `SESSION_SECRET` | — | **الزامی در تولید.** `openssl rand -hex 32` |
-| `DB_PATH` | `./data/ethiclens.db` | مسیر پایگاه داده |
-| `NVIDIA_API_KEY` | — | کلید `nvapi-…` |
-| `NVIDIA_BASE_URL` | `https://integrate.api.nvidia.com/v1` | آدرس سرویس انویدیا |
-| `OPENAI_API_KEY` | — | کلید `sk-…` |
-| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | آدرس سرویس OpenAI |
-| `TRUST_PROXY` | `0` | پشت nginx روی `1` |
-| `SECURE_COOKIE` | `0` | پشت HTTPS روی `1` |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | — | حساب مدیر اولیه |
+| `PORT` | `3000` | server port |
+| `NODE_ENV` | — | `production` enables real cache headers |
+| `SESSION_SECRET` | — | **required in production.** `openssl rand -hex 32` |
+| `DB_PATH` | `./data/ethiclens.db` | database file |
+| `TRUST_PROXY` | `0` | set to `1` behind nginx |
+| `SECURE_COOKIE` | `0` | set to `1` behind HTTPS |
+| `NVIDIA_API_KEY` / `NVIDIA_BASE_URL` | — | `nvapi-…` |
+| `OPENAI_API_KEY` / `OPENAI_BASE_URL` | — | `sk-…` |
+| `DEEPSEEK_API_KEY` / `DEEPSEEK_BASE_URL` | — | `sk-…` |
+| `BREVO_API_KEY` | — | transactional email |
+| `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` / `MAILGUN_BASE_URL` | — | transactional email |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | — | the first admin account |
 
-> این متغیرها فقط برای **راه‌اندازی اولیه**اند. پس از آن، ارائه‌دهندگان و کلیدها از پنل مدیریت مدیریت می‌شوند و در پایگاه داده ذخیره می‌مانند.
-> ارائه‌دهنده‌ای که کلید نداشته باشد ساخته ولی خاموش می‌ماند.
+> These are for **first boot only**. After that, providers and keys are managed
+> from the admin panel and stored in the database. A provider with no key is
+> created but stays switched off.
 
 ---
 
-## ساختار پروژه
+## Layout
 
 ```
 server/
-  index.js              اکسپرس، helmet/CSP، نشست، مسیرهای صفحه
-  db.js                 اسکیمای SQLite و audit()
-  seed.js               مدل‌ها، دستور پیش‌فرض، مدیر اولیه
-  session-store.js      ذخیره‌ساز نشست روی SQLite
+  index.js              express, helmet/CSP with a per-request nonce, routing
+  db.js                 SQLite schema, additive migrations, audit()
+  seed.js               models, factory prompt, first admin
+  session-store.js      session store on SQLite
   middleware/auth.js    loadUser / requireAuth / requireAdmin / CSRF
-  routes/               auth، analyze (SSE)، history، admin
+  routes/               auth, analyze (SSE), history, admin, public
   services/
-    llm.js              کلاینت عمومی هر API سازگار با OpenAI
-    providers.js        ارائه‌دهندگان، تفکیک مدل‌ها و resolveModel
-    default-prompt.js   دستور کارخانه + قالب پیام کاربر
-    schools.js          تعریف هشت مکتب و پنج مرحله فلوچارت
-    tiers.js            گروه‌های کاربری، سقف‌ها و مصرف
-    parser.js           تجزیه بلوک‌های @@key@@
-    settings.js         تنظیمات با پیش‌فرض
+    llm.js              generic client for any OpenAI-compatible API
+    providers.js        providers, model resolution
+    default-prompt.js   factory prompt + the user-message template
+    schools.js          the eight lenses, five stages, matrix columns
+    parser.js           @@key@@ block parsing
+    completeness.js     which blocks came back missing or too thin
+    render-analysis.js  server-side rendering of an analysis
+    export-html.js      the standalone HTML/print document
+    categories.js       category shelves and tags
+    seo.js              meta tags, JSON-LD, slugs, nonce injection
+client/
+  index.html            the app shell
+  src/                  React app: pages, components, lib
 public/
-  index.html            صفحه معرفی
-  css/ js/              سامانه طراحی و هسته کلاینت
-  pages/                login، app، dashboard، history، analysis، settings، admin، guide، 404
-deploy/                 systemd، nginx، راهنمای استقرار
-scripts/                smoke.mjs، sync-models.mjs، probe-models.mjs، try-analysis.mjs
+  index.html            landing page
+  pages/                guide, about, 404
+  css/ js/              design system and the shared core for those pages
+  icons/ fonts/         product mark, PWA icons, Shabnam
+  sw.js manifest.webmanifest
+deploy/                 systemd units, nginx, backup, update script, guide
+scripts/                test suites and operational tools
 ```
 
 ---
 
-## قالب خروجی مدل
+## The model's output format
 
-مدل باید پاسخ را در بلوک‌های نشانه‌گذاری‌شده بنویسد؛ هر بلوک با خطی که فقط `@@key@@` است شروع می‌شود:
+The model answers in marked blocks. Each starts with a line that is only
+`@@key@@` and nothing else:
 
 ```
-@@reframe@@ @@stakeholders@@ @@options@@
-@@school:virtue@@ … @@school:nietzsche@@        (هشت مکتب، هرکدام با خط «حکم: …»)
-@@gate:dignity@@ … @@gate:authenticity@@        (پنج دروازه، هرکدام با خط «وضعیت: …»)
-@@tensions@@ @@recommendation@@ @@questions@@ @@blindspots@@
+@@issue@@ @@reframe@@ @@facts@@ @@stakeholders@@ @@options@@ @@matrix@@
+@@school:virtue@@ … @@school:nietzsche@@     (eight lenses, each led by «حکم: …»)
+@@gate:dignity@@ … @@gate:authenticity@@     (five gates, each led by «وضعیت: …»)
+@@tensions@@ @@recommendation@@ @@test@@
+@@implementation@@ @@questions@@ @@blindspots@@ @@revisit@@
 ```
 
-کلاینت این بلوک‌ها را حین استریم تجزیه می‌کند و در کارت مربوطه می‌نشاند.
-**اگر دستور را در پنل مدیریت ویرایش می‌کنید، این کلیدها را دست‌نخورده نگه دارید.**
+Twenty-six blocks. The client parses them as they stream and the server stores
+them parsed. **If you edit the prompt in the admin panel, leave these keys
+exactly as they are.**
+
+The matrix asks for one column per lens. Adding or removing a lens means
+changing `MATRIX_COLUMNS` in `server/services/schools.js`, the matching list in
+`client/src/lib/analysis.js`, and the table header in the prompt. A stored
+analysis keeps whatever width it was written with; a column no row scored is
+simply not drawn.
 
 ---
 
-## تأیید ایمیل
+## Email verification
 
-ایمیل‌های تأیید از راه **API میل‌گان** فرستاده می‌شوند — نه SMTP.
-یک درخواست `fetch` ساده است و وابستگی تازه‌ای به پروژه اضافه نمی‌کند.
+Verification email goes out over the **Brevo or Mailgun HTTP API**, not SMTP —
+it is one `fetch` and adds no dependency.
 
-**دروازه پیش‌فرض نرم است:** کاربر تأییدنشده وارد می‌شود و می‌گردد، ولی
-`POST /api/analyze/stream` برایش بسته است. ریسک واقعیِ ثبت‌نام جعلی، سوزاندن
-اعتبار API است نه صرفِ ورود؛ و بستنِ کاملِ ورود، کاربری را که ایمیلش را
-اشتباه تایپ کرده بیرون نگه می‌دارد. از پنل مدیریت می‌توان روی «کل سامانه» گذاشت.
+**The default gate is soft:** an unverified user can sign in and look around,
+but `POST /api/analyze/stream` is closed to them. The real risk from a fake
+signup is burning API credit, not the sign-in itself, and locking sign-in
+entirely would shut out anyone who mistyped their address. The admin panel can
+raise it to the whole site.
 
-| رفتار | جزئیات |
+| Behaviour | Detail |
 |---|---|
-| توکن | ۳۲ بایت تصادفی، فقط چکیده SHA-256 ذخیره می‌شود |
-| اعتبار | ۲۴ ساعت، یک‌بارمصرف؛ توکن تازه، قبلی‌ها را باطل می‌کند |
-| ارسال دوباره | حداقل ۶۰ ثانیه فاصله، تا ایمیل کسی بمباران نشود |
-| تأیید موفق | کاربر را وارد هم می‌کند تا مسیر بدون اصطکاک باشد |
-| بدون تنظیم میل‌گان | حساب‌های تازه تأییدشده حساب می‌شوند تا کسی پشت در نماند |
-| شکست ارسال | ثبت‌نام نمی‌شکند؛ خطا در گزارش رخدادها ثبت می‌شود |
-| کاربران قدیمی | با مهاجرت، تأییدشده علامت می‌خورند |
-| کلید API | فقط روی سرور؛ هرگز در پاسخ پنل مدیریت نمی‌آید |
+| Token | 32 random bytes; only the SHA-256 digest is stored |
+| Validity | 24 hours, single use; a new token invalidates the previous ones |
+| Resend | at least 60 seconds apart, so nobody's inbox is flooded |
+| On success | signs the user in, so the path has no friction |
+| With no mail provider | new accounts count as verified, so nobody is stranded |
+| Send failure | registration still succeeds; the error goes to the audit log |
+| Existing users | marked verified by the migration |
+| API key | server-side only; never returned to the admin panel |
 
-> اگر حساب میل‌گان شما **اروپایی** است، در پنل مدیریت منطقه را روی
-> `api.eu.mailgun.net` بگذارید — وگرنه خطای ۴۰۱ می‌گیرید.
-> حساب آزمایشی میل‌گان فقط به گیرندگان تأییدشده ایمیل می‌فرستد.
+> If your Mailgun account is **European**, set the region to
+> `api.eu.mailgun.net` in the admin panel or every call returns 401. A Mailgun
+> sandbox account only delivers to verified recipients.
 
 ---
-## نقشه نشانی‌ها
 
-اپلیکیشن روی ریشه سوار است و صفحه‌های قابل ایندکس نشانی جدا دارند:
+## URL map
 
-| نشانی | چیست |
+The application lives under `/app`; the indexable pages have their own
+addresses at the root.
+
+| Address | What it is |
 |---|---|
-| `/` | خود اپلیکیشن — پشت ورود، `noindex` |
-| `/intro` | صفحه معرفی |
-| `/g` | دانشنامه |
-| `/p` | فهرست تحلیل‌های عمومی |
-| `/a/<slug>` | یک تحلیل منتشرشده |
-| `/c/<slug>` | یک دسته‌بندی |
-| `/about` | درباره ما |
+| `/` | landing page |
+| `/guide` | the encyclopedia |
+| `/explore` | published analyses, with category shelves |
+| `/category/<slug>` | one category |
+| `/analysis/<category>/<slug>` | one published analysis |
+| `/about` | about the project |
+| `/app` | the application — behind sign-in, `noindex` |
+| `/app/history`, `/app/dashboard`, `/app/settings`, `/app/admin` | app screens |
 
-هرچه زیر ریشه بیاید و در فهرست مسیرهای اپ نباشد ۴۰۴ می‌گیرد؛ نشانی‌های
-قدیمی `/app` و `/analysis` و هرچه زیر `/v2` بود، ۳۰۱ می‌خورند.
+Every address the product has ever used redirects rather than 404s: `/intro`,
+`/g`, `/p`, `/a/<slug>`, `/c/<slug>`, and the bare `/login`, `/history`,
+`/dashboard`, `/settings`, `/admin`, `/verify`.
 
 ---
-## انتشار عمومی و SEO
 
-هر تحلیل می‌تواند نشانی عمومی و قابل ایندکس خودش را داشته باشد:
-`/a/<عنوان-فارسی>`. صفحه‌های فهرست در `/p` جمع می‌شوند.
+## Publishing and SEO
 
-**انتشار همیشه انتخاب صریح صاحب تحلیل است و هرگز خودکار نیست.**
-متن دوراهی‌ها شخصی است و ممکن است نام افراد یا جزئیات قابل‌شناسایی داشته باشد،
-پس پیش از انتشار هشدار داده می‌شود و کاربر می‌تواند عنوان و خلاصه عمومی جداگانه
-بنویسد و نامش را پنهان نگه دارد. لغو انتشار صفحه را فوراً ۴۰۴ می‌کند،
-ولی نشانی محفوظ می‌ماند تا انتشار دوباره لینک را نشکند.
+Any analysis can have its own indexable address,
+`/analysis/<category>/<persian-title>`, listed on `/explore`.
 
-آنچه برای موتور جست‌وجو فراهم است:
+**Publishing is always an explicit choice by the analysis owner, never
+automatic.** Dilemma text is personal and may carry names or identifying
+detail, so the user is warned first and can write a separate public title and
+summary and stay anonymous. Unpublishing 404s the page immediately but keeps
+the slug, so republishing does not break the link.
 
-| مورد | توضیح |
+| Provided | Detail |
 |---|---|
-| رندر سمت سرور | محتوای تحلیل در همان پاسخ نخست است، نه با جاوااسکریپت |
-| `<title>` و توضیح متا | از عنوان و خلاصه عمومی، با طول مناسب گوگل |
-| canonical | نشانی مطلق، از تنظیم «آدرس سایت» |
-| OpenGraph و Twitter Card | برای پیش‌نمایش در شبکه‌های اجتماعی |
-| داده ساختاریافته | `Article` و `BreadcrumbList` روی هر تحلیل، `ItemList` روی `/p` |
-| `sitemap.xml` | صفحه‌های ایستا + همه تحلیل‌های منتشرشده |
-| `robots.txt` | مسیرهای عمومی باز، ریشه و `/admin` و `/api/` و مانند آن بسته |
-| `noindex` | روی همه صفحه‌های درون‌برنامه‌ای |
-| پیوند داخلی | ناوبری مهمان و مسیر راهنما، برای خزیدن بهتر |
+| Server rendering | the content is in the first response, not added by script |
+| `<title>` and meta description | from the public title and summary, sized for Google |
+| Canonical | absolute, from the "site URL" setting |
+| OpenGraph and Twitter Card | for social previews |
+| Structured data | `Article` and `BreadcrumbList` per analysis, `ItemList` on `/explore` |
+| `sitemap.xml` | static pages plus every published analysis |
+| `robots.txt` | public paths open; `/app`, `/api/` and the like closed |
+| `noindex` | on every in-app screen |
+| Internal links | guest navigation, breadcrumbs and a shared footer |
 
-> پیش از انتشار، در پنل مدیریت ← تنظیمات سایت، **آدرس سایت** را وارد کنید
-> (مثلاً `https://ethiclens.ir`). بدون آن، canonical و نقشه سایت نشانی مطلق ندارند.
-
----
-## ملاحظات امنیتی
-
-- رمزها با bcrypt، نشست در کوکی `HttpOnly` + `SameSite=Lax`
-- CSRF با الگوی double-submit روی همه مسیرهای تغییردهنده
-- CSP سخت‌گیرانه؛ تنها منبع بیرونی مجاز، فونت Google است
-- کلیدهای API فقط سمت سرور می‌مانند و در پاسخ پنل مدیریت ماسک می‌شوند
-- پاسخ تنظیمات فهرست سفید دارد تا هیچ مقدار حساسی نشت نکند
-- محدودیت نرخ روی ورود و ثبت‌نام، سهمیه روزانه تحلیل برای هر کاربر
-- ثبت رخدادهای حساس در `audit_log`
-- کاربران فقط به تحلیل‌های خودشان دسترسی دارند (بررسی `user_id` در همه پرس‌وجوها)
+> Before publishing, set **site URL** in admin → site settings (for example
+> `https://ethiclens.ir`). Without it, canonical links and the sitemap have no
+> absolute address.
 
 ---
 
-## سازگاری مدل‌ها
+## Security notes
 
-خانواده‌های تازه اوپن‌ای‌آی (GPT-5 و سری o) به‌جای `max_tokens` پارامتر
-`max_completion_tokens` می‌خواهند و `temperature`/`top_p` سفارشی را رد می‌کنند.
-کلاینت دو لایه دفاع دارد: حدسِ اولیه از روی نام مدل، و تطبیق خودکار پس از خطای ۴۰۰.
-بنابراین مدل‌های آینده هم بدون تغییر کد کار می‌کنند.
-
----
-
-## استقرار
-
-راهنمای کامل اوبونتو: [`deploy/DEPLOY.md`](deploy/DEPLOY.md)
+- bcrypt passwords; session in an `HttpOnly` + `SameSite=Lax` cookie
+- CSRF double-submit on every mutating route
+- A strict CSP with a per-request nonce — no `unsafe-inline` for scripts
+- API keys stay server-side and are masked in admin responses
+- The settings response is allow-listed so no sensitive value leaks
+- Rate limits on sign-in and registration; a daily analysis quota per user
+- Sensitive events written to `audit_log`
+- Users reach only their own analyses (`user_id` checked in every query)
 
 ---
 
-## سلب مسئولیت
+## Model compatibility
 
-تحلیل‌ها توسط یک مدل زبانی تولید می‌شوند و می‌توانند نادرست یا ناقص باشند.
-دیدگاه اخلاق جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست و مسئولیت تصمیم نهایی با کاربر است.
+Newer OpenAI families (GPT-5 and the o-series) want `max_completion_tokens`
+instead of `max_tokens` and reject custom `temperature`/`top_p`. The client has
+two layers of defence: an initial guess from the model name, and automatic
+adaptation after a 400. Future models therefore work without a code change.
 
-## پروانه
+---
+
+## Deployment
+
+Full Ubuntu guide: [`deploy/DEPLOY.md`](deploy/DEPLOY.md)
+
+```bash
+sudo bash /opt/ethiclens/deploy/update.sh
+```
+
+---
+
+## Disclaimer
+
+Analyses are produced by a language model and can be wrong or incomplete.
+Ethic Lens is not a substitute for legal, medical or psychological advice, and
+the final decision and its consequences rest with the user.
+
+## Licence
 
 MIT
