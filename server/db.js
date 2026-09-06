@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS categories (
   title       TEXT    NOT NULL,             -- Persian, shown to readers
   slug        TEXT    NOT NULL UNIQUE,      -- ASCII, used in the URL
   description TEXT,                         -- meta description for the category page
+  icon        TEXT,                         -- emoji shown on the card and page head
   sort_order  INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
 );
@@ -294,6 +295,12 @@ function addMissingColumns() {
       email_check_note: 'TEXT',
       quota_override: 'INTEGER',
       token_override: 'INTEGER'
+    },
+    categories: {
+      // An emoji, shown on the category cards and at the head of the category
+      // page. A shelf with a face on it is findable at a glance in a grid;
+      // four cards of identical grey text are not.
+      icon: 'TEXT'
     },
     models: {
       min_tier: "TEXT NOT NULL DEFAULT 'basic'"

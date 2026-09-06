@@ -19,11 +19,11 @@
       document, and replaying one from a cache would repeat it.
    ========================================================================== */
 
-// v4: the app moved again — root to /app — so every cached path points
-// somewhere that now redirects, and the second typeface was dropped, so the
-// cache is also holding two font files nothing asks for. Bumping the key is
-// what makes activate drop the lot.
-const VERSION = 'v4';
+// v5: the pre-cached offline page still links to /v2/, an address that has
+// not existed for two moves. A cached copy is exactly what an offline visitor
+// gets, so the correction only reaches anyone if the key changes — bumping it
+// is what makes activate drop the old set.
+const VERSION = 'v5';
 const SHELL = `ethiclens-shell-${VERSION}`;
 const ASSETS = `ethiclens-assets-${VERSION}`;
 

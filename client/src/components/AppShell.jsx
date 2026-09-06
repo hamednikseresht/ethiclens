@@ -45,9 +45,10 @@ export function AppShell({ user, children, onSignedOut }) {
         <OfflineBar />
         <div className="mx-auto flex h-14 max-w-xl md:max-w-4xl items-center gap-3 px-5">
           <Link to="/" className="flex items-center gap-2">
-            <span className="grid size-8 place-items-center rounded-sm bg-primary text-[11px] font-bold text-primary-foreground">
-              EL
-            </span>
+            {/* The product mark, not a two-letter stand-in for it. The file
+                carries its own rounded square and colour. */}
+            <img src="/icons/mark.svg" width="32" height="32" alt=""
+                 className="size-8 shrink-0 rounded-[9px]" />
             <span className="font-bold">دیدگاه اخلاق</span>
           </Link>
 

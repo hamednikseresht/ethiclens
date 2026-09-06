@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Sheet } from '@/components/ui/sheet';
 import { fa, faDate } from '@/lib/fa';
 import {
-  Star, Pencil, Download, Globe, Check, TriangleAlert, ExternalLink, NotebookPen
+  Star, Pencil, Download, Globe, Check, TriangleAlert, ExternalLink, NotebookPen,
+  FileCode, FileText, Printer
 } from 'lucide-react';
 
 /**
@@ -54,15 +55,10 @@ export function AnalysisActions({ analysis, onUpdated }) {
           عنوان
         </IconAction>
 
-        {/* A real link, not a fetch: the response is an attachment and the
-            browser's own download handling is what saves it. GET is exempt
-            from the CSRF check, so the session cookie is all it needs. */}
-        <a href={`/api/history/${analysis.id}/export`} download
-           className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-card
-                      px-3 text-[11px] font-bold text-text-3 transition-colors hover:bg-muted">
+        <IconAction onClick={() => setSheet('export')} label="خروجی گرفتن">
           <Download className="size-3.5" />
           خروجی
-        </a>
+        </IconAction>
 
         <IconAction onClick={() => setSheet('publish')} active={published}
                     label={published ? 'مدیریت انتشار' : 'انتشار عمومی'}>
@@ -81,6 +77,9 @@ export function AnalysisActions({ analysis, onUpdated }) {
         </a>
       )}
 
+      {sheet === 'export' && (
+        <ExportSheet analysis={analysis} onClose={() => setSheet(null)} />
+      )}
       {sheet === 'rename' && (
         <RenameSheet analysis={analysis} onClose={() => setSheet(null)} onUpdated={onUpdated} />
       )}
@@ -100,6 +99,72 @@ function IconAction({ children, onClick, disabled, active, label }) {
                      : 'border-border bg-card text-text-3 hover:bg-muted'}`}>
       {children}
     </button>
+  );
+}
+
+/* ==========================================================================
+   Export
+   ========================================================================== */
+
+/**
+ * Three ways out of the app.
+ *
+ * HTML is one self-contained file — styles and the four Shabnam faces inlined
+ * — so it reads the same from a downloads folder with no network as it does
+ * here, which is what makes it worth attaching to an email.
+ *
+ * PDF is the browser's own print-to-PDF, opened on that same document. It is
+ * not a shortcut: rendering PDF on the server would mean implementing Arabic
+ * shaping and bidirectional layout over a drawing library, and the output
+ * would be worse than what the browser already does — no selectable text, no
+ * live links, and Persian letters at risk of arriving unjoined.
+ *
+ * Markdown stays for pasting into another tool.
+ */
+const EXPORT_FORMATS = [
+  { key: 'html', icon: FileCode, title: 'صفحه HTML',
+    note: 'یک فایل مستقل با همان ظاهر و قلم؛ بدون اینترنت هم درست باز می‌شود.' },
+  { key: 'pdf', icon: Printer, title: 'PDF',
+    note: 'در پنجره چاپ مرورگر، مقصد را روی «ذخیره به‌صورت PDF» بگذارید.' },
+  { key: 'md', icon: FileText, title: 'متن Markdown',
+    note: 'متن خام تحلیل، برای چسباندن در ابزار دیگر.' }
+];
+
+function ExportSheet({ analysis, onClose }) {
+  const base = `/api/history/${analysis.id}`;
+
+  // A real link rather than a fetch: the response is an attachment and the
+  // browser's own download handling is what saves it. GET is exempt from the
+  // CSRF check, so the session cookie is all it needs.
+  const href = (key) =>
+    key === 'pdf'  ? `${base}/print`
+  : key === 'html' ? `${base}/export?format=html`
+                   : `${base}/export`;
+
+  return (
+    <Sheet title="خروجی تحلیل" onClose={onClose}>
+      <div className="space-y-2">
+        {EXPORT_FORMATS.map(f => (
+          <a key={f.key} href={href(f.key)}
+             {...(f.key === 'pdf'
+               // Printing needs a document the browser has actually laid out,
+               // so this one opens rather than downloads.
+               ? { target: '_blank', rel: 'noopener' }
+               : { download: '' })}
+             onClick={f.key === 'pdf' ? undefined : onClose}
+             className="flex items-start gap-3 rounded-lg border border-border bg-card p-3.5
+                        text-start transition-colors hover:border-primary">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">
+              <f.icon className="size-4" />
+            </span>
+            <span className="min-w-0 grow">
+              <span className="block text-[13px] font-bold">{f.title}</span>
+              <span className="mt-0.5 block text-[11.5px] leading-relaxed text-text-4">{f.note}</span>
+            </span>
+          </a>
+        ))}
+      </div>
+    </Sheet>
   );
 }
 

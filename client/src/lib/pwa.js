@@ -5,10 +5,18 @@
  * fetches the pre-cache list, and doing that while the page is still painting
  * competes with the very assets the person is waiting for.
  *
- * The scope is /app/, which is exactly what the installed app covers. The
- * homepage and the public pages are outside it on purpose: they are plain
- * server-rendered documents that the browser and the CDN can cache on their
- * own, and a worker in front of them would only add a layer to go wrong.
+ * The worker's scope is /app/, which is exactly what the installed app
+ * covers. The homepage and the public pages are outside it on purpose: they
+ * are plain server-rendered documents that the browser and the CDN can cache
+ * on their own, and a worker in front of them would only add a layer to go
+ * wrong.
+ *
+ * Note this is the *worker's* scope and not the manifest's. The manifest is
+ * scoped to / so that the install prompt can fire on the public pages too —
+ * a browser only offers to install while the page it is on is inside the
+ * manifest scope, and with both set to /app/ nobody who arrived at the
+ * homepage was ever asked. start_url stays /app/, so an installed copy still
+ * opens straight into the app.
  */
 
 export function registerServiceWorker() {

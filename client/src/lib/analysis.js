@@ -146,8 +146,25 @@ export const MATRIX_COLUMNS = [
   { key: 'commongood',   label: 'خیر مشترک' },
   { key: 'care',         label: 'مراقبت' },
   { key: 'virtue',       label: 'فضیلت' },
-  { key: 'authenticity', label: 'اصالت' }
+  { key: 'authenticity', label: 'اصالت' },
+  { key: 'genealogy',    label: 'تبارشناسی' }
 ];
+
+/**
+ * Which of those columns this particular matrix actually scored.
+ *
+ * The list above is what the current prompt asks for, but a stored analysis
+ * was produced by whatever prompt was live when it ran — everything from
+ * before the genealogy column has one fewer score per row. Drawing the full
+ * list against those puts a column of em dashes down every historic analysis,
+ * which reads as a broken table rather than as a lens that was never asked
+ * about. A column no row scored is not drawn.
+ */
+export function scoredColumns(rows) {
+  return MATRIX_COLUMNS
+    .map((c, i) => ({ ...c, i }))
+    .filter(c => rows.some(r => r.scores[c.i] !== null && r.scores[c.i] !== undefined));
+}
 
 /** Cell colour by score, from strong support to strong objection. */
 export function scoreStyle(v) {

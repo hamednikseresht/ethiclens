@@ -1,9 +1,10 @@
 import express from 'express';
 import { db } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { uniqueSlug, metaDescription } from '../services/seo.js';
+import { uniqueSlug, metaDescription, withNonce } from '../services/seo.js';
 import { audit } from '../db.js';
 import { parseTags, readTags, listCategories, categoryPathFor } from '../services/categories.js';
+import { analysisDocument, attachmentHeader } from '../services/export-html.js';
 
 export const router = express.Router();
 router.use(requireAuth);
@@ -239,16 +240,37 @@ router.delete('/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-router.get('/:id/export', (req, res) => {
+/** The row plus its category slug, or null. Shared by both export routes. */
+function ownAnalysis(req) {
   // Joined for the category slug: the result page links to the public
   // address, and that carries the category as a path segment.
-  const row = db.prepare(`
+  return db.prepare(`
     SELECT a.*, c.slug AS category_slug
     FROM analyses a LEFT JOIN categories c ON c.id = a.category_id
     WHERE a.id = ? AND a.user_id = ?`).get(req.params.id, req.user.id);
+}
+
+/**
+ * Download an analysis.
+ *
+ * `format=md` is the raw marked-up text — small, diffable, and what you paste
+ * into another tool. `format=html` is a standalone document with its styles
+ * and typeface inlined, for reading and for sending to someone else.
+ */
+router.get('/:id/export', (req, res) => {
+  const row = ownAnalysis(req);
   if (!row) return res.status(404).json({ error: 'تحلیل یافت نشد.' });
+
+  if (req.query.format === 'html') {
+    let sections = {};
+    try { sections = JSON.parse(row.sections) || {}; } catch { /* falls back to empty */ }
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Disposition', attachmentHeader(row, 'html'));
+    return res.send(analysisDocument(row, sections));
+  }
+
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="analysis-${row.id}.md"`);
+  res.setHeader('Content-Disposition', attachmentHeader(row, 'md'));
 
   const reflection = row.reflected_at
     ? `\n\n---\n\n## بازنگری — ثبت‌شده در ${row.reflected_at}\n\n` +
@@ -260,6 +282,27 @@ router.get('/:id/export', (req, res) => {
     `**تاریخ:** ${row.created_at}\n**مدل:** ${row.model}\n\n` +
     `## شرح دوراهی\n\n${row.dilemma}\n\n---\n\n` +
     `${row.raw_output || ''}${reflection}\n`
+  );
+});
+
+/**
+ * The same document, served inline and told to print itself.
+ *
+ * This is the PDF path. The browser's own print-to-PDF is what produces the
+ * file: for Persian that means real shaped text, working links and correct
+ * RTL layout, none of which a server-side PDF library gives without
+ * implementing Arabic shaping first.
+ */
+router.get('/:id/print', (req, res) => {
+  const row = ownAnalysis(req);
+  if (!row) return res.status(404).json({ error: 'تحلیل یافت نشد.' });
+
+  let sections = {};
+  try { sections = JSON.parse(row.sections) || {}; } catch { /* falls back to empty */ }
+
+  res.setHeader('Cache-Control', 'no-store');
+  res.type('html').send(
+    withNonce(analysisDocument(row, sections, { print: true }), res.locals.cspNonce)
   );
 });
 

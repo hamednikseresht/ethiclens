@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Alert } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { quoteDeck } from '@shared/quotes.js';
-import { ArrowLeft, ArrowRight, Compass, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Compass, X, Check } from 'lucide-react';
 import { fa, faDuration } from '@/lib/fa';
+import { SAMPLE_DILEMMAS } from '@/lib/samples';
+import { LensOctagon } from '@/components/LensOctagon';
 
 /**
  * New analysis: a two-step form, then a waiting screen while the model works.
@@ -92,6 +94,8 @@ export default function Analyze({ onDone }) {
             </div>
           </div>
 
+          <Samples current={form.dilemma} onPick={(t) => set('dilemma', t)} />
+
           <div className="flex gap-2">
             <Button variant="primary" className="flex-1" disabled={tooShort} onClick={() => setStep(2)}>
               ادامه <ArrowLeft className="size-4" />
@@ -164,6 +168,53 @@ export default function Analyze({ onDone }) {
   );
 }
 
+/**
+ * Five worked examples under the textarea.
+ *
+ * A blank box is the form's hardest moment: most people write two lines,
+ * which produces a two-line analysis, and nothing on the screen tells them
+ * how much detail is worth giving. Each sample is at the length that actually
+ * analyses well, so picking one is also a demonstration of the ask.
+ *
+ * Picking replaces the field rather than appending — two dilemmas in one box
+ * analyse as neither — so anything already typed is confirmed first.
+ */
+function Samples({ current, onPick }) {
+  const [picked, setPicked] = useState(null);
+
+  const choose = (s) => {
+    const typed = current.trim();
+    if (typed && typed !== SAMPLE_DILEMMAS.find(x => x.label === picked)?.text
+        && !window.confirm('متن فعلی با این نمونه جایگزین شود؟')) return;
+    onPick(s.text);
+    setPicked(s.label);
+  };
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] text-text-5">
+        نمی‌دانید از کجا شروع کنید؟ یکی از این نمونه‌ها را بردارید و به موقعیت خودتان تغییرش دهید.
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {SAMPLE_DILEMMAS.map(s => {
+          const active = picked === s.label && current === s.text;
+          return (
+            <button key={s.label} type="button" onClick={() => choose(s)}
+                    aria-pressed={active}
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5
+                                text-[11.5px] font-bold transition-colors ${active
+                                  ? 'border-primary bg-primary-soft text-primary'
+                                  : 'border-border bg-card text-text-3 hover:border-primary hover:text-primary'}`}>
+              {active ? <Check className="size-3.5" /> : <span aria-hidden="true">{s.icon}</span>}
+              {s.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function StepHeader({ step }) {
   return (
     <div className="mb-5 flex items-center gap-2">
@@ -181,7 +232,7 @@ function StepHeader({ step }) {
    ========================================================================== */
 function Waiting({ form, meta, onDone, onCancel, onError }) {
   const [progress, setProgress] = useState(0);
-  const [seen, setSeen] = useState([]);
+  const [doneLenses, setSeen] = useState([]);
   const [quote, setQuote] = useState(null);
   const [elapsed, setElapsed] = useState(0);
 
@@ -218,7 +269,13 @@ function Waiting({ form, meta, onDone, onCancel, onError }) {
           // would be a guess, and token count says nothing about structure.
           const marks = acc.current.match(/^\s*@@\s*[a-zA-Z:_-]+\s*@@\s*$/gm) || [];
           setProgress(Math.min(99, Math.round((marks.length / 26) * 100)));
-          setSeen(marks.map(m => m.replace(/@|@|\s/g, '')).filter(k => k.startsWith('school:')));
+          // A marker means its block has opened, not that it is finished, so
+          // the last one is still being written. Lighting a lens on the
+          // marker alone showed it done while its verdict was mid-sentence.
+          setSeen(marks.slice(0, -1)
+            .map(m => m.replace(/[@\s]/g, ''))
+            .filter(k => k.startsWith('school:'))
+            .map(k => k.slice('school:'.length)));
         },
         onDone: (result) => onDone?.(result)
       }
@@ -239,6 +296,9 @@ function Waiting({ form, meta, onDone, onCancel, onError }) {
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-xl md:max-w-2xl flex-col justify-between px-5 pb-24 pt-8">
       <div className="space-y-6">
+        <LensOctagon schools={meta?.schools || []} done={doneLenses}
+                     label={`${fa(doneLenses.length)} از ${fa(meta?.schools?.length || 8)} لنز بررسی شد`} />
+
         <div className="space-y-3">
           <div className="flex items-baseline justify-between">
             <span className="text-xs font-bold text-text-3">در حال تحلیل</span>
@@ -258,7 +318,7 @@ function Waiting({ form, meta, onDone, onCancel, onError }) {
         {meta?.schools && (
           <div className="flex flex-wrap gap-1.5">
             {meta.schools.map(s => {
-              const done = seen.includes(`school:${s.key}`);
+              const done = doneLenses.includes(s.key);
               return (
                 <span key={s.key}
                       className="rounded-full border px-2.5 py-1 text-[10px] font-bold transition-opacity"

@@ -9,7 +9,7 @@ import {
   metaDescription, publishedAnalyses, publishedCount, findBySlug,
   siteJsonLd, breadcrumbJsonLd, injectHead, withNonce
 } from '../services/seo.js';
-import { renderAnalysis, verdictChips, faNum, splitVerdict, md } from '../services/render-analysis.js';
+import { renderAnalysis, renderOptions, verdictChips, faNum, splitVerdict, md } from '../services/render-analysis.js';
 import { guideContent } from '../services/guide.js';
 import {
   getCategory, getCategoryBySlug, listCategories, readTags,
@@ -86,6 +86,12 @@ function shell({ head, body, bodyClass = '' }) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
+<link rel="icon" href="/icons/mark.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#f5f5f4">
+<meta name="apple-mobile-web-app-title" content="دیدگاه اخلاق">
 ${head}
 ${FONTS}
 <link rel="stylesheet" href="/css/app.css">
@@ -111,12 +117,29 @@ function publicNav() {
   return `<header class="topbar" id="topbar"></header>`;
 }
 
+/**
+ * The footer every page outside the app carries.
+ *
+ * The links are a nav with gaps rather than a sentence joined by «·»: as one
+ * run of inline text the separator was landing at the end of a wrapped line
+ * with nothing after it, which on a phone read as a truncated list.
+ */
 export function siteFooter() {
+  const links = [
+    ['/', 'خانه'],
+    ['/explore', 'تحلیل‌های عمومی'],
+    ['/guide', 'دانشنامه'],
+    ['/about', 'درباره ما']
+  ];
   return `<footer class="site pub-footer">
-    <p><strong>Ethic Lens</strong> — دستیار تصمیم‌گیری اخلاقی ·
-       <a href="/about">درباره ما</a> · <a href="/guide">دانشنامه</a> · <a href="/explore">تحلیل‌های عمومی</a></p>
-    <p>تحلیل‌ها با کمک مدل‌های زبانی تولید می‌شوند و می‌توانند خطا داشته باشند.<br>
-       این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</p>
+    <div class="pub-footer-in">
+      <p class="pub-footer-brand"><strong>Ethic Lens</strong> — دستیار تصمیم‌گیری اخلاقی</p>
+      <nav class="pub-footer-nav">
+        ${links.map(([href, label]) => `<a href="${href}">${label}</a>`).join('')}
+      </nav>
+      <p class="pub-footer-note">تحلیل‌ها با کمک مدل‌های زبانی تولید می‌شوند و می‌توانند خطا داشته باشند.
+         این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</p>
+    </div>
   </footer>`;
 }
 
@@ -271,7 +294,7 @@ router.get('/analysis/:category/:slug', (req, res, next) => {
   const optionsBlock = sections.options ? `
       <section class="pub-options">
         <h2>گزینه‌هایی که سنجیده شده</h2>
-        <div class="prose">${md(sections.options)}</div>
+        ${renderOptions(sections.options)}
       </section>` : '';
 
   const rec = sections.recommendation
@@ -402,7 +425,10 @@ router.get('/explore', (req, res) => {
     <nav class="cat-grid" aria-label="دسته‌بندی‌ها">
       ${shelves.map(c => `
         <a class="cat-card" href="/category/${esc(c.slug)}">
-          <span class="cat-card-title">${esc(c.title)}</span>
+          <span class="cat-card-head">
+            ${c.icon ? `<span class="cat-card-icon" aria-hidden="true">${esc(c.icon)}</span>` : ''}
+            <span class="cat-card-title">${esc(c.title)}</span>
+          </span>
           ${c.description ? `<span class="cat-card-desc">${esc(c.description)}</span>` : ''}
           <span class="cat-card-count">${faNum(c.published)} تحلیل</span>
         </a>`).join('')}
@@ -665,7 +691,7 @@ ${publicNav()}
     <a href="/intro">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a> ‹ <span>${esc(cat.title)}</span>
   </nav>
   <div class="pub-head">
-    <h1>${esc(cat.title)}</h1>
+    <h1>${cat.icon ? `<span class="pub-head-icon" aria-hidden="true">${esc(cat.icon)}</span> ` : ''}${esc(cat.title)}</h1>
     <p>${esc(description)}</p>
   </div>
   ${items.length

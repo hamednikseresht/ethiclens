@@ -159,10 +159,9 @@ img, svg{max-width:100%}
 .topbar-inner{max-width:1180px;margin:0 auto;height:100%;padding:0 1rem;display:flex;align-items:center;gap:.75rem}
 .brand{display:flex;align-items:center;gap:.55rem;font-weight:900;font-size:1.05rem;color:var(--text);text-decoration:none;flex-shrink:0}
 .brand:hover{text-decoration:none}
-.brand-mark{
-  width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
-  background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;font-size:.95rem;font-weight:900;
-}
+/* The product mark itself, not a two-letter stand-in for it. The artwork
+   carries its own rounded square and colour, so nothing is drawn behind it. */
+.brand-mark{width:32px;height:32px;border-radius:9px;display:block;flex-shrink:0}
 /* The nav must be allowed to shrink and scroll rather than squeeze its
    siblings. Without min-width:0 a flex item refuses to go below its content
    width, so the row overflows instead of the strip scrolling. */
@@ -526,3 +525,7 @@ tbody tr:hover{background:var(--bg-subtle)}
 @media (prefers-reduced-motion: reduce){
   .ring{ animation-duration:3s }
   .ex:active{ transform:none }}
+/* Shown only once the browser says the app can be installed, so it never
+   sits there as a button that does nothing. */
+.install-btn{flex-shrink:0;white-space:nowrap}
+@media (max-width:420px){.install-btn{font-size:.75rem;padding:.35rem .6rem}}

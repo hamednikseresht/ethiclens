@@ -81,12 +81,27 @@
    and it was landing on the text. The extra room is its height plus its own
    inset, so it settles on empty padding instead. */
 .pub-footer{border-top:1px solid var(--border);
-            padding:2.2rem 1rem calc(2.2rem + 46px + 1.25rem);text-align:center;
+            padding:2.2rem 1rem calc(2.2rem + 46px + 1.25rem);
             font-size:.83rem;color:var(--text-muted);line-height:1.95;margin-top:2rem}
+
+/* Held to the same width as the page content above it. Left to fill the
+   viewport, the disclaimer became one very long line on a wide screen. */
+.pub-footer-in{max-width:1180px;margin:0 auto;text-align:center;
+               display:flex;flex-direction:column;align-items:center;gap:.85rem}
+.pub-footer-brand{margin:0}
+
+/* Gaps, not «·» glyphs between the links: a separator is part of the text
+   run and wraps with it, so it kept ending up alone at the end of a line. */
+.pub-footer-nav{display:flex;flex-wrap:wrap;justify-content:center;gap:.35rem 1.15rem}
+.pub-footer-nav a{color:var(--text-muted);white-space:nowrap}
+.pub-footer-nav a:hover{color:var(--primary)}
+
+.pub-footer-note{margin:0;max-width:58ch;font-size:.79rem;
+                 line-height:1.9;color:var(--text-faint);text-wrap:pretty}
 .pub-footer a{color:var(--text-muted)}
 .pub-footer a:hover{color:var(--primary)}
 /* --------------------------------------------------------------------------
-   Category index on /p
+   Category index on /explore
    -------------------------------------------------------------------------- */
 .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
   gap:.9rem;margin:0 0 2.2rem}
@@ -94,7 +109,10 @@
   background:var(--bg-surface);border:1px solid var(--border);
   border-radius:var(--r-sm);text-decoration:none;transition:border-color .15s}
 .cat-card:hover{border-color:var(--primary)}
+.cat-card-head{display:flex;align-items:center;gap:.5rem}
+.cat-card-icon{font-size:1.25rem;line-height:1;flex-shrink:0}
 .cat-card-title{font-size:1rem;font-weight:800;color:var(--text)}
+.pub-head-icon{font-size:.9em;line-height:1}
 .cat-card-desc{font-size:.82rem;line-height:1.9;color:var(--text-muted);text-align:justify}
 .cat-card-count{font-size:.74rem;font-weight:700;color:var(--primary);margin-top:.2rem}
 

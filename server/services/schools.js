@@ -52,7 +52,7 @@ export const STAGES = [
 
 export const GATES = STAGES.map(s => ({ key: s.key, title: s.title, sub: s.thinker, type: s.kind, hint: s.rule }));
 
-/** Columns of the option-comparison matrix — order must match the model prompt */
+/** Columns of the option-comparison matrix — one per lens, order must match the model prompt */
 export const MATRIX_COLUMNS = [
   { key: 'dignity',    label: 'کرامت' },
   { key: 'justice',    label: 'عدالت' },
@@ -60,7 +60,11 @@ export const MATRIX_COLUMNS = [
   { key: 'commongood', label: 'خیر مشترک' },
   { key: 'care',       label: 'مراقبت' },
   { key: 'virtue',     label: 'فضیلت' },
-  { key: 'authenticity', label: 'اصالت' }
+  { key: 'authenticity', label: 'اصالت' },
+  // The eighth. Every other lens had a column and genealogy did not, so the
+  // matrix was scoring an option against seven of the eight the rest of the
+  // product promises.
+  { key: 'genealogy',    label: 'تبارشناسی' }
 ];
 
 /** Every section key the model emits, in narrative order */

@@ -23,6 +23,22 @@ export function categorySlug(input) {
     .slice(0, 60);
 }
 
+/**
+ * Keep an icon to a single glyph.
+ *
+ * The field is free text in a form, so it will receive pasted words, whole
+ * sentences and the occasional URL. Anything longer than one grapheme would
+ * break the card layout it sits in, and truncating mid-emoji leaves a broken
+ * codepoint — so the first grapheme is taken whole, or nothing is stored.
+ */
+export function categoryIcon(input) {
+  const s = String(input ?? '').trim();
+  if (!s) return null;
+  const first = [...new Intl.Segmenter().segment(s)][0]?.segment ?? '';
+  // Letters and digits are almost always a mis-paste rather than an icon.
+  return /^[\p{L}\p{N}]$/u.test(first) ? null : first.slice(0, 8) || null;
+}
+
 export function listCategories() {
   return db.prepare(`
     SELECT c.*,
@@ -40,7 +56,7 @@ export function getCategoryBySlug(slug) {
   return db.prepare('SELECT * FROM categories WHERE slug = ?').get(String(slug));
 }
 
-export function createCategory({ title, slug, description, sort_order }) {
+export function createCategory({ title, slug, description, icon, sort_order }) {
   const clean = categorySlug(slug);
   if (!clean) { const e = new Error('آدرس انگلیسی لازم است و باید حروف لاتین باشد.'); e.code = 'BAD_SLUG'; throw e; }
   if (!String(title || '').trim()) { const e = new Error('عنوان فارسی لازم است.'); e.code = 'BAD_TITLE'; throw e; }
@@ -59,9 +75,9 @@ export function createCategory({ title, slug, description, sort_order }) {
 
   const max = db.prepare('SELECT COALESCE(MAX(sort_order), 0) m FROM categories').get().m;
   const info = db.prepare(`
-    INSERT INTO categories (title, slug, description, sort_order) VALUES (?,?,?,?)`)
+    INSERT INTO categories (title, slug, description, icon, sort_order) VALUES (?,?,?,?,?)`)
     .run(String(title).trim().slice(0, 120), clean,
-         String(description || '').trim().slice(0, 300),
+         String(description || '').trim().slice(0, 300), categoryIcon(icon),
          Number.isFinite(Number(sort_order)) ? Number(sort_order) : max + 10);
 
   return getCategory(Number(info.lastInsertRowid));
@@ -89,9 +105,10 @@ export function updateCategory(id, patch) {
     throw e;
   }
 
-  db.prepare(`UPDATE categories SET title = ?, slug = ?, description = ?, sort_order = ? WHERE id = ?`)
+  db.prepare(`UPDATE categories SET title = ?, slug = ?, description = ?, icon = ?, sort_order = ? WHERE id = ?`)
     .run(String(patch.title ?? cur.title).trim().slice(0, 120), slug,
          String(patch.description ?? cur.description ?? '').trim().slice(0, 300),
+         patch.icon !== undefined ? categoryIcon(patch.icon) : cur.icon,
          Number(patch.sort_order ?? cur.sort_order), cur.id);
 
   return getCategory(cur.id);
@@ -164,6 +181,7 @@ export const PUBLIC_CATEGORY = {
   slug: 'public',
   title: 'منتشرشده کاربران',
   description: 'دوراهی‌هایی که کاربران خودشان تحلیل کرده و برای دیگران عمومی کرده‌اند.',
+  icon: '🌐',
   synthetic: true
 };
 
