@@ -11,6 +11,7 @@ import {
 } from '../services/seo.js';
 import { renderAnalysis, renderOptions, verdictChips, faNum, splitVerdict, md } from '../services/render-analysis.js';
 import { guideContent } from '../services/guide.js';
+import { renderGuide } from '../services/render-guide.js';
 import {
   getCategory, getCategoryBySlug, listCategories, readTags,
   analysesInCategory, countInCategory, browsableCategories,
@@ -552,6 +553,10 @@ const SEO_PAGES = {
   },
   '/guide': {
     file: 'pages/guide.html',
+    body: {
+      mount: /(<main[^>]*id="guideHost"[^>]*>)[\s\S]*?(<\/main>)/,
+      render: () => renderGuide(guideContent())
+    },
     title: () => 'دانشنامه لنزهای اخلاقی — راهنمای هشت مکتب فلسفه اخلاق',
     description: () => 'راهنمای هشت لنز فلسفه اخلاق و فرایند پنج‌فازی تصمیم‌گیری: ' +
       'فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، خیر مشترک، قراردادگرایی، اخلاق مراقبت، ' +
@@ -588,6 +593,15 @@ for (const [route, page] of Object.entries(SEO_PAGES)) {
       ...(page.trail ? [`<script type="application/ld+json">${jsonLd(breadcrumbJsonLd(req, page.trail))}</script>`] : []),
       ...page.extra(req).map(o => `<script type="application/ld+json">${jsonLd(o)}</script>`)
     ];
+
+    // The encyclopedia's text lives in the database and used to be fetched by
+    // the page itself, which meant the largest piece of original writing on
+    // the site reached a crawler as an empty div. It is rendered here instead.
+    // A replacer function, not a string: the rendered text is arbitrary and a
+    // literal "$&" in it would otherwise be read as a substitution pattern.
+    if (page.body) {
+      html = html.replace(page.body.mount, (_m, open, close) => open + page.body.render() + close);
+    }
 
     // The site footer is the only set of internal links these pages carry in
     // their raw HTML — their top bar is built by script, so a crawler reading

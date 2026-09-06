@@ -139,21 +139,13 @@
   </main>
 
 <script type="module">
-  import { boot, toast } from '/js/core.js';
+  // The encyclopedia itself is rendered by the server, so there is nothing to
+  // fetch here — only the shared page furniture and the reveal animation.
+  import { boot } from '/js/core.js';
   import { revealOnScroll } from '/js/motion.js';
-  import { renderGuide } from '/js/guide.js';
 
   await boot({ auth: false });
-
-  try {
-    const data = await (await fetch('/api/guide')).json();
-    renderGuide(document.querySelector('#guideHost'), data);
-    revealOnScroll('.lens, .phase-card, .gate, .exp');
-  } catch (e) {
-    document.querySelector('#guideHost').innerHTML =
-      '<div class="alert alert-danger">بارگذاری محتوای دانشنامه ناموفق بود. صفحه را تازه کنید.</div>';
-    console.error(e);
-  }
+  revealOnScroll('.lens, .phase-card, .gate, .exp');
 </script>
 </body>
 </html>
