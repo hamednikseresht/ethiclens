@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { fa } from '@/lib/fa';
 import {
   PHASES, STAGE_SCHOOLS, splitVerdict, verdictState, VERDICT_STYLE,
-  parseMatrix, MATRIX_COLUMNS, scoreStyle, scoreLabel, matrixTotals
+  parseMatrix, scoredColumns, scoreStyle, scoreLabel, matrixTotals
 } from '@/lib/analysis';
 import { ChevronDown, TriangleAlert, RotateCcw } from 'lucide-react';
 import { AnalysisActions, Reflection } from '@/components/AnalysisActions';
@@ -314,7 +314,8 @@ function Gate({ gate, sections, schools }) {
 /* ---------------- Comparison matrix ---------------- */
 function Matrix({ raw }) {
   const rows = useMemo(() => parseMatrix(raw), [raw]);
-  if (!rows.length) return null;
+  const cols = useMemo(() => scoredColumns(rows), [rows]);
+  if (!rows.length || !cols.length) return null;
 
   const { totals, best } = matrixTotals(rows);
 
@@ -329,7 +330,7 @@ function Matrix({ raw }) {
           <thead>
             <tr className="border-b border-border">
               <th className="p-2.5 text-start font-bold">گزینه</th>
-              {MATRIX_COLUMNS.map(c => (
+              {cols.map(c => (
                 <th key={c.key} className="p-2 text-center font-bold whitespace-nowrap">{c.label}</th>
               ))}
               <th className="p-2 text-center font-bold">جمع</th>
@@ -346,11 +347,11 @@ function Matrix({ raw }) {
                     </span>
                   )}
                 </td>
-                {MATRIX_COLUMNS.map((c, k) => (
+                {cols.map(c => (
                   <td key={c.key} className="p-1 text-center">
                     <span dir="ltr"
-                          className={`nums ltr inline-block w-7 rounded py-1 font-bold ${scoreStyle(r.scores[k])}`}>
-                      {scoreLabel(r.scores[k])}
+                          className={`nums ltr inline-block w-7 rounded py-1 font-bold ${scoreStyle(r.scores[c.i])}`}>
+                      {scoreLabel(r.scores[c.i])}
                     </span>
                   </td>
                 ))}

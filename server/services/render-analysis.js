@@ -99,9 +99,28 @@ export function parseMatrix(raw) {
   return rows;
 }
 
+/**
+ * Which columns this particular matrix actually scored.
+ *
+ * The column list is what the current prompt asks for, but a stored analysis
+ * was produced by whatever prompt was live when it ran — every analysis from
+ * before the genealogy column existed has one fewer score per row. Rendering
+ * the full list against those gives a column of em dashes down every historic
+ * analysis, which reads as a broken table rather than as a lens that was not
+ * asked about. A column no row scored is simply not drawn.
+ */
+export function scoredColumns(rows) {
+  return MATRIX_COLUMNS
+    .map((c, i) => ({ ...c, i }))
+    .filter(c => rows.some(r => r.scores[c.i] !== null && r.scores[c.i] !== undefined));
+}
+
 function renderMatrix(raw) {
   const rows = parseMatrix(raw);
   if (!rows.length) return '';
+  const cols = scoredColumns(rows);
+  if (!cols.length) return '';
+
   const totals = rows.map(r => r.scores.reduce((a, b) => a + (b ?? 0), 0));
   const best = Math.max(...totals);
 
@@ -113,13 +132,13 @@ function renderMatrix(raw) {
     <div class="mx-wrap">
       <table class="mx">
         <thead><tr><th class="mx-opt">گزینه</th>
-          ${MATRIX_COLUMNS.map(c => `<th>${esc(c.label)}</th>`).join('')}
+          ${cols.map(c => `<th>${esc(c.label)}</th>`).join('')}
           <th class="mx-total">جمع</th></tr></thead>
         <tbody>
           ${rows.map((r, i) => `
             <tr${totals[i] === best ? ' class="mx-best"' : ''}>
               <td class="mx-opt">${esc(r.option)}${totals[i] === best ? ' <span class="mx-badge">بالاترین</span>' : ''}</td>
-              ${MATRIX_COLUMNS.map((_, j) => cell(r.scores[j])).join('')}
+              ${cols.map(c => cell(r.scores[c.i])).join('')}
               <td class="mx-total" data-t="${totals[i] > 0 ? 'pos' : totals[i] < 0 ? 'neg' : 'zero'}">${totals[i] > 0 ? '+' : ''}${faNum(totals[i])}</td>
             </tr>`).join('')}
         </tbody>

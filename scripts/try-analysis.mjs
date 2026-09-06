@@ -7,6 +7,7 @@
  *   node scripts/try-analysis.mjs --show              print the full analysis text
  */
 import 'dotenv/config';
+import { MATRIX_COLUMNS } from '../server/services/schools.js';
 
 const BASE = process.env.BASE || 'http://localhost:3000';
 const SHOW = process.argv.includes('--show');
@@ -155,7 +156,13 @@ for (const line of mLines) {
   if (scores.every(s => s === null)) continue;
   mRows.push({ option: cells[0], scores });
 }
-const okScores = mRows.every(r => r.scores.length === 7 && r.scores.every(s => s !== null && s >= -2 && s <= 2));
+// Counted from the shared column list rather than written here, so adding a
+// lens cannot leave this check asserting the old width — which is exactly
+// what it did when the genealogy column arrived and every run since reported
+// a correct matrix as incomplete.
+const okScores = mRows.every(r =>
+  r.scores.length === MATRIX_COLUMNS.length &&
+  r.scores.every(s => s !== null && s >= -2 && s <= 2));
 console.log(`  ماتریس        : ${mRows.length} گزینه × ${mRows[0]?.scores.length ?? 0} معیار${okScores ? ' ✓' : ' ⚠ ناقص'}`);
 for (const r of mRows) {
   console.log(`      ${r.option.padEnd(28)} ${r.scores.map(s => String(s ?? '?').padStart(3)).join('')}  = ${r.scores.reduce((a, b) => a + (b ?? 0), 0)}`);
