@@ -146,7 +146,8 @@ export const MATRIX_COLUMNS = [
   { key: 'commongood',   label: 'خیر مشترک' },
   { key: 'care',         label: 'مراقبت' },
   { key: 'virtue',       label: 'فضیلت' },
-  { key: 'authenticity', label: 'اصالت' }
+  { key: 'authenticity', label: 'اصالت' },
+  { key: 'genealogy',    label: 'تبارشناسی' }
 ];
 
 /** Cell colour by score, from strong support to strong objection. */
