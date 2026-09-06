@@ -295,3 +295,38 @@
 
 /* ---- Success{animation:none;border-top-color:var(--success);opacity:.35}
 @keyframes pop{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+/* --------------------------------------------------------------------------
+   The options, as numbered cards
+   --------------------------------------------------------------------------
+   Every later section refers back to these by name, so they get a shape of
+   their own rather than being four dashes in a paragraph.
+   -------------------------------------------------------------------------- */
+.opt-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.65rem}
+.opt{display:flex;gap:.8rem;padding:.85rem 1rem;background:var(--bg-subtle);
+     border:1px solid var(--border);border-radius:var(--r-sm)}
+.opt-n{flex-shrink:0;width:1.7rem;height:1.7rem;border-radius:50%;
+       display:grid;place-items:center;background:var(--primary-soft);
+       color:var(--primary);font-size:.78rem;font-weight:800}
+.opt-main{min-width:0;flex:1}
+.opt-label{font-size:.9rem;font-weight:800;line-height:1.7;margin-bottom:.15rem}
+.opt-desc{font-size:.86rem;line-height:1.9;color:var(--text-muted)}
+.opt-desc p{margin:0;text-align:justify}
+
+/* --------------------------------------------------------------------------
+   Lens detail behind a disclosure
+   --------------------------------------------------------------------------
+   The gate's own finding stays on the page; what folds away is the two-to-
+   eight paragraph lens-by-lens argument under it. Open, all five gates at
+   once ran to several screens of reasoning before the reader reached the
+   part that says what to do.
+   -------------------------------------------------------------------------- */
+.stage-more{margin-bottom:.85rem}
+.stage-more > summary{
+  cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:.35rem;
+  font-size:.8rem;font-weight:700;color:var(--primary);padding:.35rem 0;
+}
+.stage-more > summary::-webkit-details-marker{display:none}
+.stage-more > summary::after{content:"▾";transition:transform .2s;display:inline-block}
+.stage-more[open] > summary::after{transform:rotate(180deg)}
+.stage-more > summary:hover{text-decoration:underline}
+.stage-more .stage-schools{margin-top:.6rem}

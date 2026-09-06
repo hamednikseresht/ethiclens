@@ -9,7 +9,7 @@ import {
   metaDescription, publishedAnalyses, publishedCount, findBySlug,
   siteJsonLd, breadcrumbJsonLd, injectHead, withNonce
 } from '../services/seo.js';
-import { renderAnalysis, verdictChips, faNum, splitVerdict, md } from '../services/render-analysis.js';
+import { renderAnalysis, renderOptions, verdictChips, faNum, splitVerdict, md } from '../services/render-analysis.js';
 import { guideContent } from '../services/guide.js';
 import {
   getCategory, getCategoryBySlug, listCategories, readTags,
@@ -288,7 +288,7 @@ router.get('/analysis/:category/:slug', (req, res, next) => {
   const optionsBlock = sections.options ? `
       <section class="pub-options">
         <h2>گزینه‌هایی که سنجیده شده</h2>
-        <div class="prose">${md(sections.options)}</div>
+        ${renderOptions(sections.options)}
       </section>` : '';
 
   const rec = sections.recommendation

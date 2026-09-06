@@ -128,7 +128,19 @@ function renderMatrix(raw) {
     </div>`;
 }
 
-/* ---------------- Text blocks ---------------- */
+/* ---------------- Text blocks ----------------
+   Same reading order as the in-app result: the recommendation first, then the
+   framing, the options and the matrix that scores them, the gates, where the
+   lenses disagree, the three tests, and finally carrying it out.
+
+   The phase numbers are the framework's own, and they still run 1-2-3-4-5
+   down the page because the one block that moves — the recommendation, from
+   phase four to the top — is lifted out of the phase structure entirely
+   rather than dragging its heading up with it. */
+
+/** Lifted out of its phase and rendered first, on its own. */
+const LEAD = { key: 'recommendation', title: 'مسیر پیشنهادی', icon: '🧭', featured: true };
+
 const PHASES = [
   { n: '۱', label: 'تشخیص مسئله اخلاقی', blocks: [
     { key: 'issue', title: 'آیا این یک مسئله اخلاقی است؟', icon: '🎯' }] },
@@ -139,10 +151,9 @@ const PHASES = [
     { key: 'stakeholders', title: 'ذی‌نفعان', icon: '👥' },
     { key: 'options',      title: 'گزینه‌های موجود', icon: '🔀' }] },
 
-  { n: '۴', label: 'تصمیم و آزمون آن', blocks: [
-    { key: 'tensions',       title: 'تعارض میان مکاتب', icon: '⚡' },
-    { key: 'recommendation', title: 'مسیر پیشنهادی', icon: '🧭', featured: true },
-    { key: 'test',           title: 'آزمون تصمیم', icon: '🧪' }] },
+  { n: '۴', label: 'تعارض‌ها و آزمون تصمیم', blocks: [
+    { key: 'tensions', title: 'تعارض میان مکاتب', icon: '⚡' },
+    { key: 'test',     title: 'آزمون تصمیم', icon: '🧪' }] },
 
   { n: '۵', label: 'اجرا و بازنگری', blocks: [
     { key: 'implementation', title: 'اجرای کم‌آسیب', icon: '🛠️' },
@@ -151,14 +162,50 @@ const PHASES = [
     { key: 'revisit',        title: 'بازنگری', icon: '🔁' }] }
 ];
 
+/**
+ * The options, as numbered cards rather than a bullet list.
+ *
+ * Every later section refers back to these by name — the matrix scores them
+ * row by row, the gates rule on them, the recommendation picks one — so they
+ * are the most referred-to part of the page and were the least distinct.
+ *
+ * A line that does not split on a colon is still shown, without a heading:
+ * dropping it would silently lose an option.
+ */
+export function renderOptions(raw) {
+  const items = String(raw || '').split('\n')
+    .map(l => l.trim())
+    .filter(l => /^[-*•–]\s+/.test(l))
+    .map(l => {
+      const text = l.replace(/^[-*•–]\s+/, '');
+      const m = text.match(/^(.{1,40}?)\s*[:：]\s*([\s\S]+)$/);
+      return m ? { label: m[1].replace(/[*`]/g, '').trim(), desc: m[2].trim() }
+               : { label: null, desc: text };
+    });
+
+  if (!items.length) return `<div class="prose res-body">${md(raw)}</div>`;
+
+  return `<ol class="opt-list">${items.map((o, i) => `
+    <li class="opt">
+      <span class="opt-n">${faNum(i + 1)}</span>
+      <div class="opt-main">
+        ${o.label ? `<div class="opt-label">${esc(o.label)}</div>` : ''}
+        <div class="prose opt-desc">${md(o.desc)}</div>
+      </div>
+    </li>`).join('')}</ol>`;
+}
+
 function block(b, sections, omit) {
   if (omit?.has(b.key)) return '';
   const content = sections[b.key];
   if (!content) return '';
+  const body = b.key === 'options'
+    ? renderOptions(content)
+    : `<div class="prose res-body">${md(content)}</div>`;
   return `
     <section class="res-block${b.featured ? ' featured' : ''}" id="rs-${b.key}">
       <h3 class="res-h"><span class="res-ic">${b.icon}</span> ${esc(b.title)}</h3>
-      <div class="prose res-body">${md(content)}</div>
+      ${body}
     </section>`;
 }
 
@@ -215,7 +262,10 @@ function renderStages(sections) {
             <div class="stage-gate-label">نتیجه این مرحله</div>
             <div class="prose stage-gate-note">${md(rest)}</div>
           </div>` : ''}
-          <div class="stage-schools">${schools}</div>
+          ${schools ? `<details class="stage-more">
+            <summary>دیدن ${faNum(st.schools.length)} لنز این دروازه</summary>
+            <div class="stage-schools">${schools}</div>
+          </details>` : ''}
           <p class="stage-rule">${esc(st.rule)}</p>
         </div>
       </section>`;
@@ -248,7 +298,14 @@ export function renderAnalysis(sections, { omit = [] } = {}) {
        </div>`
     : '';
 
+  // The recommendation leads, outside any phase: it belongs to phase four of
+  // the framework, and printing «فاز ۴» above the page and again halfway down
+  // reads as a numbering error rather than as a deliberate reading order.
+  // Then the framing and the options, the matrix that scores them and the
+  // gates that rule on them, the disagreements and the tests, and last how to
+  // carry it out.
   return `<div class="result">
+    ${block(LEAD, sections, skip)}
     ${phase(PHASES[0], sections, '', skip)}
     ${phase(PHASES[1], sections, '', skip)}
     ${phase3}
