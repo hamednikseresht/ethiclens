@@ -59,6 +59,35 @@ export function absoluteUrl(req, path) {
   return base ? `${base}${path}` : path;
 }
 
+/**
+ * The brand on its own — what Google shows above the links for this site.
+ *
+ * Google will not use a site name that reads as a sentence; it wants the
+ * brand and nothing else, matching what the header and the title say. The
+ * page title cannot serve as both, because a title has to carry a descriptor
+ * to compete in a result list.
+ *
+ * With site_name unset — which is every existing install — the brand is taken
+ * from the part of site_title before the first separator. "دیدگاه اخلاق —
+ * Ethic Lens" gives "دیدگاه اخلاق", which is the name the top bar, the footer
+ * and the installed app already use. That makes the fix apply everywhere
+ * without an admin having to fill in a new field first.
+ */
+export function siteName() {
+  const explicit = (getSetting('site_name') || '').trim();
+  if (explicit) return explicit;
+
+  const title = (getSetting('site_title') || '').trim();
+  const brand = title.split(/\s+[—–|·]\s+/)[0].trim();
+  return brand || title || 'Ethic Lens';
+}
+
+/** The shorter or Latin form, when it differs from the brand. */
+export function siteAlternateName() {
+  const alt = (getSetting('site_alternate_name') || '').trim();
+  return alt && alt !== siteName() ? alt : '';
+}
+
 /** Clean summary for the meta description — no markup, sized for Google */
 export function metaDescription(text, { max = 158 } = {}) {
   const clean = String(text || '')
@@ -93,7 +122,7 @@ export function metaTags({
   publishedAt, modifiedAt, noindex = false, author
 }) {
   const url = absoluteUrl(req, path);
-  const siteName = getSetting('site_title') || 'Ethic Lens';
+  const brand = siteName();
   const t = escapeHtml(title);
   const d = escapeHtml(description || '');
 
@@ -116,7 +145,7 @@ export function metaTags({
     `<meta property="og:title" content="${t}">`,
     `<meta property="og:description" content="${d}">`,
     url ? `<meta property="og:url" content="${escapeHtml(url)}">` : '',
-    `<meta property="og:site_name" content="${escapeHtml(siteName)}">`,
+    `<meta property="og:site_name" content="${escapeHtml(brand)}">`,
     '<meta property="og:locale" content="fa_IR">',
 
     // The card type has to follow the image, not the other way round. Every
@@ -228,7 +257,8 @@ export function findBySlug(slug) {
  */
 export function siteJsonLd(req) {
   const base = siteUrl(req);
-  const name = getSetting('site_title') || 'Ethic Lens';
+  const name = siteName();
+  const alternateName = siteAlternateName();
   const tagline = getSetting('site_tagline') || '';
   const image = (getSetting('og_image') || '').trim();
 
@@ -236,16 +266,23 @@ export function siteJsonLd(req) {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name,
+    ...(alternateName ? { alternateName } : {}),
     ...(base ? { url: base } : {}),
     ...(image ? { logo: /^https?:\/\//i.test(image) ? image : absoluteUrl(req, image) } : {}),
     description: tagline
   };
 
+  // The node Google reads for the name it prints above this site's results.
+  // It only looks for it on the home page, which is the one place this is
+  // emitted, and the URL has to be the home page itself with a trailing
+  // slash — a bare origin is a different string to the canonical it matches
+  // against.
   const site = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name,
-    ...(base ? { url: base } : {}),
+    ...(alternateName ? { alternateName } : {}),
+    ...(base ? { url: `${base}/` } : {}),
     inLanguage: 'fa-IR',
     description: tagline
   };
