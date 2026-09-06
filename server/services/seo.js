@@ -241,6 +241,45 @@ export function publishedCount({ q, categoryId } = {}) {
   return db.prepare(`SELECT COUNT(*) c FROM analyses WHERE ${sql}`).get(...params).c;
 }
 
+/**
+ * Other published analyses to link to from one of them.
+ *
+ * Without this every article is a dead end: a reader who finishes one has
+ * nowhere to go, and a crawler arriving from a search result finds no path
+ * deeper into the site. Both cost more than the block does.
+ *
+ * Same category first, because that is the most likely next read, then the
+ * newest of anything else to fill the row. Ordering by views instead would
+ * lock the same three articles onto every page and leave the rest orphaned —
+ * which is the situation this is meant to fix.
+ */
+export function relatedAnalyses(id, categoryId, limit = 3) {
+  const COLS = `a.id, a.slug, a.title, a.public_title, a.public_summary,
+                a.dilemma, a.published_at, c.slug AS category_slug`;
+
+  const query = (extraWhere, params, n) => db.prepare(`
+    SELECT ${COLS}
+    FROM analyses a
+    LEFT JOIN categories c ON c.id = a.category_id
+    WHERE a.is_public = 1 AND a.slug IS NOT NULL
+      AND a.status IN ('done','partial')
+      AND a.id <> ?
+      ${extraWhere}
+    ORDER BY a.published_at DESC
+    LIMIT ?`).all(id, ...params, n);
+
+  const near = categoryId ? query('AND a.category_id = ?', [categoryId], limit) : [];
+  if (near.length >= limit) return near;
+
+  // Topped up with the newest of anything else, minus what is already shown.
+  const seen = near.map(r => r.id);
+  const rest = query(
+    seen.length ? `AND a.id NOT IN (${seen.map(() => '?').join(',')})` : '',
+    seen, limit - near.length);
+
+  return [...near, ...rest];
+}
+
 export function findBySlug(slug) {
   return db.prepare(`
     SELECT * FROM analyses

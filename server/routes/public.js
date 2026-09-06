@@ -7,10 +7,11 @@ import { fileURLToPath } from 'node:url';
 import {
   metaTags, siteUrl, absoluteUrl, escapeHtml as esc, jsonLd, isoDate, faDate,
   metaDescription, publishedAnalyses, publishedCount, findBySlug,
-  siteJsonLd, breadcrumbJsonLd, injectHead, withNonce
+  siteJsonLd, breadcrumbJsonLd, injectHead, withNonce, relatedAnalyses
 } from '../services/seo.js';
 import { renderAnalysis, renderOptions, verdictChips, faNum, splitVerdict, md } from '../services/render-analysis.js';
 import { guideContent } from '../services/guide.js';
+import { renderGuide } from '../services/render-guide.js';
 import {
   getCategory, getCategoryBySlug, listCategories, readTags,
   analysesInCategory, countInCategory, browsableCategories,
@@ -301,13 +302,31 @@ router.get('/analysis/:category/:slug', (req, res, next) => {
     ? `<div class="pub-lead"><strong>خلاصه پیشنهاد:</strong> ${esc(metaDescription(sections.recommendation, { max: 260 }))}</div>`
     : '';
 
+  /* ---- Where to go next ----
+     Without this the article is a dead end: the reader has finished and the
+     crawler that arrived from a search result finds no path deeper into the
+     site. Same category first, then the newest of anything else. */
+  const siblings = relatedAnalyses(row.id, row.category_id, 3);
+  const related = siblings.length ? `
+  <aside class="pub-related">
+    <h2 class="pub-sec">تحلیل‌های مرتبط</h2>
+    <div class="pub-grid">
+      ${siblings.map(s => `
+        <a class="pub-card" href="/analysis/${esc(s.category_slug || PUBLIC_CATEGORY.slug)}/${encodeURIComponent(s.slug)}">
+          <span class="pub-card-title">${esc(s.public_title || s.title)}</span>
+          <p class="pub-card-sum">${esc(s.public_summary?.trim() || metaDescription(s.dilemma, { max: 120 }))}</p>
+          ${s.published_at ? `<span class="pub-card-foot">${esc(faDate(s.published_at))}</span>` : ''}
+        </a>`).join('')}
+    </div>
+  </aside>` : '';
+
   const body = `
 ${publicNav()}
 <main class="wrap" id="main">
   <article>
     <div class="result-head">
       <nav class="pub-crumbs" aria-label="مسیر">
-        <a href="/intro">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a>
+        <a href="/">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a>
         ${category ? `‹ <a href="/category/${esc(category.slug)}">${esc(category.title)}</a>` : ''}
         ‹ <span>${esc(title)}</span>
       </nav>
@@ -336,6 +355,8 @@ ${publicNav()}
     </div>
   </article>
 
+  ${related}
+
   <aside class="pub-cta">
     <h2>دوراهی خودتان را تحلیل کنید</h2>
     <p>Ethic Lens موقعیت شما را از هشت منظر فلسفه اخلاق می‌سنجد، تعارض‌ها را نشان می‌دهد و مسیری موجه پیشنهاد می‌کند.</p>
@@ -352,11 +373,18 @@ ${siteFooter()}`;
 /* ==========================================================================
    Public analyses index
    ========================================================================== */
-router.get('/explore', (req, res) => {
+router.get('/explore', (req, res, next) => {
   const perPage = 12;
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const total = publishedCount();
   const pages = Math.max(1, Math.ceil(total / perPage));
+
+  // A page past the end is not an empty page, it is not a page. Answering 200
+  // with an empty list hands a crawler unlimited addresses — ?page=99 works
+  // just as well as ?page=10 — each one indexable and each one thin. The
+  // shape only shows up once there is enough published to paginate at all.
+  if (page > pages) return next();
+
   const items = publishedAnalyses({ limit: perPage, offset: (page - 1) * perPage });
 
   const path = page > 1 ? `/explore?page=${page}` : '/explore';
@@ -552,6 +580,10 @@ const SEO_PAGES = {
   },
   '/guide': {
     file: 'pages/guide.html',
+    body: {
+      mount: /(<main[^>]*id="guideHost"[^>]*>)[\s\S]*?(<\/main>)/,
+      render: () => renderGuide(guideContent())
+    },
     title: () => 'دانشنامه لنزهای اخلاقی — راهنمای هشت مکتب فلسفه اخلاق',
     description: () => 'راهنمای هشت لنز فلسفه اخلاق و فرایند پنج‌فازی تصمیم‌گیری: ' +
       'فضیلت‌گرایی، وظیفه‌گرایی، فایده‌گرایی، خیر مشترک، قراردادگرایی، اخلاق مراقبت، ' +
@@ -589,6 +621,15 @@ for (const [route, page] of Object.entries(SEO_PAGES)) {
       ...page.extra(req).map(o => `<script type="application/ld+json">${jsonLd(o)}</script>`)
     ];
 
+    // The encyclopedia's text lives in the database and used to be fetched by
+    // the page itself, which meant the largest piece of original writing on
+    // the site reached a crawler as an empty div. It is rendered here instead.
+    // A replacer function, not a string: the rendered text is arbitrary and a
+    // literal "$&" in it would otherwise be read as a substitution pattern.
+    if (page.body) {
+      html = html.replace(page.body.mount, (_m, open, close) => open + page.body.render() + close);
+    }
+
     // The site footer is the only set of internal links these pages carry in
     // their raw HTML — their top bar is built by script, so a crawler reading
     // the response alone would find nothing to follow out of them.
@@ -617,6 +658,10 @@ router.get('/category/:slug', (req, res, next) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const total = countInCategory(cat.id);
   const pages = Math.max(1, Math.ceil(total / perPage));
+
+  // Same as /explore: past the last page is a 404, not an empty shelf.
+  if (page > pages) return next();
+
   const items = analysesInCategory(cat.id, { limit: perPage, offset: (page - 1) * perPage });
 
   const path = page > 1 ? `/category/${cat.slug}?page=${page}` : `/category/${cat.slug}`;
@@ -683,7 +728,7 @@ router.get('/category/:slug', (req, res, next) => {
 ${publicNav()}
 <main class="wrap" id="main">
   <nav class="pub-crumbs" aria-label="مسیر">
-    <a href="/intro">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a> ‹ <span>${esc(cat.title)}</span>
+    <a href="/">خانه</a> ‹ <a href="/explore">تحلیل‌های عمومی</a> ‹ <span>${esc(cat.title)}</span>
   </nav>
   <div class="pub-head">
     <h1>${cat.icon ? `<span class="pub-head-icon" aria-hidden="true">${esc(cat.icon)}</span> ` : ''}${esc(cat.title)}</h1>
