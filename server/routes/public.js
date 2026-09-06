@@ -111,12 +111,29 @@ function publicNav() {
   return `<header class="topbar" id="topbar"></header>`;
 }
 
+/**
+ * The footer every page outside the app carries.
+ *
+ * The links are a nav with gaps rather than a sentence joined by «·»: as one
+ * run of inline text the separator was landing at the end of a wrapped line
+ * with nothing after it, which on a phone read as a truncated list.
+ */
 export function siteFooter() {
+  const links = [
+    ['/', 'خانه'],
+    ['/explore', 'تحلیل‌های عمومی'],
+    ['/guide', 'دانشنامه'],
+    ['/about', 'درباره ما']
+  ];
   return `<footer class="site pub-footer">
-    <p><strong>Ethic Lens</strong> — دستیار تصمیم‌گیری اخلاقی ·
-       <a href="/about">درباره ما</a> · <a href="/guide">دانشنامه</a> · <a href="/explore">تحلیل‌های عمومی</a></p>
-    <p>تحلیل‌ها با کمک مدل‌های زبانی تولید می‌شوند و می‌توانند خطا داشته باشند.<br>
-       این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</p>
+    <div class="pub-footer-in">
+      <p class="pub-footer-brand"><strong>Ethic Lens</strong> — دستیار تصمیم‌گیری اخلاقی</p>
+      <nav class="pub-footer-nav">
+        ${links.map(([href, label]) => `<a href="${href}">${label}</a>`).join('')}
+      </nav>
+      <p class="pub-footer-note">تحلیل‌ها با کمک مدل‌های زبانی تولید می‌شوند و می‌توانند خطا داشته باشند.
+         این ابزار جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.</p>
+    </div>
   </footer>`;
 }
 
