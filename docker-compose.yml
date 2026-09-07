@@ -1,0 +1,100 @@
+# Ethic Lens — deployment.
+#
+#   docker compose up -d --build          install, or update after a pull
+#   docker compose logs -f app            follow the log
+#   docker compose down                   stop (the data volume survives)
+#
+# The app is published on 127.0.0.1 only. TLS, the Cloudflare origin
+# certificate and the firewall rules stay where they already work — on the
+# host's nginx — and this container is a drop-in replacement for the systemd
+# service behind it, listening on the same port. Binding 0.0.0.0 instead would
+# put the app on the public internet beside nginx and around every rule in
+# deploy/nginx.conf.
+#
+# To run nginx in Docker as well, see the `nginx` profile at the bottom.
+
+name: ethiclens
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ethiclens:latest
+    restart: unless-stopped
+
+    # Host port : container port. Change only the left number if 3000 is
+    # already taken; deploy/nginx.conf proxies to 127.0.0.1:3000.
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    # Every secret and setting comes from the same .env the systemd service
+    # used, so moving to Docker needs no new configuration.
+    env_file:
+      - .env
+
+    environment:
+      # These three are not left to .env: the image is built for production,
+      # the database belongs on the volume, and the app is behind a proxy.
+      # A stale .env from a bare-metal install would otherwise point DB_PATH
+      # at ./data inside the container, where nothing is mounted.
+      NODE_ENV: production
+      DB_PATH: /data/ethiclens.db
+      TRUST_PROXY: "1"
+
+    volumes:
+      - data:/data
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "const u='http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health';fetch(u).then(r=>{if(!r.ok)process.exitCode=1}).catch(()=>{process.exitCode=1})"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+
+    # An unbounded json-file driver is the usual way a small server runs out
+    # of disk months after anyone last looked at it.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    security_opt:
+      - no-new-privileges:true
+
+  # ---------------------------------------------------------------------
+  # Optional: nginx in Docker too.
+  #
+  #   docker compose --profile nginx up -d
+  #
+  # Only for a host with no nginx of its own. If one is already serving the
+  # site, leave this off — two processes cannot both hold port 443, and the
+  # host's copy already has the certificates and the Cloudflare real-IP
+  # include that this one would need mounted.
+  # ---------------------------------------------------------------------
+  nginx:
+    profiles: ["nginx"]
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/ethiclens.conf:ro
+      - ./deploy/cloudflare-realip.conf:/etc/nginx/cloudflare-realip.conf:ro
+      - /etc/ssl/cloudflare:/etc/ssl/cloudflare:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  # Named rather than a bind mount: the database is written by uid 1000 inside
+  # the container, and a bind mount would arrive owned by whoever created the
+  # directory on the host. Back it up with deploy/docker-backup.sh.
+  data:

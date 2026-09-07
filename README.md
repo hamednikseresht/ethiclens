@@ -166,7 +166,9 @@ public/
   css/ js/              design system and the shared core for those pages
   icons/ fonts/         product mark, PWA icons, Shabnam
   sw.js manifest.webmanifest
-deploy/                 systemd units, nginx, backup, update script, guide
+deploy/                 systemd units, nginx, backup and update scripts, guides
+Dockerfile              two-stage production image
+docker-compose.yml      the deployment; nginx behind an optional profile
 scripts/                test suites and operational tools
 ```
 
@@ -300,11 +302,16 @@ adaptation after a 400. Future models therefore work without a code change.
 
 ## Deployment
 
-Full Ubuntu guide: [`deploy/DEPLOY.md`](deploy/DEPLOY.md)
+Two supported ways, same application behind the same nginx:
 
-```bash
-sudo bash /opt/ethiclens/deploy/update.sh
-```
+| | Guide | Update with |
+|---|---|---|
+| Directly on the host, under systemd | [`deploy/DEPLOY.md`](deploy/DEPLOY.md) | `sudo bash deploy/update.sh` |
+| In Docker, with compose | [`deploy/DOCKER.md`](deploy/DOCKER.md) | `sudo bash deploy/docker-update.sh` |
+
+The container publishes on 127.0.0.1:3000, exactly where the systemd service
+listened, so the host's nginx, the Cloudflare origin certificate and the
+firewall rules are the same either way.
 
 ---
 
