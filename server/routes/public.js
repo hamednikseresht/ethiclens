@@ -130,7 +130,8 @@ export function siteFooter() {
     ['/', 'خانه'],
     ['/explore', 'تحلیل‌های عمومی'],
     ['/guide', 'دانشنامه'],
-    ['/about', 'درباره ما']
+    ['/about', 'درباره ما'],
+    ['/privacy', 'حریم خصوصی']
   ];
   return `<footer class="site pub-footer">
     <div class="pub-footer-in">
@@ -564,7 +565,8 @@ router.get('/sitemap.xml', (req, res) => {
     { loc: '/',   priority: '1.0', freq: 'weekly' },
     { loc: '/explore', priority: '0.9', freq: 'daily'  },
     { loc: '/guide',   priority: '0.8', freq: 'monthly'},
-    { loc: '/about',   priority: '0.5', freq: 'yearly' }
+    { loc: '/about',   priority: '0.5', freq: 'yearly' },
+    { loc: '/privacy', priority: '0.3', freq: 'yearly' }
   ];
 
     // Category pages are real landing pages and belong in the sitemap; one
@@ -641,6 +643,13 @@ const SEO_PAGES = {
       publisher: { '@type': 'Organization', name: getSetting('site_title') || 'Ethic Lens' },
       mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(req, '/guide') }
     }]
+  },
+  '/privacy': {
+    file: 'pages/privacy.html',
+    title: () => 'سیاست حریم خصوصی — دیدگاه اخلاق',
+    description: () => 'چه اطلاعاتی جمع می‌شود، متن دوراهی شما کجا می‌رود، چقدر نگه داشته می‌شود و چطور می‌توانید حذفش کنید.',
+    trail: [{ name: 'خانه', path: '/' }, { name: 'حریم خصوصی', path: '/privacy' }],
+    extra: () => []
   },
   '/about': {
     file: 'pages/about.html',
