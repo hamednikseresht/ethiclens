@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import {
-  useResource, useAction, Panel, TextField, SelectField, Toggle, Status, Skeleton
+  useResource, useAction, Panel, Field, TextField, SelectField, Toggle, Status, Skeleton
 } from './ui';
 import { Button } from '@/components/ui/button';
 
@@ -27,6 +27,8 @@ export default function Site() {
       site_tagline: data.site_tagline || '',
       site_url: data.site_url || '',
       og_image: data.og_image || '',
+      twa_package_name: data.twa_package_name || '',
+      twa_fingerprints: data.twa_fingerprints || '',
       default_model: data.default_model || '',
       temperature: data.temperature ?? '',
       top_p: data.top_p ?? '',
@@ -69,6 +71,25 @@ export default function Site() {
         <TextField label="تصویر اشتراک‌گذاری" id="s-og" dir="ltr" value={form.og_image}
                    onChange={set('og_image')}
                    hint="نشانی تصویری که هنگام اشتراک لینک نشان داده می‌شود." />
+      </Panel>
+
+      {/* The Android wrapper's half of the Digital Asset Links handshake.
+          Kept out of "site identity" because it means nothing until an app
+          exists, and the fingerprint only exists after the first upload. */}
+      <Panel title="اپ اندروید (TWA)"
+             hint="تا وقتی هر دو فیلد پر نشوند، /.well-known/assetlinks.json کد ۴۰۴ می‌دهد و اپ اندروید نوار نشانی را نشان می‌دهد.">
+        <TextField label="نام بسته" id="s-twa-pkg" dir="ltr" value={form.twa_package_name}
+                   onChange={set('twa_package_name')}
+                   hint="مثل ir.ethiclens.twa — همان applicationId اپ اندروید." />
+        <Field id="s-twa-fp" label="اثر انگشت SHA-256"
+               hint="هر اثر انگشت در یک خط. معمولاً دو تا لازم است: کلید آپلود خودتان، و کلید امضای گوگل که در Play Console زیر Setup ← App integrity می‌بینید — چون گوگل بسته را با کلید خودش دوباره امضا می‌کند و همان است که روی گوشی کاربر نصب می‌شود. خط‌هایی که قالب درست ندارند نادیده گرفته می‌شوند.">
+          <textarea id="s-twa-fp" rows={4} dir="ltr" value={form.twa_fingerprints}
+                    onChange={set('twa_fingerprints')}
+                    placeholder={'AB:CD:…:12\n34:56:…:78'}
+                    className="w-full rounded-md border border-input bg-card p-3 font-mono text-[11px]
+                               leading-loose focus-visible:outline-none focus-visible:ring-2
+                               focus-visible:ring-ring" />
+        </Field>
       </Panel>
 
       <Panel title="مدل پیش‌فرض">

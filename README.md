@@ -306,6 +306,10 @@ Full Ubuntu guide: [`deploy/DEPLOY.md`](deploy/DEPLOY.md)
 sudo bash /opt/ethiclens/deploy/update.sh
 ```
 
+The Android app for Google Play is a Trusted Web Activity around this same
+PWA — no second codebase, and a website deploy updates it without review:
+[`deploy/TWA.md`](deploy/TWA.md).
+
 ---
 
 ## Disclaimer
