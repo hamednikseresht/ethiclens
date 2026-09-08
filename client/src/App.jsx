@@ -122,7 +122,11 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard user={state.user} />} />
           <Route path="/settings" element={
             <Settings user={state.user}
-                      onUserChanged={(user) => setState(s => ({ ...s, user }))} />
+                      onUserChanged={(user) => setState(s => ({ ...s, user }))}
+                      // The account is gone and so is the session; dropping the
+                      // user here sends the app back to the sign-in screen
+                      // rather than leaving it rendering a deleted account.
+                      onDeleted={() => setState({ loading: false, user: null })} />
           } />
           {/* Nested so every section is its own address: /admin/users is a
               link one admin can send another, and each section fetches only

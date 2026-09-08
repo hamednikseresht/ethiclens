@@ -566,7 +566,8 @@ router.get('/sitemap.xml', (req, res) => {
     { loc: '/explore', priority: '0.9', freq: 'daily'  },
     { loc: '/guide',   priority: '0.8', freq: 'monthly'},
     { loc: '/about',   priority: '0.5', freq: 'yearly' },
-    { loc: '/privacy', priority: '0.3', freq: 'yearly' }
+    { loc: '/privacy', priority: '0.3', freq: 'yearly' },
+    { loc: '/account-deletion', priority: '0.3', freq: 'yearly' }
   ];
 
     // Category pages are real landing pages and belong in the sitemap; one
@@ -643,6 +644,13 @@ const SEO_PAGES = {
       publisher: { '@type': 'Organization', name: getSetting('site_title') || 'Ethic Lens' },
       mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(req, '/guide') }
     }]
+  },
+  '/account-deletion': {
+    file: 'pages/account-deletion.html',
+    title: () => 'حذف حساب کاربری — دیدگاه اخلاق',
+    description: () => 'چطور حساب دیدگاه اخلاق و همه محتوایش را برای همیشه پاک کنید، و چه چیزی حذف می‌شود.',
+    trail: [{ name: 'خانه', path: '/' }, { name: 'حذف حساب', path: '/account-deletion' }],
+    extra: () => []
   },
   '/privacy': {
     file: 'pages/privacy.html',

@@ -7,7 +7,8 @@ import { fa, faCount, faDate } from '@/lib/fa';
 import { getTheme, applyTheme } from '@/lib/theme';
 import { watchInstallPrompt, isStandalone, isIosSafari } from '@/lib/pwa';
 import {
-  User, KeyRound, Gauge, Palette, Download, BadgeCheck, MailWarning, Check
+  User, KeyRound, Gauge, Palette, Download, BadgeCheck, MailWarning, Check,
+  ShieldAlert, FileJson, Trash2
 } from 'lucide-react';
 
 /**
@@ -17,7 +18,7 @@ import {
  * with one save button would mean a failed password change discarding an
  * edited name, and the two have nothing to do with each other.
  */
-export default function Settings({ user, onUserChanged }) {
+export default function Settings({ user, onUserChanged, onDeleted }) {
   const [allowance, setAllowance] = useState(null);
   const [verification, setVerification] = useState(null);
 
@@ -38,6 +39,7 @@ export default function Settings({ user, onUserChanged }) {
         <AppearanceCard />
         <InstallCard />
         <AccountCard user={user} />
+        <DangerCard user={user} onDeleted={onDeleted} />
       </div>
     </div>
   );
@@ -379,6 +381,110 @@ function AccountCard({ user }) {
           </div>
         ))}
       </dl>
+    </Card>
+  );
+}
+
+/**
+ * Taking your data out, and closing the account.
+ *
+ * Two separate rights and two separate buttons. Article 20 of the GDPR asks
+ * for a copy in a machine-readable form, which is the JSON export; article 17
+ * and Google Play's account-deletion policy ask that an account created in
+ * the app can be destroyed from it, rather than only disabled.
+ *
+ * Export sits above delete on purpose: someone who came here to leave should
+ * be offered their copy before the irreversible button, not after it.
+ *
+ * The password is asked for again even though the session is already signed
+ * in. This is the one action with no undo, and an open session on a shared or
+ * stolen device should not be enough to destroy someone's writing.
+ */
+function DangerCard({ user, onDeleted }) {
+  const [footprint, setFootprint] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    api.get('/api/auth/account').then(r => setFootprint(r.footprint)).catch(() => {});
+  }, []);
+
+  const remove = async (e) => {
+    e.preventDefault();
+    setBusy(true); setError('');
+    try {
+      await api.del('/api/auth/account', { password });
+      onDeleted?.();
+    } catch (err) { setError(err.message); setBusy(false); }
+  };
+
+  return (
+    <Card icon={ShieldAlert} title="داده‌های شما" tone="warn">
+      <p className="mb-3 text-justify text-[12px] leading-loose text-text-3">
+        یک نسخه از همه اطلاعاتتان بگیرید، یا حساب و تمام محتوایش را برای همیشه پاک کنید.
+      </p>
+
+      {/* A plain link, not a fetch: the response is an attachment and the
+          browser's own download handling saves it. */}
+      <a href="/api/auth/account/export" download
+         className="mb-4 flex items-center gap-3 rounded-lg border border-border bg-subtle p-3
+                    transition-colors hover:border-primary">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">
+          <FileJson className="size-4" />
+        </span>
+        <span className="min-w-0 grow">
+          <span className="block text-[13px] font-bold">دریافت نسخه‌ای از اطلاعاتم</span>
+          <span className="mt-0.5 block text-[11.5px] leading-relaxed text-text-4">
+            یک فایل JSON شامل حساب، همه تحلیل‌ها و متن کاملشان.
+          </span>
+        </span>
+      </a>
+
+      {!open ? (
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}
+                className="w-full border-destructive/40 text-destructive hover:bg-destructive-soft">
+          <Trash2 className="size-3.5" /> حذف حساب کاربری
+        </Button>
+      ) : (
+        <form onSubmit={remove} className="rounded-lg border border-destructive/30 bg-destructive-soft p-3">
+          <p className="mb-2 text-justify text-[12px] font-bold leading-loose text-destructive">
+            این کار برگشت‌پذیر نیست.
+          </p>
+          <ul className="mb-3 space-y-1 ps-4 text-justify text-[11.5px] leading-loose text-destructive">
+            <li className="list-disc">
+              {footprint
+                ? `${fa(footprint.analyses)} تحلیل شما با متن کاملشان پاک می‌شود.`
+                : 'همه تحلیل‌های شما با متن کاملشان پاک می‌شود.'}
+            </li>
+            {footprint?.published > 0 && (
+              <li className="list-disc">
+                {fa(footprint.published)} تحلیل منتشرشده از سایت عمومی برداشته می‌شود و
+                نشانی‌شان ۴۰۴ خواهد شد.
+              </li>
+            )}
+            <li className="list-disc">نشانی ایمیل، نام و همه رخدادهای ثبت‌شده حذف می‌شوند.</li>
+            <li className="list-disc">پیش از حذف، اگر نسخه‌ای می‌خواهید بالا را بزنید.</li>
+          </ul>
+
+          <Label htmlFor="del-pass" className="text-destructive">برای تأیید، رمز عبورتان را بنویسید</Label>
+          <Input id="del-pass" type="password" value={password} autoComplete="current-password"
+                 onChange={(e) => setPassword(e.target.value)} className="mt-1" required />
+
+          <Status error={error} />
+
+          <div className="mt-3 flex gap-2">
+            <Button type="submit" variant="destructive" size="sm" disabled={busy || !password}>
+              {busy ? 'در حال حذف…' : 'بله، حساب من را پاک کن'}
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={busy}
+                    onClick={() => { setOpen(false); setPassword(''); setError(''); }}>
+              انصراف
+            </Button>
+          </div>
+        </form>
+      )}
     </Card>
   );
 }

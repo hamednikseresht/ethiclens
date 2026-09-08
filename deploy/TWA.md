@@ -135,19 +135,21 @@ adb logcat | grep -i "digital asset\|assetlink"
 
 ## Before Play will accept the listing
 
-Things the store requires that the site does not have yet:
+What the store requires, and where each one now stands:
 
-- **A privacy policy at a public URL.** `/privacy` is currently a 404. Play
-  will not publish without one, and the Data safety form asks what the app
-  collects — for this product that is an email address, the dilemmas people
-  write, and their analyses.
+- **Privacy policy**: `https://ethiclens.ir/privacy` — done.
+- **Account deletion URL**: `https://ethiclens.ir/account-deletion` — done. Play
+  requires this for any app that creates accounts, and asks for it as a URL
+  reachable without installing the app. Deletion is also available in the app
+  itself, under account settings, which is the other half of the requirement.
 - **Store assets**: a 512×512 icon (have it), a 1024×500 feature graphic, and
   at least two phone screenshots.
 - **Content rating questionnaire** and a target audience declaration.
 
-Nothing in that list is code, but the privacy policy is a real blocker rather
-than a formality — the app sends people's written dilemmas to a third-party
-model provider, and the form asks about exactly that.
+The Data safety form asks what the app collects and whether it is shared. For
+this product the honest answers are an email address, the dilemmas people
+write, and their analyses — and yes, the dilemma text goes to a third-party
+model provider. /privacy says so in those words, so the two match.
 
 ---
 

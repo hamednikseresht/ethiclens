@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
+<link rel="icon" href="/icons/mark.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#f5f5f4">
+<meta name="apple-mobile-web-app-title" content="دیدگاه اخلاق">
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/motion.css">
+<link rel="stylesheet" href="/css/public.css">
+<style>
+  /* Deliberately plain and short. Google Play's reviewer opens this URL to
+     confirm the deletion route exists, and a visitor opens it because they
+     want to leave — neither is here to read a designed page. */
+  .ad-hero{padding:2.2rem 0 1rem}
+  .ad-hero h1{font-size:clamp(1.4rem,4.5vw,1.95rem);font-weight:900;line-height:1.5;margin-bottom:.7rem}
+  .ad-hero p{font-size:.95rem;line-height:2;color:var(--text-muted);max-width:60ch;text-align:justify}
+
+  .ad-steps{counter-reset:s;list-style:none;margin:1.4rem 0;padding:0}
+  .ad-steps li{counter-increment:s;position:relative;padding-inline-start:2.6rem;
+               margin-bottom:1rem;font-size:.93rem;line-height:2;text-align:justify}
+  .ad-steps li::before{content:counter(s);position:absolute;inset-inline-start:0;top:.15rem;
+    width:1.8rem;height:1.8rem;border-radius:50%;background:var(--primary-soft);
+    color:var(--primary);font-weight:800;font-size:.82rem;display:grid;place-items:center}
+
+  .ad-sec{background:var(--bg-surface);border:1px solid var(--border);
+          border-radius:var(--r);padding:1.3rem 1.4rem;margin-bottom:1rem}
+  .ad-sec h2{font-size:1.05rem;font-weight:800;margin-bottom:.7rem}
+  .ad-sec p{font-size:.9rem;line-height:2;margin-bottom:.6rem;text-align:justify;color:var(--text-2)}
+  .ad-sec p:last-child{margin-bottom:0}
+  .ad-sec ul{margin:0;padding-inline-start:1.1rem}
+  .ad-sec li{font-size:.9rem;line-height:2;margin-bottom:.3rem;text-align:justify}
+
+  .ad-mail{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;
+           border-radius:var(--r);padding:1.6rem 1.4rem;text-align:center;margin:1.6rem 0 1rem}
+  .ad-mail h2{font-size:1.08rem;font-weight:900;margin-bottom:.5rem}
+  .ad-mail p{font-size:.89rem;opacity:.94;line-height:1.95;max-width:52ch;margin:0 auto .8rem}
+  .ad-mail a{color:#fff;text-decoration:underline;font-weight:700;direction:ltr;display:inline-block}
+</style>
+<script src="/js/analytics.js"></script>
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap-narrow">
+  <nav class="pub-crumbs" aria-label="مسیر">
+    <a href="/">خانه</a> ‹ <span>حذف حساب کاربری</span>
+  </nav>
+
+  <div class="ad-hero">
+    <h1>حذف حساب کاربری</h1>
+    <p>
+      حساب دیدگاه اخلاق را هر وقت خواستید می‌توانید خودتان پاک کنید. حذف واقعی است،
+      نه غیرفعال‌کردن: حساب و همه محتوایش از پایگاه داده برداشته می‌شود و برگشتی ندارد.
+    </p>
+  </div>
+
+  <div class="ad-sec">
+    <h2>از داخل اپ یا سایت</h2>
+    <ol class="ad-steps">
+      <li>وارد حسابتان شوید.</li>
+      <li>به <strong>تنظیمات حساب</strong> بروید — از منوی حساب کاربری بالای صفحه.</li>
+      <li>پایین صفحه، بخش <strong>داده‌های شما</strong> را باز کنید.</li>
+      <li>اگر نسخه‌ای از اطلاعاتتان می‌خواهید، اول <strong>دریافت نسخه‌ای از اطلاعاتم</strong>
+          را بزنید. پس از حذف، دیگر ممکن نیست.</li>
+      <li><strong>حذف حساب کاربری</strong> را بزنید، رمز عبورتان را برای تأیید وارد کنید،
+          و تأیید نهایی را بدهید.</li>
+    </ol>
+    <p style="text-align:center">
+      <a class="btn btn-primary" href="/app/settings">رفتن به تنظیمات حساب</a>
+    </p>
+  </div>
+
+  <div class="ad-sec">
+    <h2>چه چیزی حذف می‌شود</h2>
+    <ul>
+      <li>حساب کاربری: نشانی ایمیل، نام و رمز عبور</li>
+      <li>همه تحلیل‌ها با متن کامل دوراهی، نتیجه، و تصمیم و بازنگری‌ای که ثبت کرده‌اید</li>
+      <li>تحلیل‌های منتشرشده شما از سایت عمومی برداشته می‌شوند و نشانی‌شان دیگر کار نمی‌کند</li>
+      <li>همه رخدادهای ثبت‌شده مربوط به شما، از جمله نشانی‌های IP</li>
+      <li>نشست‌های ورود فعالتان روی همه دستگاه‌ها</li>
+    </ul>
+  </div>
+
+  <div class="ad-sec">
+    <h2>چه چیزی می‌ماند</h2>
+    <p>
+      یک ردیف بی‌نام در گزارش سامانه که فقط می‌گوید حسابی در چه تاریخی حذف شده و چند
+      تحلیل داشته — بدون ایمیل، بدون نام، بدون نشانی IP و بدون هیچ راهی برای رسیدن به شما.
+      این برای این است که مدیر سامانه بداند حذف عمدی بوده، نه خطا.
+    </p>
+    <p>
+      همچنین ممکن است متن دوراهی‌هایی که تحلیل کرده‌اید، طبق سیاست نگهداری
+      <strong>ارائه‌دهنده مدل زبانی</strong> مدتی نزد آن سرویس بماند. ما بر آن کنترلی
+      نداریم؛ در <a href="/privacy">سیاست حریم خصوصی</a> توضیح داده شده است.
+    </p>
+  </div>
+
+  <div class="ad-sec">
+    <h2>چقدر طول می‌کشد</h2>
+    <p>
+      حذف از داخل اپ <strong>بلافاصله</strong> انجام می‌شود. درخواست از راه ایمیل حداکثر
+      ظرف ۳۰ روز انجام می‌شود، و معمولاً خیلی زودتر.
+    </p>
+  </div>
+
+  <div class="ad-mail">
+    <h2>اگر به حسابتان دسترسی ندارید</h2>
+    <p>
+      رمز را فراموش کرده‌اید یا نمی‌توانید وارد شوید؟ از همان نشانی ایمیلی که با آن
+      ثبت‌نام کرده‌اید برای ما بنویسید تا حساب را پاک کنیم.
+    </p>
+    <a href="mailto:hamednikseresht@gmail.com?subject=%D8%AF%D8%B1%D8%AE%D9%88%D8%A7%D8%B3%D8%AA%20%D8%AD%D8%B0%D9%81%20%D8%AD%D8%B3%D8%A7%D8%A8">hamednikseresht@gmail.com</a>
+  </div>
+
+  <p class="pub-footer-note" style="max-width:60ch;margin:1.2rem auto 0;text-align:justify">
+    برای جزئیات کامل درباره اینکه چه اطلاعاتی جمع می‌شود و کجا می‌رود،
+    <a href="/privacy">سیاست حریم خصوصی</a> را ببینید.
+  </p>
+</main>
+
+<script type="module">
+  import { boot } from '/js/core.js';
+  await boot({ auth: false });
+</script>
+</body>
+</html>
