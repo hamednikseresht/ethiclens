@@ -16,6 +16,7 @@ import {
   OTP_TTL_MINUTES, RESEND_COOLDOWN_SECONDS
 } from '../services/otp.js';
 import { requireAuth, csrfToken } from '../middleware/auth.js';
+import { accountFootprint, exportAccount, eraseAccount } from '../services/account.js';
 
 export const router = express.Router();
 
@@ -227,6 +228,70 @@ router.post('/change-password', requireAuth, (req, res) => {
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(bcrypt.hashSync(next, 10), req.user.id);
   audit(req.user.id, 'change_password', null, req.ip);
   res.json({ ok: true });
+});
+
+/* ==========================================================================
+   The account itself — export and erasure
+   --------------------------------------------------------------------------
+   Google Play requires an account created in an app to be deletable from it,
+   and the deletion to be real rather than a disabled flag. GDPR article 17
+   asks for the same, and article 20 for a copy in a machine-readable form.
+   ========================================================================== */
+
+/** What erasure would remove, so the confirmation can name real numbers. */
+router.get('/account', requireAuth, (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ footprint: accountFootprint(req.user.id) });
+});
+
+/** GDPR article 20: the whole account as JSON. */
+router.get('/account/export', requireAuth, (req, res) => {
+  const data = exportAccount(req.user);
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Disposition',
+    `attachment; filename="ethiclens-account-${req.user.id}.json"`);
+  res.setHeader('Cache-Control', 'no-store');
+  audit(req.user.id, 'account_export', { analyses: data.analyses.length }, req.ip);
+  res.send(JSON.stringify(data, null, 2));
+});
+
+/**
+ * Erase the account.
+ *
+ * The password is required again even though the caller is already signed in.
+ * This is the one action with no undo, and a session left open on a shared
+ * or stolen device should not be enough to destroy someone's writing.
+ *
+ * An admin can delete their own account, but not if they are the last one —
+ * that leaves a running system nobody can administer, and no amount of
+ * confirming makes it recoverable from the UI.
+ */
+router.delete('/account', requireAuth, (req, res) => {
+  const password = String(req.body?.password || '');
+
+  const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(req.user.id);
+  if (!row || !bcrypt.compareSync(password, row.password_hash)) {
+    return res.status(401).json({ error: 'رمز نادرست است.' });
+  }
+
+  if (req.user.role === 'admin') {
+    const admins = db.prepare("SELECT COUNT(*) c FROM users WHERE role = 'admin'").get().c;
+    if (admins <= 1) {
+      return res.status(409).json({
+        error: 'شما تنها مدیر سامانه‌اید. اول مدیر دیگری بسازید، وگرنه پس از حذف حساب، سامانه مدیری نخواهد داشت.'
+      });
+    }
+  }
+
+  const removed = eraseAccount(req.user.id);
+  if (!removed) return res.status(404).json({ error: 'حساب یافت نشد.' });
+
+  // The session rows were deleted inside the transaction; this clears the
+  // cookie so the browser does not keep presenting an id that is now gone.
+  req.session.destroy(() => {
+    res.clearCookie('ethiclens.sid');
+    res.json({ ok: true, removed });
+  });
 });
 
 router.post('/profile', requireAuth, (req, res) => {

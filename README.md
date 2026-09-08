@@ -313,6 +313,10 @@ The container publishes on 127.0.0.1:3000, exactly where the systemd service
 listened, so the host's nginx, the Cloudflare origin certificate and the
 firewall rules are the same either way.
 
+The Android app for Google Play is a Trusted Web Activity around this same
+PWA — no second codebase, and a website deploy updates it without review:
+[`deploy/TWA.md`](deploy/TWA.md).
+
 ---
 
 ## Disclaimer

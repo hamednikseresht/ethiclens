@@ -12,6 +12,20 @@ const DEFAULTS = {
   // empty, it is derived from site_title — see siteName() in services/seo.js.
   site_name: '',
   site_alternate_name: 'Ethic Lens',
+
+  /* ---- Trusted Web Activity (the Android wrapper on Google Play) ----
+     Digital Asset Links: the Android app names this origin, and this origin
+     has to name the app back, or Chrome keeps the URL bar visible inside it
+     and the whole point of a TWA is gone.
+
+     Settings rather than a committed file because the fingerprint that
+     matters is not known until after the first upload. With Play App Signing
+     — the default, and required for new apps — Google re-signs the bundle
+     with its own key, so the certificate users actually run is one Play
+     generates. Both belong here: the upload key for local test builds, and
+     Play's app-signing key for what people install. */
+  twa_package_name: '',
+  twa_fingerprints: '',              // SHA-256 fingerprints, one per line
   site_url: '',                      // for canonical links and the sitemap — e.g. https://ethiclens.ir
   // Social preview image, 1200x630. Empty means the card degrades to a plain
   // text summary rather than promising a picture the site cannot supply.

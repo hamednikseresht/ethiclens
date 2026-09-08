@@ -130,7 +130,8 @@ export function siteFooter() {
     ['/', 'خانه'],
     ['/explore', 'تحلیل‌های عمومی'],
     ['/guide', 'دانشنامه'],
-    ['/about', 'درباره ما']
+    ['/about', 'درباره ما'],
+    ['/privacy', 'حریم خصوصی']
   ];
   return `<footer class="site pub-footer">
     <div class="pub-footer-in">
@@ -512,6 +513,49 @@ Disallow: /api/
 ${base ? `Sitemap: ${base}/sitemap.xml` : ''}`);
 });
 
+/* ==========================================================================
+   Digital Asset Links — the Android wrapper (TWA)
+   --------------------------------------------------------------------------
+   A Trusted Web Activity is Chrome rendering this site inside an Android app,
+   with the URL bar hidden. Chrome only hides it once the app and the origin
+   vouch for each other: the app names this domain, and this file names the
+   app's package and signing certificate back. Get it wrong and the app still
+   works — it just shows an address bar, which is exactly what a wrapper is
+   meant to avoid, and gives no error saying why.
+
+   Served from settings rather than a committed file because the fingerprint
+   is not knowable until after the first upload: with Play App Signing, Google
+   re-signs the bundle with its own key, so the certificate on the device is
+   not the one built locally. Both usually belong here — the upload key and
+   Play's app-signing key.
+
+   Returns 404 until a package name is set, which is the honest answer: no
+   Android app claims this origin yet.
+   ========================================================================== */
+router.get('/.well-known/assetlinks.json', (_req, res) => {
+  const pkg = (getSetting('twa_package_name') || '').trim();
+  const prints = (getSetting('twa_fingerprints') || '')
+    .split(/[\s,]+/)
+    .map(f => f.trim().toUpperCase())
+    // A SHA-256 fingerprint is 32 colon-separated hex pairs. Anything else is
+    // a paste that went wrong, and shipping it would produce a file Chrome
+    // rejects silently.
+    .filter(f => /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/.test(f));
+
+  if (!pkg || !prints.length) return res.status(404).type('text/plain').send('not configured');
+
+  res.set('Cache-Control', 'public, max-age=300').type('application/json').send(
+    JSON.stringify([{
+      relation: ['delegate_permission/common.handle_all_urls'],
+      target: {
+        namespace: 'android_app',
+        package_name: pkg,
+        sha256_cert_fingerprints: prints
+      }
+    }], null, 2)
+  );
+});
+
 router.get('/sitemap.xml', (req, res) => {
   const base = siteUrl(req);
   if (!base) return res.status(503).type('text/plain')
@@ -521,7 +565,9 @@ router.get('/sitemap.xml', (req, res) => {
     { loc: '/',   priority: '1.0', freq: 'weekly' },
     { loc: '/explore', priority: '0.9', freq: 'daily'  },
     { loc: '/guide',   priority: '0.8', freq: 'monthly'},
-    { loc: '/about',   priority: '0.5', freq: 'yearly' }
+    { loc: '/about',   priority: '0.5', freq: 'yearly' },
+    { loc: '/privacy', priority: '0.3', freq: 'yearly' },
+    { loc: '/account-deletion', priority: '0.3', freq: 'yearly' }
   ];
 
     // Category pages are real landing pages and belong in the sitemap; one
@@ -598,6 +644,20 @@ const SEO_PAGES = {
       publisher: { '@type': 'Organization', name: getSetting('site_title') || 'Ethic Lens' },
       mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(req, '/guide') }
     }]
+  },
+  '/account-deletion': {
+    file: 'pages/account-deletion.html',
+    title: () => 'حذف حساب کاربری — دیدگاه اخلاق',
+    description: () => 'چطور حساب دیدگاه اخلاق و همه محتوایش را برای همیشه پاک کنید، و چه چیزی حذف می‌شود.',
+    trail: [{ name: 'خانه', path: '/' }, { name: 'حذف حساب', path: '/account-deletion' }],
+    extra: () => []
+  },
+  '/privacy': {
+    file: 'pages/privacy.html',
+    title: () => 'سیاست حریم خصوصی — دیدگاه اخلاق',
+    description: () => 'چه اطلاعاتی جمع می‌شود، متن دوراهی شما کجا می‌رود، چقدر نگه داشته می‌شود و چطور می‌توانید حذفش کنید.',
+    trail: [{ name: 'خانه', path: '/' }, { name: 'حریم خصوصی', path: '/privacy' }],
+    extra: () => []
   },
   '/about': {
     file: 'pages/about.html',

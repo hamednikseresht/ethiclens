@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
+<link rel="icon" href="/icons/mark.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#f5f5f4">
+<meta name="apple-mobile-web-app-title" content="دیدگاه اخلاق">
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/motion.css">
+<link rel="stylesheet" href="/css/public.css">
+<style>
+  .pv-hero{padding:2.2rem 0 1.4rem}
+  .pv-hero h1{font-size:clamp(1.5rem,4.5vw,2.1rem);font-weight:900;line-height:1.5;margin-bottom:.6rem}
+  .pv-hero p{font-size:.95rem;line-height:2;color:var(--text-muted);max-width:62ch;text-align:justify}
+  .pv-updated{font-size:.8rem;color:var(--text-faint);margin-top:.8rem}
+
+  /* The summary sits above the detail because most people read one screen and
+     leave. If they read nothing else, they should still learn that what they
+     write is sent to a model provider. */
+  .pv-tldr{background:var(--primary-soft);border-inline-start:4px solid var(--primary);
+           border-radius:0 var(--r-sm) var(--r-sm) 0;padding:1.1rem 1.3rem;margin:1.4rem 0 2rem}
+  .pv-tldr h2{font-size:1rem;font-weight:800;margin-bottom:.6rem}
+  .pv-tldr ul{margin:0;padding-inline-start:1.1rem}
+  .pv-tldr li{font-size:.9rem;line-height:2;margin-bottom:.3rem;text-align:justify}
+
+  .pv-sec{background:var(--bg-surface);border:1px solid var(--border);
+          border-radius:var(--r);padding:1.4rem 1.5rem;margin-bottom:1rem}
+  .pv-sec h2{font-size:1.08rem;font-weight:800;margin-bottom:.8rem;
+             display:flex;align-items:center;gap:.55rem}
+  .pv-sec p{font-size:.9rem;line-height:2;margin-bottom:.7rem;text-align:justify;color:var(--text-2)}
+  .pv-sec p:last-child{margin-bottom:0}
+  .pv-sec ul{margin:0 0 .7rem;padding-inline-start:1.1rem}
+  .pv-sec li{font-size:.9rem;line-height:2;margin-bottom:.35rem;text-align:justify}
+
+  .pv-table-wrap{overflow-x:auto;margin:.4rem 0 .8rem}
+  .pv-table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:420px}
+  .pv-table th,.pv-table td{padding:.6rem .7rem;text-align:start;border-bottom:1px solid var(--border);line-height:1.9}
+  .pv-table th{font-weight:800;background:var(--bg-subtle);white-space:nowrap}
+  .pv-table td:first-child{font-weight:700;white-space:nowrap}
+
+  .pv-warn{background:var(--warn-soft);border:1px solid var(--warn);
+           border-radius:var(--r-sm);padding:1rem 1.2rem;margin:.6rem 0}
+  .pv-warn p{color:var(--warn);margin:0;font-size:.88rem;line-height:2;text-align:justify}
+
+  .pv-contact{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;
+              border-radius:var(--r);padding:1.8rem 1.5rem;text-align:center;margin:2rem 0 1rem}
+  .pv-contact h2{font-size:1.15rem;font-weight:900;margin-bottom:.5rem}
+  .pv-contact p{font-size:.9rem;opacity:.94;line-height:1.95;max-width:54ch;margin:0 auto .9rem}
+  .pv-contact a{color:#fff;text-decoration:underline;font-weight:700;direction:ltr;display:inline-block}
+</style>
+<script src="/js/analytics.js"></script>
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap-narrow">
+  <nav class="pub-crumbs" aria-label="مسیر">
+    <a href="/">خانه</a> ‹ <span>سیاست حریم خصوصی</span>
+  </nav>
+
+  <div class="pv-hero">
+    <h1>سیاست حریم خصوصی</h1>
+    <p>
+      دیدگاه اخلاق ابزاری است که دوراهی‌های اخلاقی شما را تحلیل می‌کند. برای این کار
+      ناچار است چیزی را که می‌نویسید بخواند و نگه دارد. این صفحه دقیقاً می‌گوید چه
+      چیزی جمع می‌شود، کجا می‌رود، چقدر می‌ماند و چطور می‌توانید پاکش کنید — بدون
+      کلی‌گویی.
+    </p>
+    <p class="pv-updated">آخرین به‌روزرسانی: شهریور ۱۴۰۴</p>
+  </div>
+
+  <div class="pv-tldr">
+    <h2>خلاصه، اگر فقط همین را می‌خوانید</h2>
+    <ul>
+      <li><strong>متن دوراهی شما به یک سرویس هوش مصنوعی بیرونی فرستاده می‌شود</strong>
+          تا تحلیل شود. این ذات کار است و راه دیگری ندارد.</li>
+      <li>تحلیل‌های شما <strong>خصوصی‌اند</strong> مگر خودتان صریحاً منتشرشان کنید.</li>
+      <li>ما اطلاعات شما را <strong>نمی‌فروشیم</strong> و برای تبلیغات به کسی نمی‌دهیم.</li>
+      <li>هر تحلیل را می‌توانید هر وقت خواستید <strong>حذف کنید</strong> یا خروجی بگیرید.</li>
+      <li>هیچ اطلاعات پرداختی جمع نمی‌شود، چون سرویس پرداختی ندارد.</li>
+    </ul>
+  </div>
+
+  <section class="pv-sec">
+    <h2><span>📋</span> چه چیزی جمع می‌کنیم</h2>
+    <div class="pv-table-wrap">
+      <table class="pv-table">
+        <thead><tr><th>دسته</th><th>چه چیزی</th><th>چرا</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>حساب کاربری</td>
+            <td>نشانی ایمیل، نام، رمز عبور به‌صورت هش‌شده (bcrypt)</td>
+            <td>ورود به حساب و بازیابی رمز</td>
+          </tr>
+          <tr>
+            <td>محتوای شما</td>
+            <td>متن دوراهی، اطلاعات تکمیلی که وارد می‌کنید، تحلیل تولیدشده، و تصمیم و
+                بازنگری‌ای که بعداً ثبت می‌کنید</td>
+            <td>نمایش نتیجه و نگه‌داشتن تاریخچه برای خودتان</td>
+          </tr>
+          <tr>
+            <td>فنی</td>
+            <td>نشانی IP هنگام ورود، ثبت‌نام و رخدادهای حساس؛ مدل استفاده‌شده، تعداد
+                توکن و مدت اجرای هر تحلیل</td>
+            <td>جلوگیری از سوءاستفاده، محدودیت نرخ، و سنجش سهمیه</td>
+          </tr>
+          <tr>
+            <td>تحلیل رفتار</td>
+            <td>Google Analytics: صفحه‌های بازدیدشده، مرورگر، کشور</td>
+            <td>فهمیدن اینکه کدام بخش‌ها استفاده می‌شوند</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      <strong>چه چیزی جمع نمی‌کنیم:</strong> اطلاعات پرداخت، موقعیت مکانی دقیق،
+      دفترچه تماس، و هیچ داده‌ای از دستگاه شما جز آنچه بالا آمد.
+    </p>
+  </section>
+
+  <section class="pv-sec">
+    <h2><span>🤖</span> متن شما کجا می‌رود</h2>
+    <p>
+      برای تولید تحلیل، متن دوراهی و اطلاعات تکمیلی‌ای که وارد کرده‌اید به یک
+      <strong>ارائه‌دهنده مدل زبانی</strong> فرستاده می‌شود — بسته به تنظیم فعلی سامانه،
+      یکی از سرویس‌هایی مثل NVIDIA، OpenAI یا DeepSeek. این سرویس‌ها خارج از ایران
+      هستند و سیاست حریم خصوصی خودشان را دارند.
+    </p>
+    <div class="pv-warn">
+      <p>
+        <strong>مهم:</strong> چیزی را ننویسید که نمی‌خواهید از سرور ما خارج شود.
+        اگر موقعیت شما نام افراد، اطلاعات پزشکی، یا جزئیات قابل‌شناسایی دارد،
+        پیش از نوشتن آن‌ها را تغییر دهید یا حذف کنید. تحلیل با نام‌های مستعار
+        هم به همان خوبی کار می‌کند.
+      </p>
+    </div>
+    <p>
+      ما درخواست‌ها را بدون نام حساب شما می‌فرستیم — ارائه‌دهنده مدل ایمیل یا نام
+      شما را دریافت نمی‌کند — ولی خودِ متن را می‌بیند و ممکن است طبق سیاست خودش
+      مدتی نگه دارد.
+    </p>
+  </section>
+
+  <section class="pv-sec">
+    <h2><span>🔗</span> سرویس‌های شخص ثالث</h2>
+    <div class="pv-table-wrap">
+      <table class="pv-table">
+        <thead><tr><th>سرویس</th><th>چه چیزی می‌گیرد</th></tr></thead>
+        <tbody>
+          <tr><td>ارائه‌دهنده مدل</td><td>متن دوراهی و اطلاعات تکمیلی — بدون نام و ایمیل شما</td></tr>
+          <tr><td>Brevo یا Mailgun</td><td>نشانی ایمیل شما، برای فرستادن کد تأیید و بازیابی رمز</td></tr>
+          <tr><td>Cloudflare</td><td>همه ترافیک سایت از آن عبور می‌کند: نشانی IP و اطلاعات درخواست</td></tr>
+          <tr><td>Google Analytics</td><td>آمار بازدید صفحه‌ها</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      اگر مرورگرتان سیگنال <span class="ltr">Do Not Track</span> بفرستد، Google Analytics
+      اصلاً بارگذاری نمی‌شود.
+    </p>
+  </section>
+
+  <section class="pv-sec">
+    <h2><span>🌐</span> انتشار عمومی</h2>
+    <p>
+      تحلیل‌های شما به‌صورت پیش‌فرض <strong>خصوصی‌اند</strong> و فقط خودتان می‌بینیدشان.
+      انتشار عمومی همیشه انتخاب صریح خودتان است و هرگز خودکار نیست.
+    </p>
+    <p>
+      اگر تحلیلی را منتشر کنید، صفحه‌ای عمومی و قابل ایندکس در گوگل پیدا می‌کند.
+      می‌توانید عنوان و خلاصه عمومی جداگانه بنویسید و <strong>ناشناس</strong> بمانید.
+      متن اصلی دوراهی هم در آن صفحه دیده می‌شود، پس پیش از انتشار یک بار بخوانیدش.
+    </p>
+    <p>
+      لغو انتشار، صفحه را فوراً از دسترس خارج می‌کند. ولی توجه داشته باشید که
+      موتورهای جست‌وجو ممکن است نسخه‌ای در حافظه‌شان داشته باشند و بیرون‌آمدن کامل
+      از نتایج زمان می‌برد.
+    </p>
+  </section>
+
+  <section class="pv-sec">
+    <h2><span>🍪</span> کوکی‌ها</h2>
+    <ul>
+      <li><strong>کوکی نشست</strong> (<span class="ltr">ethiclens.sid</span>): برای اینکه
+          وارد حساب بمانید. <span class="ltr">HttpOnly</span> است، یعنی جاوااسکریپت
+          نمی‌تواند بخواندش، و پس از ۳۰ روز بی‌استفادگی منقضی می‌شود.</li>
+      <li><strong>توکن CSRF</strong>: برای جلوگیری از اینکه سایت دیگری از طرف شما
+          درخواستی بفرستد.</li>
+      <li><strong>حالت شب/روز</strong>: در حافظه محلی مرورگر خودتان ذخیره می‌شود و
+          به سرور نمی‌آید.</li>
+      <li><strong>کوکی‌های Google Analytics</strong>: برای شمارش بازدید.</li>
+    </ul>
+    <p>سه مورد اول برای کارکردن سایت لازم‌اند. مورد چهارم را با Do Not Track می‌توانید خاموش کنید.</p>
+  </section>
+
+  <section class="pv-sec">
+    <h2><span>⏳</span> چقدر نگه می‌داریم</h2>
+    <div class="pv-table-wrap">
+      <table class="pv-table">
+        <thead><tr><th>داده</th><th>مدت</th></tr></thead>
+        <tbody>
+          <tr><td>حساب و تحلیل‌ها</td><td>تا وقتی خودتان حذفشان کنید</td></tr>
+          <tr><td>نشست ورود</td><td>۳۰ روز، بعد خودکار پاک می‌شود</td></tr>
+          <tr><td>کد تأیید ایمیل</td><td>۲۴ ساعت، یک‌بارمصرف</td></tr>
+          <tr><td>گزارش رخدادها (شامل IP)</td><td>فعلاً بدون حذف خودکار نگه داشته می‌شود</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="pv-sec">
+    <h2><span>🛠️</span> اختیارات شما</h2>
+    <ul>
+      <li><strong>حذف تحلیل:</strong> از تاریخچه، هر تحلیل را هر وقت خواستید پاک کنید.
+          این حذف کامل است و برگشت ندارد.</li>
+      <li><strong>خروجی گرفتن:</strong> هر تحلیل را به‌صورت HTML، PDF یا Markdown
+          دانلود کنید.</li>
+      <li><strong>لغو انتشار:</strong> هر تحلیل منتشرشده را دوباره خصوصی کنید.</li>
+      <li><strong>اصلاح اطلاعات حساب:</strong> از تنظیمات حساب.</li>
+      <li><strong>نسخه‌ای از همه اطلاعاتتان:</strong> از تنظیمات حساب، یک فایل JSON
+          شامل حساب و متن کامل همه تحلیل‌ها بگیرید — قابل خواندن توسط ماشین، برای
+          اینکه بتوانید جای دیگری ببریدش.</li>
+      <li><strong>حذف کامل حساب:</strong> از تنظیمات حساب ← داده‌های شما. حذف فوری و
+          واقعی است، نه غیرفعال‌کردن. جزئیاتش در
+          <a href="/account-deletion">صفحه حذف حساب</a> آمده است.</li>
+    </ul>
+    <p>
+      اگر به حسابتان دسترسی ندارید، از همان ایمیلی که با آن ثبت‌نام کرده‌اید برای ما
+      بنویسید. درخواست‌های ایمیلی حداکثر ظرف ۳۰ روز انجام می‌شوند.
+    </p>
+  </section>
+
+  <section class="pv-sec">
+    <h2><span>🔒</span> امنیت</h2>
+    <p>
+      رمزها با bcrypt هش می‌شوند و هرگز به‌صورت متن ساده ذخیره نمی‌شوند. همه ترافیک
+      روی HTTPS است. کوکی نشست <span class="ltr">HttpOnly</span> و
+      <span class="ltr">SameSite</span> است، و همه درخواست‌های تغییردهنده بررسی CSRF
+      دارند. دسترسی به هر تحلیل در سطح پایگاه داده به صاحبش محدود است.
+    </p>
+    <p>
+      با این همه، هیچ سامانه‌ای صددرصد امن نیست. اگر گمان می‌کنید حسابتان در خطر
+      است، رمز را عوض کنید و به ما خبر دهید.
+    </p>
+  </section>
+
+  <section class="pv-sec">
+    <h2><span>👶</span> کودکان</h2>
+    <p>
+      این سرویس برای افراد زیر ۱۳ سال نیست و ما آگاهانه از آن‌ها اطلاعاتی جمع
+      نمی‌کنیم. اگر متوجه شویم حسابی متعلق به کودکی است، آن را حذف می‌کنیم.
+    </p>
+  </section>
+
+  <section class="pv-sec">
+    <h2><span>📝</span> تغییر این سیاست</h2>
+    <p>
+      اگر این سیاست عوض شود، تاریخ بالای صفحه به‌روز می‌شود. تغییرات مهم — مثل
+      جمع‌آوری داده تازه یا افزوده‌شدن سرویس ثالث جدید — را پیش از اعمال به کاربران
+      اطلاع می‌دهیم.
+    </p>
+  </section>
+
+  <div class="pv-contact">
+    <h2>پرسشی درباره اطلاعاتتان دارید؟</h2>
+    <p>
+      برای حذف حساب، درخواست نسخه‌ای از اطلاعاتتان، یا هر پرسش دیگری درباره این
+      سیاست، بنویسید:
+    </p>
+    <a href="mailto:hamednikseresht@gmail.com">hamednikseresht@gmail.com</a>
+  </div>
+
+  <p class="pub-footer-note" style="max-width:62ch;margin:1.4rem auto 0;text-align:justify">
+    یادآوری: تحلیل‌ها با کمک مدل‌های زبانی تولید می‌شوند و می‌توانند نادرست یا ناقص
+    باشند. دیدگاه اخلاق جایگزین مشاوره حقوقی، پزشکی یا روان‌شناختی نیست.
+  </p>
+</main>
+
+<script type="module">
+  import { boot } from '/js/core.js';
+  import { revealOnScroll } from '/js/motion.js';
+
+  await boot({ auth: false });
+  revealOnScroll('.pv-sec, .pv-contact');
+</script>
+</body>
+</html>

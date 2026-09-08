@@ -454,6 +454,12 @@ console.log('\n── انتشار عمومی و SEO ──');
   check('robots صفحه اصلی را نمی‌بندد', !/Disallow: \/\$/.test(String(rb.data)));
   check('robots نقشه سایت را معرفی می‌کند', /Sitemap: https:\/\/smoke\.test/.test(String(rb.data)));
 
+  // Digital Asset Links. Unconfigured it must 404 rather than serve an empty
+  // or half-filled file: Chrome reads a malformed one as "this origin does
+  // not vouch for the app" and shows the URL bar with no error anywhere.
+  const al = await req('/.well-known/assetlinks.json');
+  check('assetlinks بدون تنظیم ۴۰۴ می‌دهد', al.status === 404, `status=${al.status}`);
+
   const missing = await req('/analysis/public/این-نشانی-وجود-ندارد');
   check('نشانی ناموجود ۴۰۴ می‌دهد', missing.status === 404, `status=${missing.status}`);
 }

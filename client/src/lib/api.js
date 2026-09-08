@@ -63,7 +63,10 @@ export const api = {
   get:  (p)       => request(p),
   post: (p, body) => request(p, { method: 'POST', body: body ?? {} }),
   put:  (p, body) => request(p, { method: 'PUT',  body: body ?? {} }),
-  del:  (p)       => request(p, { method: 'DELETE' })
+  // A body is optional and almost always absent — the id is in the path. It
+  // exists for the one DELETE that has to prove who is asking: erasing an
+  // account re-checks the password, and that cannot travel in the URL.
+  del:  (p, body) => request(p, { method: 'DELETE', ...(body ? { body } : {}) })
 };
 
 /**
