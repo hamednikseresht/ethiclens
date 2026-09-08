@@ -180,7 +180,12 @@ function RegisterForm({ busy, setBusy, setError, onLogin, onDone }) {
   const [last, setLast] = useState('');
   const [mail, setMail] = useState('');
   const [pass, setPass] = useState('');
+  const [repeat, setRepeat] = useState('');
   const [captcha, setCaptcha] = useState('');
+
+  // Only once the second field has been typed in — flagging a mismatch while
+  // someone is still on the first character of it is noise, not help.
+  const mismatch = repeat.length > 0 && pass !== repeat;
 
   // Cache-busted so a refused answer can be retried with a genuinely new
   // image; the endpoint sends no-store, but the browser still reuses the URL.
@@ -189,6 +194,15 @@ function RegisterForm({ busy, setBusy, setError, onLogin, onDone }) {
 
   const submit = async (e) => {
     e.preventDefault();
+
+    // Checked here rather than on the server, which never receives the second
+    // field. A typo at registration is worse than at a password change: there
+    // is no previous password to fall back on, so the account would be
+    // unreachable from the moment it was made.
+    if (pass !== repeat) {
+      return setError('رمز عبور و تکرارش یکی نیستند.');
+    }
+
     setBusy(true); setError('');
     const addr = mail.trim();
     try {
@@ -235,6 +249,20 @@ function RegisterForm({ busy, setBusy, setError, onLogin, onDone }) {
       </div>
 
       <div className="space-y-1.5">
+        <Label htmlFor="rg-pass2">تکرار رمز عبور</Label>
+        <Input id="rg-pass2" type="password" required autoComplete="new-password"
+               value={repeat} onChange={(e) => setRepeat(e.target.value)}
+               aria-invalid={mismatch || undefined}
+               aria-describedby={mismatch ? 'rg-pass2-err' : undefined}
+               className={mismatch ? 'border-destructive focus-visible:ring-destructive' : ''} />
+        {mismatch && (
+          <p id="rg-pass2-err" className="text-[11px] text-destructive">
+            با رمز بالا یکی نیست.
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-1.5">
         <Label htmlFor="rg-captcha">حاصل را وارد کنید</Label>
         <div className="flex items-center gap-2">
           <img src={`/api/auth/captcha?v=${nonce}`} alt="تصویر امنیتی"
@@ -247,7 +275,11 @@ function RegisterForm({ busy, setBusy, setError, onLogin, onDone }) {
         </div>
       </div>
 
-      <Button type="submit" variant="primary" className="w-full" disabled={busy}>
+      {/* Disabled on mismatch as well as while busy: submitting would burn the
+          single-use CAPTCHA on an error the form already knows about, and the
+          next attempt would then fail on the challenge rather than on the
+          thing the person actually got wrong. */}
+      <Button type="submit" variant="primary" className="w-full" disabled={busy || mismatch}>
         {busy ? 'در حال ثبت…' : 'ثبت‌نام'}
       </Button>
 
