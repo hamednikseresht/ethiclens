@@ -24,8 +24,11 @@ export default function Ai() {
 
   const reloadBoth = async () => { await providers.reload(); await models.reload(); };
 
+  // The skeleton is for the first load only. Showing it on every reload
+  // unmounted the whole screen after each save, which closed the provider
+  // being edited and threw away the message saying what the save did.
   if (providers.error) return <Status error={providers.error} />;
-  if (providers.loading || !providers.data) return <Skeleton rows={4} />;
+  if (!providers.data) return <Skeleton rows={4} />;
 
   return (
     <div className="space-y-3">
@@ -485,8 +488,8 @@ function Models({ models, providers, onChanged }) {
     finally { setProbing(false); }
   };
 
-  if (models.loading || !models.data) return <Skeleton rows={3} />;
   if (models.error) return <Status error={models.error} />;
+  if (!models.data) return <Skeleton rows={3} />;
 
   const byProvider = {};
   for (const m of models.data) (byProvider[m.provider_label] ||= []).push(m);
