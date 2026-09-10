@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import {
   useResource, useAction, Panel, TextField, SelectField, Toggle,
@@ -6,7 +6,7 @@ import {
 } from './ui';
 import { Button } from '@/components/ui/button';
 import { fa } from '@/lib/fa';
-import { Plus, Plug, ListPlus, Activity, ChevronDown } from 'lucide-react';
+import { Plus, Plug, Activity, ChevronDown, RefreshCw, Square, Search } from 'lucide-react';
 
 /**
  * Providers and the models under them.
@@ -24,8 +24,11 @@ export default function Ai() {
 
   const reloadBoth = async () => { await providers.reload(); await models.reload(); };
 
+  // The skeleton is for the first load only. Showing it on every reload
+  // unmounted the whole screen after each save, which closed the provider
+  // being edited and threw away the message saying what the save did.
   if (providers.error) return <Status error={providers.error} />;
-  if (providers.loading || !providers.data) return <Skeleton rows={4} />;
+  if (!providers.data) return <Skeleton rows={4} />;
 
   return (
     <div className="space-y-3">
@@ -205,7 +208,7 @@ function ProviderRow({ provider, onChanged }) {
               {testing ? <Spinner /> : <Plug className="size-3.5" />}
               آزمایش اتصال
             </Button>
-            <RemoteModels provider={provider} onAdded={onChanged} />
+            <ModelSync provider={provider} onSynced={onChanged} />
             <ConfirmButton onConfirm={() => remove(false)} busy={act.busy}
                            className="text-destructive">
               حذف
@@ -218,21 +221,127 @@ function ProviderRow({ provider, onChanged }) {
 }
 
 /**
- * The models the provider account actually has.
+ * Bring the provider's model list in line with what its account offers.
+ *
+ * Fetches the catalogue, checks that every chat model is really on the
+ * account, and ranks the available ones by how fast the service answered.
+ * No model is ever run: the check reads each model's record, so it costs
+ * nothing. What stays ticked becomes the provider's list; whatever is left
+ * unticked is removed. The models already stored start ticked, so applying
+ * without touching anything changes nothing but the order.
+ *
+ * A service without the per-model lookup gets no checks at all; being in its
+ * list is then the only evidence, and the list order is kept.
  *
  * Fetched on demand, not with the page: it is a live call to someone else's
- * API, it can be slow, and most visits to this panel never need it.
+ * API, one request per model, and most visits never need it.
  */
-function RemoteModels({ provider, onAdded }) {
-  const [state, setState] = useState(null);   // null | 'loading' | {models} | {error}
+const SYNC_WORKERS = 4;
+const pause = (ms) => new Promise(r => setTimeout(r, ms));
+
+function ModelSync({ provider, onSynced }) {
+  const [list, setList] = useState(null);       // null | 'loading' | {error} | {provider, models}
+  const [results, setResults] = useState({});   // model id -> 'checking' | {ok, latencyMs, error}
   const [picked, setPicked] = useState(() => new Set());
-  const act = useAction(onAdded);
+  const [running, setRunning] = useState(false);
+  const [filter, setFilter] = useState('');
+  // Each run takes a number; bumping it stops the workers of the run before.
+  // A plain flag would let a stopped run's in-flight workers carry on the
+  // moment a new run reset it.
+  const runId = useRef(0);
+  const act = useAction(onSynced);
+
+  useEffect(() => () => { runId.current++; }, []);
+
+  const measure = async (ids) => {
+    const run = ++runId.current;
+    const queue = ids.map(id => ({ id, retried: false }));
+    setRunning(true);
+
+    const worker = async () => {
+      while (queue.length && runId.current === run) {
+        const job = queue.shift();
+        setResults(r => ({ ...r, [job.id]: 'checking' }));
+        let r;
+        try { r = await api.post(`/api/admin/providers/${provider.id}/model-check`, { model: job.id }); }
+        catch (e) { r = { ok: false, error: e.message }; }
+
+        // A rate limit says nothing about the model itself, so it goes back
+        // in the queue once after a pause instead of ranking a good model last.
+        if (!r.ok && r.status === 429 && !job.retried) {
+          await pause(4000);
+          queue.push({ ...job, retried: true });
+          continue;
+        }
+        setResults(x => ({ ...x, [job.id]: r }));
+      }
+    };
+
+    await Promise.all(Array.from({ length: SYNC_WORKERS }, worker));
+    if (runId.current === run) setRunning(false);
+  };
+
+  const stop = () => { runId.current++; setRunning(false); };
 
   const open = async () => {
-    setState('loading');
-    try { setState(await api.get(`/api/admin/providers/${provider.id}/remote-models`)); }
-    catch (e) { setState({ error: e.message }); }
+    setList('loading'); setResults({}); setFilter(''); act.clear();
+    try {
+      const data = await api.get(`/api/admin/providers/${provider.id}/remote-models`);
+      setList(data);
+      setPicked(new Set(data.models.filter(m => m.added).map(m => m.id)));
+      if (data.modelCheck) {
+        measure(data.models.filter(m => m.chat).map(m => m.id));
+      } else {
+        setResults(Object.fromEntries(data.models.filter(m => m.chat).map(m => [m.id,
+          m.listed ? { ok: true, latencyMs: null } : { ok: false, error: 'در فهرست سرویس نیست.' }])));
+      }
+    } catch (e) {
+      setList({ error: e.message });
+    }
   };
+
+  const close = () => { stop(); setList(null); act.clear(); };
+
+  // Available models first, fastest answer first, then the ones still being
+  // checked, then the unavailable ones, then the ones never checked because
+  // they are not chat models. Ties keep the provider's own order so rows do
+  // not shuffle needlessly.
+  const sorted = useMemo(() => {
+    if (!list?.models) return [];
+    const group = (m) => {
+      const r = results[m.id];
+      if (!m.chat) return 3;
+      if (r?.ok) return 0;
+      if (r && r !== 'checking') return 2;
+      return 1;
+    };
+    return list.models
+      .map((m, i) => ({ m, i, g: group(m), t: results[m.id]?.latencyMs ?? 0 }))
+      .sort((a, b) => (a.g - b.g) || (a.t - b.t) || (a.i - b.i))
+      .map(x => x.m);
+  }, [list, results]);
+
+  if (!list) {
+    return (
+      <>
+        <Button size="sm" variant="outline" onClick={open}>
+          <RefreshCw className="size-3.5" />
+          بروزرسانی مدل‌ها
+        </Button>
+        <Status msg={act.msg} />
+      </>
+    );
+  }
+
+  if (list === 'loading') return <Button size="sm" variant="outline" disabled><Spinner />دریافت فهرست…</Button>;
+  if (list.error) {
+    return (
+      <div className="flex w-full items-center gap-2">
+        <Status error={list.error} className="grow" />
+        <Button size="sm" variant="ghost" onClick={close}>بستن</Button>
+      </div>
+    );
+  }
 
   const toggle = (id) => setPicked(p => {
     const n = new Set(p);
@@ -240,55 +349,141 @@ function RemoteModels({ provider, onAdded }) {
     return n;
   });
 
-  const add = () => act.run(() => api.post('/api/admin/models', {
-    provider_id: provider.id,
-    models: [...picked].map(id => ({ model_id: id }))
-  }), `${fa(picked.size)} مدل اضافه شد.`).then(() => setPicked(new Set()));
+  const checked = list.models.filter(m => m.chat && results[m.id] && results[m.id] !== 'checking').length;
+  const checkable = list.models.filter(m => m.chat).length;
+  const unchecked = list.models.filter(m => m.chat && !results[m.id]).map(m => m.id);
+  const available = list.models.filter(m => m.chat && results[m.id]?.ok).map(m => m.id);
 
-  if (!state) {
-    return (
-      <Button size="sm" variant="outline" onClick={open}>
-        <ListPlus className="size-3.5" />
-        مدل‌های سرویس
-      </Button>
-    );
-  }
+  const adding = list.models.filter(m => picked.has(m.id) && !m.added).length;
+  const removing = list.models.filter(m => !picked.has(m.id) && m.added).length;
 
-  if (state === 'loading') return <Button size="sm" variant="outline" disabled><Spinner /></Button>;
-  if (state.error) return <p className="w-full text-[12px] text-destructive">{state.error}</p>;
+  const q = filter.trim().toLowerCase();
+  const shown = q ? sorted.filter(m => m.id.toLowerCase().includes(q)) : sorted;
 
-  const available = state.models.filter(m => !m.added);
+  const apply = () => act.run(
+    () => api.put(`/api/admin/providers/${provider.id}/models`, {
+      models: sorted.filter(m => picked.has(m.id)).map(m => m.id)
+    }),
+    `${fa(picked.size)} مدل ماند؛ ${fa(adding)} افزوده و ${fa(removing)} حذف شد.`
+  ).then(r => { if (r) { stop(); setList(null); } });
 
   return (
     <div className="w-full rounded-lg border border-border bg-subtle p-3">
       <div className="mb-2 flex items-center gap-2">
         <h4 className="grow text-[12px] font-bold">
-          مدل‌های {state.provider} — {fa(available.length)} تای تازه
+          مدل‌های {list.provider} — {fa(list.models.length)} مدل
         </h4>
-        <Button size="sm" variant="ghost" onClick={() => setState(null)}>بستن</Button>
+        <Button size="sm" variant="ghost" onClick={close}>بستن</Button>
       </div>
 
-      {!available.length ? (
-        <p className="text-[12px] text-text-4">همه مدل‌های این سرویس از قبل اضافه شده‌اند.</p>
-      ) : (
-        <>
-          <div className="mb-2 max-h-56 space-y-1 overflow-y-auto">
-            {available.map(m => (
-              <label key={m.id} className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 hover:bg-muted">
-                <input type="checkbox" checked={picked.has(m.id)} onChange={() => toggle(m.id)}
-                       className="size-3.5 accent-[var(--color-primary)]" />
-                <span className="ltr grow truncate text-[11.5px]">{m.id}</span>
-              </label>
-            ))}
-          </div>
-          <Status msg={act.msg} error={act.error} className="mb-2" />
-          <Button size="sm" variant="primary" disabled={!picked.size || act.busy} onClick={add}>
-            افزودن {picked.size ? fa(picked.size) : ''}
+      <p className="mb-2 text-justify text-[11px] leading-loose text-text-4">
+        {list.modelCheck
+          ? 'در دسترس بودن هر مدل از خود سرویس پرسیده می‌شود و فهرست به ترتیب زمان پاسخ سرویس مرتب می‌شود. هیچ مدلی اجرا نمی‌شود و هزینه‌ای ندارد.'
+          : 'این سرویس بررسی تک‌مدل را پشتیبانی نمی‌کند؛ مدلی در دسترس شمرده می‌شود که در فهرست سرویس باشد.'}
+        {' '}مدل‌های تیک‌خورده فهرست این ارائه‌دهنده می‌شوند و بقیه حذف می‌شوند.
+      </p>
+
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        {running ? (
+          <>
+            <span className="nums flex items-center gap-1.5 text-[11.5px] text-text-4">
+              <Spinner className="size-3.5" />
+              بررسی {fa(checked)} از {fa(checkable)}
+            </span>
+            <Button size="sm" variant="ghost" onClick={stop}>
+              <Square className="size-3" />
+              توقف
+            </Button>
+          </>
+        ) : unchecked.length > 0 && (
+          <Button size="sm" variant="outline" onClick={() => measure(unchecked)}>
+            <Activity className="size-3.5" />
+            بررسی {fa(unchecked.length)} مدل باقی‌مانده
           </Button>
-        </>
+        )}
+        <span className="grow" />
+        <Button size="sm" variant="ghost" disabled={!available.length}
+                onClick={() => setPicked(p => new Set([...p, ...available]))}>
+          تیک همه در دسترس‌ها
+        </Button>
+        <Button size="sm" variant="ghost"
+                onClick={() => setPicked(new Set(list.models.filter(m => m.isDefault).map(m => m.id)))}>
+          برداشتن همه
+        </Button>
+      </div>
+
+      {list.modelCheck && checkable > 0 && (
+        <div className="mb-2 h-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+          <div className="h-full bg-primary transition-[width]"
+               style={{ width: `${Math.round((checked / checkable) * 100)}%` }} />
+        </div>
       )}
+
+      {list.models.length > 12 && (
+        <div className="relative mb-2">
+          <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-5" />
+          <input type="search" value={filter} onChange={(e) => setFilter(e.target.value)}
+                 placeholder="جستجو در شناسه مدل‌ها" aria-label="جستجو در شناسه مدل‌ها"
+                 className="h-9 w-full rounded-md border border-input bg-card ps-8 pe-3 text-[12px]
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+        </div>
+      )}
+
+      <div className="mb-3 max-h-80 space-y-0.5 overflow-y-auto">
+        {!shown.length && <p className="py-3 text-center text-[12px] text-text-4">مدلی با این شناسه نیست.</p>}
+        {shown.map(m => (
+          <label key={m.id}
+                 className={`flex items-center gap-2 rounded px-1 py-1 ${
+                   m.isDefault ? 'cursor-default' : 'cursor-pointer hover:bg-muted'}`}>
+            <input type="checkbox" checked={picked.has(m.id)} disabled={m.isDefault}
+                   onChange={() => toggle(m.id)}
+                   className="size-3.5 shrink-0 accent-[var(--color-primary)]" />
+            <span className="ltr grow truncate text-[11.5px]" title={m.id}>{m.id}</span>
+            {m.isDefault && <Pill tone="info">پیش‌فرض</Pill>}
+            {m.added && !m.isDefault && <Pill>فعلی</Pill>}
+            {m.added && !m.listed && <Pill tone="warn">در فهرست سرویس نیست</Pill>}
+            <Availability chat={m.chat} result={results[m.id]} />
+          </label>
+        ))}
+      </div>
+
+      <Status msg={act.msg} error={act.error} className="mb-2" />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="nums grow text-[11.5px] text-text-4">
+          {fa(picked.size)} انتخاب
+          {adding > 0 && <> · <span className="text-ok">{fa(adding)} افزوده</span></>}
+          {removing > 0 && <> · <span className="text-destructive">{fa(removing)} حذف</span></>}
+        </span>
+        {removing > 0 ? (
+          <ConfirmButton onConfirm={apply} busy={act.busy}
+                         question={`${fa(removing)} مدل حذف می‌شود؛ مطمئنید؟`}
+                         variant="primary">
+            اعمال
+          </ConfirmButton>
+        ) : (
+          <Button size="sm" variant="primary" onClick={apply} disabled={act.busy}>
+            اعمال
+          </Button>
+        )}
+      </div>
     </div>
   );
+}
+
+/** Whether a model is available, and how fast the service said so. */
+function Availability({ chat, result }) {
+  const cls = 'nums shrink-0 text-[10.5px]';
+  if (!chat) return <span className={`${cls} text-text-5`}>غیر گفتگو</span>;
+  if (!result) return <span className={`${cls} text-text-5`}>—</span>;
+  if (result === 'checking') return <Spinner className="size-3 shrink-0 text-text-5" />;
+  if (!result.ok) {
+    return <span className={`${cls} text-destructive`} title={result.error}>در دسترس نیست</span>;
+  }
+  if (result.latencyMs === null) return <span className={`${cls} text-ok`}>در فهرست</span>;
+  const ms = result.latencyMs;
+  const tone = ms < 400 ? 'text-ok' : ms < 1000 ? 'text-warn' : 'text-text-4';
+  return <span className={`${cls} ${tone}`}>{fa(ms)} میلی‌ثانیه</span>;
 }
 
 /* ==========================================================================
@@ -307,8 +502,8 @@ function Models({ models, providers, onChanged }) {
     finally { setProbing(false); }
   };
 
-  if (models.loading || !models.data) return <Skeleton rows={3} />;
   if (models.error) return <Status error={models.error} />;
+  if (!models.data) return <Skeleton rows={3} />;
 
   const byProvider = {};
   for (const m of models.data) (byProvider[m.provider_label] ||= []).push(m);

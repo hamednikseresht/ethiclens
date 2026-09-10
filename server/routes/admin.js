@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { db, audit } from '../db.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { getSettings, setSetting, getSetting } from '../services/settings.js';
-import { listRemoteModels, pingModel } from '../services/llm.js';
+import { listRemoteModels, pingModel, checkModel, isChatModel } from '../services/llm.js';
 import { PRESETS, listProviders, getProvider, enabledModels, resolveModel, modelRef } from '../services/providers.js';
 import { listTiers, TIER_ORDER, usageByUser, limitsFor, usageFor } from '../services/tiers.js';
 import { mailConfigured, sendMail, mailProvider, MAIL_PROVIDERS } from '../services/mail.js';
@@ -172,17 +172,145 @@ router.post('/providers/:id/test', async (req, res) => {
   }
 });
 
-/** Models available on a provider account */
+/**
+ * The model id the default-model setting points at, if it is on this provider.
+ * The setting is normally "providerKey:modelId"; older installs stored the
+ * bare model id, which resolveModel still honours, so it is honoured here too.
+ */
+function defaultModelOn(p) {
+  const ref = String(getSetting('default_model') || '');
+  return ref.startsWith(`${p.key}:`) ? ref.slice(p.key.length + 1) : ref;
+}
+
+/**
+ * Models available on a provider account, merged with the ones already stored.
+ *
+ * Stored models the provider no longer lists are included rather than
+ * dropped: the sync below removes whatever is left unticked, so a retired
+ * model the admin cannot see would be deleted without ever being shown.
+ */
 router.get('/providers/:id/remote-models', async (req, res) => {
   const p = getProvider(req.params.id);
   if (!p) return res.status(404).json({ error: 'ارائه‌دهنده یافت نشد.' });
   try {
     const remote = await listRemoteModels(p);
-    const known = new Set(db.prepare('SELECT model_id FROM models WHERE provider_id = ?').all(p.id).map(r => r.model_id));
-    res.json({ provider: p.label, models: remote.map(id => ({ id, added: known.has(id) })) });
+    const listed = new Set(remote);
+    const known = db.prepare('SELECT model_id FROM models WHERE provider_id = ?').all(p.id).map(r => r.model_id);
+    const stored = new Set(known);
+    const def = defaultModelOn(p);
+
+    const ids = [...remote, ...known.filter(id => !listed.has(id))];
+    res.json({
+      provider: p.label,
+      modelCheck: await supportsModelCheck(p, remote),
+      models: ids.map(id => ({
+        id,
+        added: stored.has(id),
+        listed: listed.has(id),
+        chat: isChatModel(id),
+        isDefault: stored.has(id) && id === def
+      }))
+    });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
+});
+
+/**
+ * Whether the provider answers the per-model lookup at all.
+ *
+ * Asked with models its own list just named. A single "not found" is not
+ * enough to decide — a provider can list a model the account cannot reach —
+ * so up to three are tried, and only three refusals switch the check off.
+ * Anything other than "not found", such as a rate limit or a timeout, is left
+ * for the per-model checks to report rather than read as missing support.
+ */
+async function supportsModelCheck(p, remote) {
+  const samples = [...new Set([...remote.filter(isChatModel), ...remote])].slice(0, 3);
+  if (!samples.length) return false;
+  for (const id of samples) {
+    try {
+      await checkModel(p, id);
+      return true;
+    } catch (e) {
+      if (!(e.code === 'NO_RETRIEVE' || e.status === 404 || e.status === 405)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Whether one model is available on this provider, and how fast it answered.
+ *
+ * Reads the model's record only; the model itself is never run, so the check
+ * costs nothing. One model per request, driven from the browser, instead of
+ * one request for the whole catalogue: a provider can list a few hundred
+ * models, and a response held open that long is cut off by Cloudflare at a
+ * hundred seconds. Always answers 200 — an unavailable model is a result
+ * here, not an error.
+ */
+router.post('/providers/:id/model-check', async (req, res) => {
+  const p = getProvider(req.params.id);
+  if (!p) return res.status(404).json({ error: 'ارائه‌دهنده یافت نشد.' });
+
+  const model = String(req.body?.model || '').trim().slice(0, 200);
+  if (!model) return res.status(400).json({ error: 'شناسه مدل لازم است.' });
+
+  try {
+    const { latencyMs } = await checkModel(p, model);
+    res.json({ model, ok: true, latencyMs });
+  } catch (e) {
+    const timedOut = e.name === 'TimeoutError' || e.name === 'AbortError';
+    res.json({
+      model, ok: false, status: e.status || null,
+      error: timedOut ? 'در ۱۵ ثانیه جوابی نداد.'
+           : e.status || e.code ? e.message
+           : 'اتصال به سرویس برقرار نشد.'
+    });
+  }
+});
+
+/**
+ * Make the provider's model list exactly the given ids.
+ *
+ * Ticked models that are new are added, ticked models already stored keep
+ * their label, tier and on/off state, and everything else on this provider is
+ * removed. The order of the list becomes the order of the models, so a list
+ * ranked by response time puts the fastest first in the analysis form.
+ */
+router.put('/providers/:id/models', (req, res) => {
+  const p = getProvider(req.params.id);
+  if (!p) return res.status(404).json({ error: 'ارائه‌دهنده یافت نشد.' });
+  if (!Array.isArray(req.body?.models)) return res.status(400).json({ error: 'فهرست مدل‌ها لازم است.' });
+
+  const keep = [...new Set(req.body.models.map(id => String(id || '').trim().slice(0, 200)).filter(Boolean))];
+  const stored = db.prepare('SELECT id, model_id FROM models WHERE provider_id = ?').all(p.id);
+  const kept = new Set(keep);
+
+  const def = defaultModelOn(p);
+  if (stored.some(m => m.model_id === def) && !kept.has(def)) {
+    return res.status(400).json({ error: `«${def}» مدل پیش‌فرض است و نمی‌توان حذفش کرد. ابتدا پیش‌فرض را عوض کنید.` });
+  }
+
+  const existing = new Set(stored.map(m => m.model_id));
+  const ins = db.prepare(`INSERT INTO models (provider_id, model_id, label, note, enabled, min_tier, sort_order)
+                          VALUES (?,?,?,'',1,'basic',?)`);
+  const order = db.prepare('UPDATE models SET sort_order = ? WHERE provider_id = ? AND model_id = ?');
+  const drop = db.prepare('DELETE FROM models WHERE id = ?');
+  let added = 0, removed = 0;
+
+  db.transaction(() => {
+    keep.forEach((mid, i) => {
+      if (existing.has(mid)) order.run(100 + i, p.id, mid);
+      else { ins.run(p.id, mid, mid.split('/').pop(), 100 + i); added++; }
+    });
+    for (const m of stored) {
+      if (!kept.has(m.model_id)) { drop.run(m.id); removed++; }
+    }
+  })();
+
+  audit(req.user.id, 'models_sync', { provider: p.key, kept: keep.length, added, removed }, req.ip);
+  res.json({ ok: true, kept: keep.length, added, removed });
 });
 
 /* ---------------- User tiers ---------------- */
