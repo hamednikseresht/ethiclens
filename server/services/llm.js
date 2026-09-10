@@ -224,6 +224,51 @@ export async function listRemoteModels(provider) {
   return (json.data || []).map(m => m.id).filter(Boolean).sort();
 }
 
+/**
+ * Whether one model is on the account, without running it.
+ *
+ * Reads the model's record from GET /models/{id}, the OpenAI-compatible
+ * retrieve call, so nothing is generated and nothing is billed. The time is
+ * how long the service took to answer that lookup, not how fast the model
+ * writes — the only way to learn that is to run it.
+ *
+ * Slashes stay unencoded: NVIDIA ids are "vendor/model", and NVIDIA answers
+ * 404 to the encoded form. Each segment is still encoded on its own, so an id
+ * cannot add a query string or climb out of /models.
+ */
+export async function checkModel(provider, model, timeoutMs = 15000) {
+  const key = requireKey(provider);
+  const segments = String(model).split('/');
+  if (segments.some(s => !s || s === '.' || s === '..')) {
+    const e = new Error('شناسه مدل معتبر نیست.');
+    e.code = 'BAD_MODEL_ID';
+    throw e;
+  }
+  const path = segments.map(s => encodeURIComponent(s).replace(/%3A/gi, ':')).join('/');
+
+  const started = Date.now();
+  const res = await fetch(endpoint(provider, `/models/${path}`), {
+    headers: { Authorization: `Bearer ${key}` },
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+  const latencyMs = Date.now() - started;
+
+  if (!res.ok) {
+    const err = new Error(upstreamMessage(res.status, await res.text().catch(() => ''), provider));
+    err.status = res.status;
+    throw err;
+  }
+  // A service without the retrieve call can still answer 200 — with a web
+  // page, or with the whole list. Only a record naming a model counts.
+  const json = await res.json().catch(() => null);
+  if (!json?.id) {
+    const e = new Error(`«${provider?.label || 'سرویس'}» بررسی تک‌مدل را پشتیبانی نمی‌کند.`);
+    e.code = 'NO_RETRIEVE';
+    throw e;
+  }
+  return { latencyMs };
+}
+
 /** Quick probe of one model with a small non-streaming request */
 export async function pingModel(provider, model, timeoutMs = 45000) {
   const key = requireKey(provider);

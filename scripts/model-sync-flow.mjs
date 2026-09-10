@@ -1,9 +1,11 @@
 /**
- * Test "update models" on a provider: catalogue, response time, and sync.
+ * Test "update models" on a provider: catalogue, availability, and sync.
  *
  * Runs against a small OpenAI-compatible service started inside this script,
  * so no real key is needed and the models behave on cue — one fast, one slow,
- * one missing, one rate-limited, one that is not a chat model at all.
+ * one missing, one rate-limited, one that is not a chat model at all. The
+ * service counts chat requests, because the whole check must run without
+ * ever running a model.
  *
  * Run:  node scripts/model-sync-flow.mjs   (with the server already running)
  */
@@ -28,6 +30,10 @@ function section(t) { console.log(`\n── ${t} ──`); }
 const KEY = `sync-key-${crypto.randomBytes(6).toString('hex')}`;
 const LISTED = ['fast/model', 'slow/model', 'broken/model', 'busy/model', 'text-embedding-3-small'];
 
+let chatCalls = 0;
+
+// Two faces of one service: /v1 answers the per-model lookup, /bare/v1 only
+// lists — the way some providers do — and says "not found" to everything else.
 const upstream = http.createServer(async (req, res) => {
   const send = (status, body) => {
     res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -35,24 +41,27 @@ const upstream = http.createServer(async (req, res) => {
   };
   if (req.headers.authorization !== `Bearer ${KEY}`) return send(401, { error: { message: 'bad key' } });
 
-  if (req.method === 'GET' && req.url === '/v1/models') {
+  if (req.url.endsWith('/chat/completions')) {
+    chatCalls++;
+    return send(200, { choices: [{ message: { content: 'سالم' } }], usage: {} });
+  }
+  if (req.method === 'GET' && (req.url === '/v1/models' || req.url === '/bare/v1/models')) {
     return send(200, { data: LISTED.map(id => ({ id, object: 'model' })) });
   }
-  if (req.method === 'POST' && req.url === '/v1/chat/completions') {
-    let raw = '';
-    for await (const chunk of req) raw += chunk;
-    const { model } = JSON.parse(raw);
-    const reply = () => send(200, { choices: [{ message: { content: 'سالم' } }], usage: {} });
+  if (req.method === 'GET' && req.url.startsWith('/v1/models/')) {
+    const id = decodeURIComponent(req.url.slice('/v1/models/'.length));
+    const record = () => send(200, { id, object: 'model' });
 
-    if (model === 'fast/model') return reply();
-    if (model === 'slow/model') return setTimeout(reply, 600);
-    if (model === 'busy/model') return send(429, { error: { message: 'rate limited' } });
+    if (id === 'slow/model') return setTimeout(record, 600);
+    if (id === 'busy/model') return send(429, { error: { message: 'rate limited' } });
+    if (LISTED.includes(id) && id !== 'broken/model') return record();
     return send(404, { error: { message: 'model not found' } });
   }
   send(404, {});
 });
 await new Promise(r => upstream.listen(0, '127.0.0.1', r));
 const upstreamUrl = `http://127.0.0.1:${upstream.address().port}/v1`;
+const bareUrl = `http://127.0.0.1:${upstream.address().port}/bare/v1`;
 
 /* ---------------- Signing in ---------------- */
 
@@ -88,12 +97,14 @@ function asUser(userId) {
 const stamp = Date.now();
 const providerKey = `synctest${stamp}`;
 const originalDefault = getSetting('default_model');
-const created = { providerId: null, sids: [] };
+const created = { providerId: null, bareId: null, sids: [] };
 
 // Cleans up however the script exits, so a failed assertion cannot leave a
 // stand-in provider behind for the next test file to trip over.
 function cleanup() {
-  if (created.providerId) db.prepare('DELETE FROM providers WHERE id = ?').run(created.providerId);
+  for (const id of [created.providerId, created.bareId]) {
+    if (id) db.prepare('DELETE FROM providers WHERE id = ?').run(id);
+  }
   db.prepare('DELETE FROM audit_log WHERE detail LIKE ?').run(`%${providerKey}%`);
   if (getSetting('default_model') !== originalDefault) setSetting('default_model', originalDefault);
   for (const sid of created.sids) db.prepare('DELETE FROM sessions WHERE sid = ?').run(sid);
@@ -142,35 +153,54 @@ check('مدل تازه «فعلی» نیست', byId['slow/model']?.added === fal
 check('مدل embedding گفتگو شمرده نشد', byId['text-embedding-3-small']?.chat === false);
 check('مدل گفتگو گفتگو شمرده شد', byId['slow/model']?.chat === true);
 check('هیچ مدلی پیش‌فرض نیست', !Object.values(byId).some(m => m.isDefault));
+check('سرویس بررسی تک‌مدل را پشتیبانی می‌کند', list.json?.modelCheck === true);
 
-/* ================= Response time ================= */
-section('زمان پاسخ');
+/* ================= Availability ================= */
+section('در دسترس بودن');
 
-const lat = (model) => A.call(`${P}/latency`, { method: 'POST', body: { model } });
+const probe = (model) => A.call(`${P}/model-check`, { method: 'POST', body: { model } });
 
-const fast = await lat('fast/model');
-check('مدل سریع سالم است', fast.status === 200 && fast.json?.ok === true, JSON.stringify(fast.json));
+const fast = await probe('fast/model');
+check('مدل سریع در دسترس است', fast.status === 200 && fast.json?.ok === true, JSON.stringify(fast.json));
 check('زمان پاسخ عدد است', typeof fast.json?.latencyMs === 'number');
 
-const slow = await lat('slow/model');
-check('مدل کند سالم است', slow.json?.ok === true, JSON.stringify(slow.json));
+const slow = await probe('slow/model');
+check('مدل کند در دسترس است', slow.json?.ok === true, JSON.stringify(slow.json));
 check('مدل کند کندتر گزارش شد', slow.json?.latencyMs > fast.json?.latencyMs,
   `${slow.json?.latencyMs} vs ${fast.json?.latencyMs}`);
 
-const broken = await lat('broken/model');
-check('مدل ناموجود ناموفق است ولی پاسخ ۲۰۰ است', broken.status === 200 && broken.json?.ok === false);
+const broken = await probe('broken/model');
+check('مدل ناموجود در دسترس نیست ولی پاسخ ۲۰۰ است', broken.status === 200 && broken.json?.ok === false);
 check('کد ۴۰۴ سرویس برگشت', broken.json?.status === 404, JSON.stringify(broken.json));
 check('پیام خطا برای مدیر خواناست', /در دسترس نیست/.test(broken.json?.error || ''), broken.json?.error);
 
-const busy = await lat('busy/model');
+const busy = await probe('busy/model');
 check('محدودیت نرخ با کد ۴۲۹ گزارش شد', busy.json?.ok === false && busy.json?.status === 429,
   JSON.stringify(busy.json));
 
-const noModel = await A.call(`${P}/latency`, { method: 'POST', body: {} });
+const climb = await probe('../../chat/completions');
+check('شناسه‌ای که از مسیر مدل‌ها بیرون می‌زند رد شد', climb.json?.ok === false, JSON.stringify(climb.json));
+
+const noModel = await A.call(`${P}/model-check`, { method: 'POST', body: {} });
 check('بدون شناسه مدل رد می‌شود', noModel.status === 400);
 
-const noProv = await A.call('/api/admin/providers/99999999/latency', { method: 'POST', body: { model: 'x' } });
+const noProv = await A.call('/api/admin/providers/99999999/model-check', { method: 'POST', body: { model: 'x' } });
 check('ارائه‌دهنده ناموجود ۴۰۴', noProv.status === 404);
+
+check('هیچ مدلی اجرا نشد', chatCalls === 0, `${chatCalls} chat requests`);
+
+/* ================= A service with no per-model lookup ================= */
+section('سرویس بدون بررسی تک‌مدل');
+
+const mkBare = await A.call('/api/admin/providers', {
+  method: 'POST', body: { key: `${providerKey}bare`, label: 'سرویس فقط‌فهرست', base_url: bareUrl, api_key: KEY }
+});
+created.bareId = mkBare.json?.id;
+const bare = await A.call(`/api/admin/providers/${created.bareId}/remote-models`);
+check('فهرست سرویس فقط‌فهرست دریافت شد', bare.status === 200 && bare.json?.models?.length === LISTED.length,
+  JSON.stringify(bare.json).slice(0, 120));
+check('نبودِ بررسی تک‌مدل تشخیص داده شد', bare.json?.modelCheck === false);
+check('باز هم هیچ مدلی اجرا نشد', chatCalls === 0, `${chatCalls} chat requests`);
 
 /* ================= Sync ================= */
 section('اعمال انتخاب');

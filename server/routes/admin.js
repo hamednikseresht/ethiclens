@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { db, audit } from '../db.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { getSettings, setSetting, getSetting } from '../services/settings.js';
-import { listRemoteModels, pingModel, isChatModel } from '../services/llm.js';
+import { listRemoteModels, pingModel, checkModel, isChatModel } from '../services/llm.js';
 import { PRESETS, listProviders, getProvider, enabledModels, resolveModel, modelRef } from '../services/providers.js';
 import { listTiers, TIER_ORDER, usageByUser, limitsFor, usageFor } from '../services/tiers.js';
 import { mailConfigured, sendMail, mailProvider, MAIL_PROVIDERS } from '../services/mail.js';
@@ -202,6 +202,7 @@ router.get('/providers/:id/remote-models', async (req, res) => {
     const ids = [...remote, ...known.filter(id => !listed.has(id))];
     res.json({
       provider: p.label,
+      modelCheck: await supportsModelCheck(p, remote),
       models: ids.map(id => ({
         id,
         added: stored.has(id),
@@ -216,14 +217,39 @@ router.get('/providers/:id/remote-models', async (req, res) => {
 });
 
 /**
- * Response time of one model on this provider.
+ * Whether the provider answers the per-model lookup at all.
  *
- * One model per request, driven from the browser, instead of one request that
- * tests the whole catalogue: a provider can list a few hundred models, and a
- * response held open that long is cut off by Cloudflare at a hundred seconds.
- * Always answers 200 — a model that fails is a result here, not an error.
+ * Asked with models its own list just named. A single "not found" is not
+ * enough to decide — a provider can list a model the account cannot reach —
+ * so up to three are tried, and only three refusals switch the check off.
+ * Anything other than "not found", such as a rate limit or a timeout, is left
+ * for the per-model checks to report rather than read as missing support.
  */
-router.post('/providers/:id/latency', async (req, res) => {
+async function supportsModelCheck(p, remote) {
+  const samples = [...new Set([...remote.filter(isChatModel), ...remote])].slice(0, 3);
+  if (!samples.length) return false;
+  for (const id of samples) {
+    try {
+      await checkModel(p, id);
+      return true;
+    } catch (e) {
+      if (!(e.code === 'NO_RETRIEVE' || e.status === 404 || e.status === 405)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Whether one model is available on this provider, and how fast it answered.
+ *
+ * Reads the model's record only; the model itself is never run, so the check
+ * costs nothing. One model per request, driven from the browser, instead of
+ * one request for the whole catalogue: a provider can list a few hundred
+ * models, and a response held open that long is cut off by Cloudflare at a
+ * hundred seconds. Always answers 200 — an unavailable model is a result
+ * here, not an error.
+ */
+router.post('/providers/:id/model-check', async (req, res) => {
   const p = getProvider(req.params.id);
   if (!p) return res.status(404).json({ error: 'ارائه‌دهنده یافت نشد.' });
 
@@ -231,13 +257,13 @@ router.post('/providers/:id/latency', async (req, res) => {
   if (!model) return res.status(400).json({ error: 'شناسه مدل لازم است.' });
 
   try {
-    const { latencyMs } = await pingModel(p, model, 25000);
+    const { latencyMs } = await checkModel(p, model);
     res.json({ model, ok: true, latencyMs });
   } catch (e) {
     const timedOut = e.name === 'TimeoutError' || e.name === 'AbortError';
     res.json({
       model, ok: false, status: e.status || null,
-      error: timedOut ? 'در ۲۵ ثانیه جوابی نداد.'
+      error: timedOut ? 'در ۱۵ ثانیه جوابی نداد.'
            : e.status || e.code ? e.message
            : 'اتصال به سرویس برقرار نشد.'
     });

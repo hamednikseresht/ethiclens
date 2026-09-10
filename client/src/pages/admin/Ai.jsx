@@ -223,20 +223,25 @@ function ProviderRow({ provider, onChanged }) {
 /**
  * Bring the provider's model list in line with what its account offers.
  *
- * Fetches the catalogue, times one small request to every chat model, and
- * ranks them fastest first. What stays ticked becomes the provider's list;
- * whatever is left unticked is removed. The models already stored start
- * ticked, so applying without touching anything changes nothing but the order.
+ * Fetches the catalogue, checks that every chat model is really on the
+ * account, and ranks the available ones by how fast the service answered.
+ * No model is ever run: the check reads each model's record, so it costs
+ * nothing. What stays ticked becomes the provider's list; whatever is left
+ * unticked is removed. The models already stored start ticked, so applying
+ * without touching anything changes nothing but the order.
+ *
+ * A service without the per-model lookup gets no checks at all; being in its
+ * list is then the only evidence, and the list order is kept.
  *
  * Fetched on demand, not with the page: it is a live call to someone else's
- * API, it costs a request per model, and most visits never need it.
+ * API, one request per model, and most visits never need it.
  */
 const SYNC_WORKERS = 4;
 const pause = (ms) => new Promise(r => setTimeout(r, ms));
 
 function ModelSync({ provider, onSynced }) {
   const [list, setList] = useState(null);       // null | 'loading' | {error} | {provider, models}
-  const [results, setResults] = useState({});   // model id -> 'testing' | {ok, latencyMs, error}
+  const [results, setResults] = useState({});   // model id -> 'checking' | {ok, latencyMs, error}
   const [picked, setPicked] = useState(() => new Set());
   const [running, setRunning] = useState(false);
   const [filter, setFilter] = useState('');
@@ -256,9 +261,9 @@ function ModelSync({ provider, onSynced }) {
     const worker = async () => {
       while (queue.length && runId.current === run) {
         const job = queue.shift();
-        setResults(r => ({ ...r, [job.id]: 'testing' }));
+        setResults(r => ({ ...r, [job.id]: 'checking' }));
         let r;
-        try { r = await api.post(`/api/admin/providers/${provider.id}/latency`, { model: job.id }); }
+        try { r = await api.post(`/api/admin/providers/${provider.id}/model-check`, { model: job.id }); }
         catch (e) { r = { ok: false, error: e.message }; }
 
         // A rate limit says nothing about the model itself, so it goes back
@@ -284,7 +289,12 @@ function ModelSync({ provider, onSynced }) {
       const data = await api.get(`/api/admin/providers/${provider.id}/remote-models`);
       setList(data);
       setPicked(new Set(data.models.filter(m => m.added).map(m => m.id)));
-      measure(data.models.filter(m => m.chat).map(m => m.id));
+      if (data.modelCheck) {
+        measure(data.models.filter(m => m.chat).map(m => m.id));
+      } else {
+        setResults(Object.fromEntries(data.models.filter(m => m.chat).map(m => [m.id,
+          m.listed ? { ok: true, latencyMs: null } : { ok: false, error: 'در فهرست سرویس نیست.' }])));
+      }
     } catch (e) {
       setList({ error: e.message });
     }
@@ -292,16 +302,17 @@ function ModelSync({ provider, onSynced }) {
 
   const close = () => { stop(); setList(null); act.clear(); };
 
-  // Fastest working models first, then the ones still waiting, then the ones
-  // that failed, then the ones never tested because they are not chat models.
-  // Ties keep the provider's own order so rows do not shuffle needlessly.
+  // Available models first, fastest answer first, then the ones still being
+  // checked, then the unavailable ones, then the ones never checked because
+  // they are not chat models. Ties keep the provider's own order so rows do
+  // not shuffle needlessly.
   const sorted = useMemo(() => {
     if (!list?.models) return [];
     const group = (m) => {
       const r = results[m.id];
-      if (r?.ok) return 0;
       if (!m.chat) return 3;
-      if (r && r !== 'testing') return 2;
+      if (r?.ok) return 0;
+      if (r && r !== 'checking') return 2;
       return 1;
     };
     return list.models
@@ -338,10 +349,10 @@ function ModelSync({ provider, onSynced }) {
     return n;
   });
 
-  const tested = list.models.filter(m => m.chat && results[m.id] && results[m.id] !== 'testing').length;
-  const testable = list.models.filter(m => m.chat).length;
-  const untested = list.models.filter(m => m.chat && !results[m.id]).map(m => m.id);
-  const healthy = list.models.filter(m => results[m.id]?.ok).map(m => m.id);
+  const checked = list.models.filter(m => m.chat && results[m.id] && results[m.id] !== 'checking').length;
+  const checkable = list.models.filter(m => m.chat).length;
+  const unchecked = list.models.filter(m => m.chat && !results[m.id]).map(m => m.id);
+  const available = list.models.filter(m => m.chat && results[m.id]?.ok).map(m => m.id);
 
   const adding = list.models.filter(m => picked.has(m.id) && !m.added).length;
   const removing = list.models.filter(m => !picked.has(m.id) && m.added).length;
@@ -366,8 +377,10 @@ function ModelSync({ provider, onSynced }) {
       </div>
 
       <p className="mb-2 text-justify text-[11px] leading-loose text-text-4">
-        به هر مدل گفتگو یک درخواست کوچک فرستاده می‌شود و فهرست به ترتیب سرعت پاسخ مرتب می‌شود.
-        مدل‌های تیک‌خورده فهرست این ارائه‌دهنده می‌شوند و بقیه حذف می‌شوند.
+        {list.modelCheck
+          ? 'در دسترس بودن هر مدل از خود سرویس پرسیده می‌شود و فهرست به ترتیب زمان پاسخ سرویس مرتب می‌شود. هیچ مدلی اجرا نمی‌شود و هزینه‌ای ندارد.'
+          : 'این سرویس بررسی تک‌مدل را پشتیبانی نمی‌کند؛ مدلی در دسترس شمرده می‌شود که در فهرست سرویس باشد.'}
+        {' '}مدل‌های تیک‌خورده فهرست این ارائه‌دهنده می‌شوند و بقیه حذف می‌شوند.
       </p>
 
       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -375,23 +388,23 @@ function ModelSync({ provider, onSynced }) {
           <>
             <span className="nums flex items-center gap-1.5 text-[11.5px] text-text-4">
               <Spinner className="size-3.5" />
-              آزمایش {fa(tested)} از {fa(testable)}
+              بررسی {fa(checked)} از {fa(checkable)}
             </span>
             <Button size="sm" variant="ghost" onClick={stop}>
               <Square className="size-3" />
               توقف
             </Button>
           </>
-        ) : untested.length > 0 && (
-          <Button size="sm" variant="outline" onClick={() => measure(untested)}>
+        ) : unchecked.length > 0 && (
+          <Button size="sm" variant="outline" onClick={() => measure(unchecked)}>
             <Activity className="size-3.5" />
-            آزمایش {fa(untested.length)} مدل باقی‌مانده
+            بررسی {fa(unchecked.length)} مدل باقی‌مانده
           </Button>
         )}
         <span className="grow" />
-        <Button size="sm" variant="ghost" disabled={!healthy.length}
-                onClick={() => setPicked(p => new Set([...p, ...healthy]))}>
-          تیک همه سالم‌ها
+        <Button size="sm" variant="ghost" disabled={!available.length}
+                onClick={() => setPicked(p => new Set([...p, ...available]))}>
+          تیک همه در دسترس‌ها
         </Button>
         <Button size="sm" variant="ghost"
                 onClick={() => setPicked(new Set(list.models.filter(m => m.isDefault).map(m => m.id)))}>
@@ -399,10 +412,10 @@ function ModelSync({ provider, onSynced }) {
         </Button>
       </div>
 
-      {testable > 0 && (
+      {list.modelCheck && checkable > 0 && (
         <div className="mb-2 h-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
           <div className="h-full bg-primary transition-[width]"
-               style={{ width: `${Math.round((tested / testable) * 100)}%` }} />
+               style={{ width: `${Math.round((checked / checkable) * 100)}%` }} />
         </div>
       )}
 
@@ -429,7 +442,7 @@ function ModelSync({ provider, onSynced }) {
             {m.isDefault && <Pill tone="info">پیش‌فرض</Pill>}
             {m.added && !m.isDefault && <Pill>فعلی</Pill>}
             {m.added && !m.listed && <Pill tone="warn">در فهرست سرویس نیست</Pill>}
-            <Latency chat={m.chat} result={results[m.id]} />
+            <Availability chat={m.chat} result={results[m.id]} />
           </label>
         ))}
       </div>
@@ -458,18 +471,19 @@ function ModelSync({ provider, onSynced }) {
   );
 }
 
-/** A model's response time, or why it has none. */
-function Latency({ chat, result }) {
+/** Whether a model is available, and how fast the service said so. */
+function Availability({ chat, result }) {
   const cls = 'nums shrink-0 text-[10.5px]';
   if (!chat) return <span className={`${cls} text-text-5`}>غیر گفتگو</span>;
   if (!result) return <span className={`${cls} text-text-5`}>—</span>;
-  if (result === 'testing') return <Spinner className="size-3 shrink-0 text-text-5" />;
+  if (result === 'checking') return <Spinner className="size-3 shrink-0 text-text-5" />;
   if (!result.ok) {
-    return <span className={`${cls} text-destructive`} title={result.error}>ناموفق</span>;
+    return <span className={`${cls} text-destructive`} title={result.error}>در دسترس نیست</span>;
   }
-  const s = result.latencyMs / 1000;
-  const tone = s < 3 ? 'text-ok' : s < 10 ? 'text-warn' : 'text-text-4';
-  return <span className={`${cls} ${tone}`}>{fa(s.toFixed(1)).replace('.', '٫')} ثانیه</span>;
+  if (result.latencyMs === null) return <span className={`${cls} text-ok`}>در فهرست</span>;
+  const ms = result.latencyMs;
+  const tone = ms < 400 ? 'text-ok' : ms < 1000 ? 'text-warn' : 'text-text-4';
+  return <span className={`${cls} ${tone}`}>{fa(ms)} میلی‌ثانیه</span>;
 }
 
 /* ==========================================================================
