@@ -199,6 +199,20 @@ export async function streamChat({ provider, messages, model, signal, onDelta, o
   return { text, usage, finishReason };
 }
 
+/**
+ * Ids that name something other than a chat model.
+ *
+ * A provider's /models lists everything the account can reach — embeddings,
+ * speech, image generation, rerankers. None of them answer /chat/completions,
+ * so testing them only spends a request to learn what the name already says.
+ * A miss here is harmless: the model is tested like any other and fails.
+ */
+const NON_CHAT = /embed|whisper|tts|dall-e|moderation|rerank|transcribe|image|audio|realtime|speech|diffusion|sdxl|flux|retriever/i;
+
+export function isChatModel(id) {
+  return !NON_CHAT.test(String(id));
+}
+
 /** Models available on a given provider account */
 export async function listRemoteModels(provider) {
   const key = requireKey(provider);

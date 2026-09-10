@@ -28,6 +28,7 @@ const ACTIONS = {
   model_add: 'افزودن مدل',
   model_delete: 'حذف مدل',
   models_probe: 'آزمایش مدل‌ها',
+  models_sync: 'بروزرسانی مدل‌های ارائه‌دهنده',
   prompt_create: 'ساخت دستور',
   prompt_update: 'ویرایش دستور',
   prompt_activate: 'فعال‌سازی دستور',
