@@ -171,29 +171,38 @@ export async function streamChat({ provider, messages, model, signal, onDelta, o
   const decoder = new TextDecoder('utf-8');
   let buffer = '', text = '', usage = null, finishReason = null;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
 
-    let idx;
-    while ((idx = buffer.indexOf('\n')) >= 0) {
-      const line = buffer.slice(0, idx).trim();
-      buffer = buffer.slice(idx + 1);
-      if (!line.startsWith('data:')) continue;
-      const payload = line.slice(5).trim();
-      if (payload === '[DONE]') continue;
+      let idx;
+      while ((idx = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, idx).trim();
+        buffer = buffer.slice(idx + 1);
+        if (!line.startsWith('data:')) continue;
+        const payload = line.slice(5).trim();
+        if (payload === '[DONE]') continue;
 
-      let json;
-      try { json = JSON.parse(payload); } catch { continue; }
+        let json;
+        try { json = JSON.parse(payload); } catch { continue; }
 
-      const choice = json.choices?.[0];
-          // Some reasoning models put the text in reasoning_content instead
-      const delta = choice?.delta?.content ?? choice?.text ?? '';
-      if (delta) { text += delta; onDelta?.(delta); }
-      if (choice?.finish_reason) finishReason = choice.finish_reason;
-      if (json.usage) usage = json.usage;
+        const choice = json.choices?.[0];
+            // Some reasoning models put the text in reasoning_content instead
+        const delta = choice?.delta?.content ?? choice?.text ?? '';
+        if (delta) { text += delta; onDelta?.(delta); }
+        if (choice?.finish_reason) finishReason = choice.finish_reason;
+        if (json.usage) usage = json.usage;
+      }
     }
+  } catch (err) {
+    // Hand the tokens already received back so the analysis row can be stored
+    // as partial instead of error-with-no-text. The caller decides whether
+    // that is a 499 (client gone) or a Gaps screen (upstream died).
+    const aborted = signal?.aborted || err?.name === 'AbortError';
+    if (aborted) return { text, usage, finishReason: 'abort' };
+    throw err;
   }
 
   return { text, usage, finishReason };

@@ -136,6 +136,10 @@ const hist = await req('/api/history');
 check('GET /api/history', hist.status === 200 && Array.isArray(hist.data.items));
 const stats = await req('/api/history/stats');
 check('GET /api/history/stats', stats.status === 200 && 'total' in stats.data);
+check('stats.allowance سقف روزانه دارد',
+  stats.data.allowance?.daily && typeof stats.data.allowance.daily.used === 'number'
+  && typeof stats.data.allowance.daily.limit === 'number',
+  JSON.stringify(stats.data.allowance?.daily));
 const missing = await req('/api/history/999999');
 check('تحلیل ناموجود → ۴۰۴', missing.status === 404);
 

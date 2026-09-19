@@ -76,13 +76,18 @@ export const api = {
  * cannot POST, and it cannot be aborted cleanly. The analysis needs both — it
  * sends the dilemma in the body, and a user who leaves must not leave the
  * model running.
- *
- * The `finished` flag matters. The response's close event also fires on normal
- * completion, and treating that as an abort would cancel the request just as
- * it succeeded.
  */
-export async function streamAnalysis(payload, { onStart, onDelta, onDone, signal }) {
-  const res = await fetch('/api/analyze/stream', {
+export async function streamAnalysis(payload, handlers) {
+  return readSse('/api/analyze/stream', payload, handlers);
+}
+
+/** Resume a partial analysis. Same SSE events as a new run; no new daily slot. */
+export async function streamContinue(id, handlers) {
+  return readSse('/api/analyze/continue', { id }, handlers);
+}
+
+async function readSse(url, payload, { onStart, onDelta, onDone, signal }) {
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

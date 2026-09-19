@@ -5,6 +5,7 @@ import { uniqueSlug, metaDescription, withNonce } from '../services/seo.js';
 import { audit } from '../db.js';
 import { parseTags, readTags, listCategories, categoryPathFor } from '../services/categories.js';
 import { analysisDocument, attachmentHeader } from '../services/export-html.js';
+import { allowanceSummary } from '../services/tiers.js';
 
 export const router = express.Router();
 router.use(requireAuth);
@@ -40,14 +41,12 @@ router.get('/stats', (req, res) => {
   const base = db.prepare(
     `SELECT COUNT(*) total,
             SUM(status = 'done') done,
+            SUM(status = 'partial') partial,
             SUM(is_favorite = 1) favorites,
             SUM(reflected_at IS NOT NULL) reflected,
             SUM(reflected_at IS NULL AND status IN ('done','partial')) awaiting,
             COALESCE(AVG(NULLIF(duration_ms,0)), 0) avgMs
      FROM analyses WHERE user_id = ?`).get(uid);
-
-  const today = db.prepare(
-    `SELECT COUNT(*) c FROM analyses WHERE user_id = ? AND date(created_at) = date('now')`).get(uid).c;
 
   const daily = db.prepare(
     `SELECT date(created_at) d, COUNT(*) c FROM analyses
@@ -57,7 +56,17 @@ router.get('/stats', (req, res) => {
   const models = db.prepare(
     `SELECT model, COUNT(*) c FROM analyses WHERE user_id = ? GROUP BY model ORDER BY c DESC`).all(uid);
 
-  res.json({ ...base, today, quota: req.user.daily_quota, daily, models });
+  // Same numbers the analyze quota endpoint uses. `req.user.daily_quota` is
+  // not a user column — the dashboard used to render today without a limit.
+  const allowance = allowanceSummary(req.user);
+  res.json({
+    ...base,
+    today: allowance.daily.used,
+    quota: allowance.daily.limit,
+    allowance,
+    daily,
+    models
+  });
 });
 
 router.get('/:id', (req, res) => {
@@ -125,8 +134,8 @@ router.post('/:id/publish', (req, res) => {
   const row = db.prepare('SELECT * FROM analyses WHERE id = ? AND user_id = ?')
                 .get(req.params.id, req.user.id);
   if (!row) return res.status(404).json({ error: 'تحلیل یافت نشد.' });
-  // A partial analysis may still be published — the owner decides whether an
-  // incomplete result is worth sharing. What must not happen is publishing
+  // A partial analysis may still be published, but only after the owner
+  // confirms they know it is incomplete. What must not happen is publishing
   // succeeding while the public page 404s, so the same predicate is used here
   // and in the public/sitemap lookups.
   if (row.status !== 'done' && row.status !== 'partial') {
@@ -134,6 +143,14 @@ router.post('/:id/publish', (req, res) => {
   }
 
   const makePublic = req.body?.publish !== false;
+
+  if (makePublic && row.status === 'partial' && !row.is_public && req.body?.confirmIncomplete !== true) {
+    return res.status(409).json({
+      error: 'این تحلیل ناقص است. برای انتشار، ناقص‌بودن را تأیید کنید.',
+      code: 'incomplete',
+      completeness: safeJson(row.completeness, null)
+    });
+  }
 
   if (!makePublic) {
     db.prepare('UPDATE analyses SET is_public = 0 WHERE id = ?').run(row.id);

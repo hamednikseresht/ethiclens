@@ -8,8 +8,7 @@ The product is Persian and right-to-left throughout. This document, the code
 and the comments are English; Persian belongs to what a visitor reads.
 
 The theory is documented at `/guide`: the eight lenses, the five gates and the
-five-phase process, each cited to a primary source. (`ethic_2.html` is the
-project's original sketch and no longer backs that page.)
+five-phase process, each cited to a primary source.
 
 ---
 
@@ -19,6 +18,8 @@ project's original sketch and no longer backs that page.)
 - Describe a dilemma, optionally with context: stakeholders, options already
   considered, urgency, personal values
 - A **streamed** analysis — the result fills in as the model writes it
+- If a stream dies or a block is missing, the row is stored as partial and
+  the owner can continue it without spending another daily quota slot
 - Eight lenses: virtue ethics, deontology, utilitarianism, the common good,
   contractualism, the ethics of care, existentialism, Nietzschean genealogy
 - A **flowchart-ordered** verdict: dignity (veto) → justice (veto) → utility
@@ -93,23 +94,26 @@ failed build leaves the running bundle untouched.
 npm test
 ```
 
-Runs six suites in order — 248 checks:
+Runs eight suites in order. `check` and `eval:format` need no server; the
+rest talk to a running instance.
 
 | Suite | What it covers |
 |---|---|
 | `npm run check` | parses every inline script and client module; needs no server |
+| `npm run eval:format` | 26-block parse/completeness/merge fixtures; no live API |
 | `npm run smoke` | API routes against a running server |
 | `npm run signup` | registration, approval, quota |
 | `npm run guide` | encyclopedia content and admin editing |
 | `npm run test:otp` | email codes and verification links |
 | `npm run test:cats` | categories, publishing, public pages |
+| `npm run test:models` | catalogue sync against a mocked provider |
 
 `check` exists to catch the page that serves 200 while its script has a syntax
 error, so no button on it works — which the smoke test cannot see.
 
 `node scripts/try-analysis.mjs` runs one real analysis end to end and reports
 how closely the model followed the requested block format. It costs a live API
-call, so it is not part of `npm test`.
+call, so it is not part of `npm test`. The fixture suite above is.
 
 ---
 
@@ -150,8 +154,9 @@ server/
     llm.js              generic client for any OpenAI-compatible API
     providers.js        providers, model resolution
     default-prompt.js   factory prompt + the user-message template
-    schools.js          the eight lenses, five stages, matrix columns
+    schools.js          the eight lenses, five stages, matrix columns, SECTION_KEYS
     parser.js           @@key@@ block parsing
+    matrix.js           markdown comparison table → scored rows
     completeness.js     which blocks came back missing or too thin
     render-analysis.js  server-side rendering of an analysis
     export-html.js      the standalone HTML/print document
@@ -166,6 +171,8 @@ public/
   css/ js/              design system and the shared core for those pages
   icons/ fonts/         product mark, PWA icons, Shabnam
   sw.js manifest.webmanifest
+design/                 pointer only — mockups live under docs/archive/
+docs/archive/           historical mobile PWA prototypes; not served
 deploy/                 systemd units, nginx, backup and update scripts, guides
 Dockerfile              two-stage production image
 docker-compose.yml      the deployment; nginx behind an optional profile
@@ -192,10 +199,11 @@ them parsed. **If you edit the prompt in the admin panel, leave these keys
 exactly as they are.**
 
 The matrix asks for one column per lens. Adding or removing a lens means
-changing `MATRIX_COLUMNS` in `server/services/schools.js`, the matching list in
-`client/src/lib/analysis.js`, and the table header in the prompt. A stored
-analysis keeps whatever width it was written with; a column no row scored is
-simply not drawn.
+changing `MATRIX_COLUMNS` in `server/services/schools.js` and the table header
+in the prompt. The client, the public HTML renderer and `scripts/try-analysis.mjs`
+all import that list and `parseMatrix` from `server/services`. A stored analysis
+keeps whatever width it was written with; a column no row scored is simply not
+drawn.
 
 ---
 

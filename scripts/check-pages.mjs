@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = path.join(ROOT, 'public');
@@ -35,11 +35,17 @@ function check(label, code) {
   }
 }
 
+function assert(label, cond, extra = '') {
+  if (cond) { pass++; console.log(`  ✓ ${label}`); }
+  else { fail++; console.log(`  ✗ ${label}${extra ? '  → ' + extra : ''}`); }
+}
+
 /* ---- Client modules ---- */
 console.log('\n── ماژول‌های /js ──');
 for (const f of fs.readdirSync(path.join(PUBLIC, 'js')).filter(f => f.endsWith('.js')).sort()) {
   check(`js/${f}`, fs.readFileSync(path.join(PUBLIC, 'js', f), 'utf8'));
 }
+check('sw.js', fs.readFileSync(path.join(PUBLIC, 'sw.js'), 'utf8'));
 
 /* ---- Inline page scripts ---- */
 console.log('\n── اسکریپت درون‌خطی صفحه‌ها ──');
@@ -91,6 +97,44 @@ for (const p of pages) {
   }
 }
 if (!dupes) { console.log('  ✓ هیچ شناسه تکراری‌ای نیست'); pass++; }
+
+/* ---- Service worker contract ----
+ * A worker that intercepts /api ends the SSE analysis stream. One that
+ * caches HTML can hand person B person A's logged-in screen. The archived
+ * mobile prototype does both; public/sw.js must not. */
+console.log('\n── قرارداد سرویس‌ورکر ──');
+const sw = fs.readFileSync(path.join(PUBLIC, 'sw.js'), 'utf8');
+assert('SW هرگز /api را قطع نمی‌کند',
+  /if\s*\(\s*url\.pathname\.startsWith\(['"]\/api\/['"]\)\s*\)\s*return;/.test(sw)
+  && !/startsWith\(['"]\/api\/['"]\)\s*\)\s*\{/.test(sw));
+assert('SW پاسخ HTML را ذخیره نمی‌کند',
+  /includes\(['"]text\/html['"]\)\)\s*return;/.test(sw));
+assert('SW ناوبری را اول از شبکه می‌گیرد',
+  /request\.mode === ['"]navigate['"]/.test(sw)
+  && /fetch\(request\)\.catch/.test(sw));
+
+/* ---- One analysis contract ---- */
+console.log('\n── قرارداد تحلیل ──');
+const { SECTION_KEYS, MATRIX_COLUMNS, STAGE_SCHOOLS, STAGES } =
+  await import(pathToFileURL(path.join(ROOT, 'server/services/schools.js')).href);
+const { parseMatrix } = await import(pathToFileURL(path.join(ROOT, 'server/services/matrix.js')).href);
+
+assert('SECTION_KEYS بیست‌وشش بلوک است', SECTION_KEYS.length === 26, `n=${SECTION_KEYS.length}`);
+assert('MATRIX_COLUMNS هشت لنز است', MATRIX_COLUMNS.length === 8);
+assert('STAGE_SCHOOLS از STAGES مشتق شده',
+  STAGES.every(s => JSON.stringify(STAGE_SCHOOLS[s.key]) === JSON.stringify(s.schools)));
+
+const sample = parseMatrix([
+  '| گزینه | کرامت | عدالت |',
+  '|---|---|---|',
+  '| الف | ۲ | -1 |',
+  '| ب | 0 | −2 |'
+].join('\n'));
+assert('parseMatrix رقم فارسی و منها را می‌خواند',
+  sample.length === 2
+  && sample[0].scores[0] === 2
+  && sample[1].scores[1] === -2,
+  JSON.stringify(sample));
 
 fs.rmSync(tmp, { recursive: true, force: true });
 

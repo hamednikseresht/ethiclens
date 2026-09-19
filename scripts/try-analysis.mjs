@@ -7,19 +7,12 @@
  *   node scripts/try-analysis.mjs --show              print the full analysis text
  */
 import 'dotenv/config';
-import { MATRIX_COLUMNS } from '../server/services/schools.js';
+import { SECTION_KEYS, MATRIX_COLUMNS } from '../server/services/schools.js';
+import { parseMatrix } from '../server/services/matrix.js';
 
 const BASE = process.env.BASE || 'http://localhost:3000';
 const SHOW = process.argv.includes('--show');
 const MODEL = process.argv.slice(2).find(a => !a.startsWith('--')) || null;
-
-const REQUIRED = [
-  'issue', 'reframe', 'facts', 'stakeholders', 'options', 'matrix',
-  'school:virtue', 'school:deontology', 'school:utilitarianism', 'school:commongood',
-  'school:contractualism', 'school:care', 'school:existentialism', 'school:nietzsche',
-  'gate:dignity', 'gate:justice', 'gate:utility', 'gate:carevirtue', 'gate:authenticity',
-  'tensions', 'recommendation', 'test', 'implementation', 'questions', 'blindspots', 'revisit'
-];
 
 const jar = new Map();
 async function req(path, { method = 'GET', body, csrf, stream } = {}) {
@@ -120,16 +113,16 @@ if (doneInfo?.usage) {
 }
 console.log('═'.repeat(58));
 
-const missing = REQUIRED.filter(k => !sections[k] || sections[k].trim().length < 15);
-const extra = Object.keys(sections).filter(k => !REQUIRED.includes(k));
+const missing = SECTION_KEYS.filter(k => !sections[k] || sections[k].trim().length < 15);
+const extra = Object.keys(sections).filter(k => !SECTION_KEYS.includes(k));
 
-console.log(`\n  بلوک‌های لازم : ${REQUIRED.length - missing.length}/${REQUIRED.length}`);
+console.log(`\n  بلوک‌های لازم : ${SECTION_KEYS.length - missing.length}/${SECTION_KEYS.length}`);
 if (missing.length) console.log(`  ✗ جا افتاده   : ${missing.join(', ')}`);
 if (extra.length)   console.log(`  ! بلوک اضافه  : ${extra.join(', ')}`);
 
 /* ---- Check the verdict line in each school ---- */
-const schools = REQUIRED.filter(k => k.startsWith('school:'));
-const gates = REQUIRED.filter(k => k.startsWith('gate:'));
+const schools = SECTION_KEYS.filter(k => k.startsWith('school:'));
+const gates = SECTION_KEYS.filter(k => k.startsWith('gate:'));
 const hasVerdict = k => /^\s*(حکم|وضعیت)\s*[:：]/.test((sections[k] || '').split('\n')[0] || '');
 const sv = schools.filter(hasVerdict).length;
 const gv = gates.filter(hasVerdict).length;
@@ -142,20 +135,7 @@ const la = (acc.match(/[A-Za-z]/g) || []).length;
 console.log(`  نسبت فارسی    : ${((fa / (fa + la || 1)) * 100).toFixed(1)}٪`);
 
 /* ---- Comparison matrix check ---- */
-const FA_D = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
-const mLines = String(sections.matrix || '').split('\n').map(l => l.trim()).filter(l => l.startsWith('|'));
-const mRows = [];
-for (const line of mLines) {
-  const cells = line.split('|').slice(1, -1).map(c => c.trim());
-  if (cells.length < 2) continue;
-  if (/^[-:\s]+$/.test(cells.join(''))) continue;
-  const scores = cells.slice(1).map(c => {
-    const n = c.replace(/[۰-۹]/g, d => FA_D[d]).replace(/[−–—]/g, '-').match(/-?\d+/);
-    return n ? parseInt(n[0], 10) : null;
-  });
-  if (scores.every(s => s === null)) continue;
-  mRows.push({ option: cells[0], scores });
-}
+const mRows = parseMatrix(sections.matrix || '');
 // Counted from the shared column list rather than written here, so adding a
 // lens cannot leave this check asserting the old width — which is exactly
 // what it did when the genealogy column arrived and every run since reported

@@ -3,7 +3,7 @@ import { requireAuth, requireApproved } from '../middleware/auth.js';
 import { getSetting } from '../services/settings.js';
 import { enabledModels, modelsForTier, resolveModel, modelRef } from '../services/providers.js';
 import { allowanceSummary } from '../services/tiers.js';
-import { runAnalysis, normalizeInput, AnalysisError } from '../services/analysis.js';
+import { runAnalysis, continueAnalysis, normalizeInput } from '../services/analysis.js';
 import { SCHOOLS, GATES } from '../services/schools.js';
 
 export const router = express.Router();
@@ -42,17 +42,13 @@ router.get('/quota', requireAuth, (req, res) => {
   res.json(allowanceSummary(req.user));
 });
 
-/** SSE stream for the browser: events = start | delta | done | error */
-router.post('/stream', requireAuth, requireApproved, async (req, res) => {
-  let input;
-  try {
-    input = normalizeInput(req.body);
-  } catch (e) {
-    return res.status(e.status || 400).json({ error: e.message, code: e.code });
-  }
-
-  // Client disconnect is detected on the response, not the request:
-  // req emits close as soon as the request body finishes reading.
+/**
+ * Shared SSE envelope for a new analysis and for a continuation.
+ *
+ * Headers stay unsent until onStart, so a validation error can still be a
+ * normal JSON 4xx. Client disconnect aborts the upstream call.
+ */
+async function runSse(req, res, work) {
   const ac = new AbortController();
   let finished = false;
   let headersSent = false;
@@ -63,15 +59,9 @@ router.post('/stream', requireAuth, requireApproved, async (req, res) => {
   const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
   try {
-    const result = await runAnalysis({
-      user: req.user,
-      input,
+    const result = await work({
       signal: ac.signal,
-      source: 'web',
-      ip: req.ip,
       onStart: info => {
-        // Headers are held back until we know the work has started, so that
-        // pre-start errors can still set a proper status code.
         res.writeHead(200, {
           'Content-Type': 'text/event-stream; charset=utf-8',
           'Cache-Control': 'no-cache, no-transform',
@@ -102,4 +92,30 @@ router.post('/stream', requireAuth, requireApproved, async (req, res) => {
     finished = true;
     if (headersSent) res.end();
   }
+}
+
+/** SSE stream for the browser: events = start | delta | done | error */
+router.post('/stream', requireAuth, requireApproved, async (req, res) => {
+  let input;
+  try {
+    input = normalizeInput(req.body);
+  } catch (e) {
+    return res.status(e.status || 400).json({ error: e.message, code: e.code });
+  }
+
+  await runSse(req, res, (hooks) => runAnalysis({
+    user: req.user, input, source: 'web', ip: req.ip, ...hooks
+  }));
+});
+
+/** Fill missing @@keys@@ on an existing partial row — same SSE events. */
+router.post('/continue', requireAuth, requireApproved, async (req, res) => {
+  const analysisId = Number(req.body?.id);
+  if (!Number.isInteger(analysisId) || analysisId < 1) {
+    return res.status(400).json({ error: 'شناسه تحلیل نامعتبر است.', code: 'bad_id' });
+  }
+
+  await runSse(req, res, (hooks) => continueAnalysis({
+    user: req.user, analysisId, ip: req.ip, ...hooks
+  }));
 });

@@ -52,6 +52,9 @@ export const STAGES = [
 
 export const GATES = STAGES.map(s => ({ key: s.key, title: s.title, sub: s.thinker, type: s.kind, hint: s.rule }));
 
+/** Which schools argue for each gate — derived, so a new stage cannot drift. */
+export const STAGE_SCHOOLS = Object.fromEntries(STAGES.map(s => [s.key, s.schools]));
+
 /** Columns of the option-comparison matrix — one per lens, order must match the model prompt */
 export const MATRIX_COLUMNS = [
   { key: 'dignity',    label: 'کرامت' },

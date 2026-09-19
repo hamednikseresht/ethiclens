@@ -7,8 +7,10 @@ import {
   PHASES, STAGE_SCHOOLS, splitVerdict, verdictState, VERDICT_STYLE,
   parseMatrix, scoredColumns, scoreStyle, scoreLabel, matrixTotals
 } from '@/lib/analysis';
-import { ChevronDown, TriangleAlert, RotateCcw } from 'lucide-react';
+import { ChevronDown, TriangleAlert, RotateCcw, Play, Loader2 } from 'lucide-react';
 import { AnalysisActions, Reflection } from '@/components/AnalysisActions';
+import { streamContinue } from '@/lib/api';
+import { completenessMessage } from '@contract/completeness.js';
 
 /**
  * The finished analysis.
@@ -47,7 +49,9 @@ export default function Result({ analysis, meta, onNew, onUpdated }) {
 
   return (
     <div className="mx-auto max-w-xl md:max-w-2xl px-5 pb-24 pt-6">
-      {incomplete && <Gaps c={completeness} onNew={onNew} />}
+      {incomplete && (
+        <Gaps c={completeness} analysisId={analysis.id} onNew={onNew} onUpdated={onUpdated} />
+      )}
 
       <h1 className="mb-3 text-[15px] font-bold leading-relaxed">{analysis.title}</h1>
 
@@ -124,8 +128,33 @@ export default function Result({ analysis, meta, onNew, onUpdated }) {
 }
 
 /* ---------------- Incomplete result ---------------- */
-function Gaps({ c, onNew }) {
-  const missing = [...(c.missing || []), ...(c.thin || [])];
+function Gaps({ c, analysisId, onNew, onUpdated }) {
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState('');
+  const holes = [...(c.missing || []), ...(c.thin || [])];
+  const canContinue = Boolean(analysisId && onUpdated && holes.length);
+
+  const resume = async () => {
+    if (!canContinue || running) return;
+    setRunning(true);
+    setError('');
+    try {
+      await streamContinue(analysisId, {
+        onDone: (r) => {
+          onUpdated({
+            sections: r.sections,
+            completeness: r.completeness,
+            status: r.status
+          });
+        }
+      });
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setRunning(false);
+    }
+  };
+
   return (
     <Alert variant={c.severity === 'critical' ? 'destructive' : 'warn'} className="mb-5">
       <div className="flex gap-2">
@@ -138,10 +167,21 @@ function Gaps({ c, onNew }) {
             مدل {fa(c.present)} بخش از {fa(c.total)} بخش را برگرداند
             {c.truncated && ' و پاسخ وسط کار بریده شد'}.
             آنچه پایین می‌بینید ناقص است.
+            {holes.length > 0 && ` ${completenessMessage(c)}`}
           </p>
-          <Button size="sm" variant="outline" onClick={onNew}>
-            <RotateCcw className="size-3.5" /> دوباره تحلیل کن
-          </Button>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          <div className="flex flex-wrap gap-2">
+            {canContinue && (
+              <Button size="sm" variant="primary" onClick={resume} disabled={running}>
+                {running
+                  ? <><Loader2 className="size-3.5 animate-spin" /> در حال ادامه…</>
+                  : <><Play className="size-3.5" /> ادامه بده</>}
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={onNew} disabled={running}>
+              <RotateCcw className="size-3.5" /> دوباره تحلیل کن
+            </Button>
+          </div>
         </div>
       </div>
     </Alert>

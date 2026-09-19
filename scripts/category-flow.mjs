@@ -261,6 +261,34 @@ if (plainUser) {
   console.log('  (کاربر عادی فعالی نیست — این بخش رد شد)');
 }
 
+section('انتشار تحلیل ناقص');
+{
+  const partial = db.prepare(`
+    INSERT INTO analyses (user_id, title, dilemma, model, sections, status)
+    VALUES (?,?,?,?,?, 'partial')`).run(
+    admin.id, `[آزمون] ناقص ${stamp}`, 'دوراهی آزمایشی برای انتشار ناقص که باید تأیید بخواهد.',
+    'test:model', JSON.stringify({ reframe: 'بازخوانی آزمایشی ناقص' })
+  );
+  const pid = Number(partial.lastInsertRowid);
+  created.analyses.push(pid);
+
+  const blocked = await A.call(`/api/history/${pid}/publish`, {
+    method: 'POST',
+    body: { publish: true, public_title: `ناقص ${stamp}` }
+  });
+  check('انتشار ناقص بدون تأیید رد می‌شود',
+    blocked.status === 409 && blocked.json?.code === 'incomplete',
+    `status ${blocked.status} code ${blocked.json?.code}`);
+
+  const allowed = await A.call(`/api/history/${pid}/publish`, {
+    method: 'POST',
+    body: { publish: true, public_title: `ناقص تأیید ${stamp}`, confirmIncomplete: true }
+  });
+  check('انتشار ناقص با تأیید قبول می‌شود',
+    allowed.status === 200 && allowed.json?.isPublic,
+    `status ${allowed.status}`);
+}
+
 /* Cleanup runs from the exit handler above, so a failure cannot skip it. */
 
 console.log('\n══════════════════════════════════════════════');

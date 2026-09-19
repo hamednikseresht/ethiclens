@@ -1,4 +1,5 @@
-import { SCHOOLS, STAGES, MATRIX_COLUMNS } from './schools.js';
+import { SCHOOLS, STAGES } from './schools.js';
+import { parseMatrix, scoredColumns } from './matrix.js';
 import { escapeHtml as esc } from './seo.js';
 
 /**
@@ -107,44 +108,6 @@ export function splitVerdict(body) {
 /* ---------------- Persian numerals ---------------- */
 const FA = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
 const faNum = n => String(n).replace(/[0-9]/g, d => FA[+d]);
-
-/* ---------------- Matrix ---------------- */
-const FA_MAP = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
-
-export function parseMatrix(raw) {
-  if (!raw) return [];
-  const rows = [];
-  for (const line of String(raw).split('\n')) {
-    const t = line.trim();
-    if (!t.startsWith('|')) continue;
-    const cells = t.split('|').slice(1, -1).map(c => c.trim());
-    if (cells.length < 2) continue;
-    if (/^[-:\s]+$/.test(cells.join(''))) continue;
-    const scores = cells.slice(1).map(c => {
-      const n = String(c).replace(/[۰-۹]/g, d => FA_MAP[d]).replace(/[−–—]/g, '-').match(/-?\d+/);
-      return n ? Math.max(-2, Math.min(2, parseInt(n[0], 10))) : null;
-    });
-    if (scores.every(s => s === null)) continue;
-    rows.push({ option: cells[0].replace(/[*`]/g, '').trim(), scores });
-  }
-  return rows;
-}
-
-/**
- * Which columns this particular matrix actually scored.
- *
- * The column list is what the current prompt asks for, but a stored analysis
- * was produced by whatever prompt was live when it ran — every analysis from
- * before the genealogy column existed has one fewer score per row. Rendering
- * the full list against those gives a column of em dashes down every historic
- * analysis, which reads as a broken table rather than as a lens that was not
- * asked about. A column no row scored is simply not drawn.
- */
-export function scoredColumns(rows) {
-  return MATRIX_COLUMNS
-    .map((c, i) => ({ ...c, i }))
-    .filter(c => rows.some(r => r.scores[c.i] !== null && r.scores[c.i] !== undefined));
-}
 
 function renderMatrix(raw) {
   const rows = parseMatrix(raw);
