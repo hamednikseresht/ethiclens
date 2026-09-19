@@ -29,7 +29,10 @@ export default defineConfig({
       '@': path.resolve(process.cwd(), 'client/src'),
       // Shared with the pages still being served the old way, so the quote
       // deck has one home rather than two copies that drift.
-      '@shared': path.resolve(process.cwd(), 'public/js')
+      '@shared': path.resolve(process.cwd(), 'public/js'),
+      // Lenses, section keys and the matrix parser — one module for the
+      // React app, the public HTML renderer and the probe scripts.
+      '@contract': path.resolve(process.cwd(), 'server/services')
     }
   },
 

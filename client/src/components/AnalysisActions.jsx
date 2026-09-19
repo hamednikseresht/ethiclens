@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sheet } from '@/components/ui/sheet';
 import { fa, faDate } from '@/lib/fa';
+import { completenessMessage } from '@contract/completeness.js';
 import {
   Star, Pencil, Download, Globe, Check, TriangleAlert, ExternalLink, NotebookPen,
   FileCode, FileText, Printer
@@ -245,8 +246,11 @@ function PublishSheet({ analysis, onClose, onUpdated }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [titleTaken, setTitleTaken] = useState(false);
+  const [confirmIncomplete, setConfirmIncomplete] = useState(false);
 
   const published = Boolean(analysis.is_public);
+  const incomplete = analysis.status === 'partial'
+    || (analysis.completeness && analysis.completeness.complete === false);
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
   const publish = async (e) => {
@@ -257,6 +261,7 @@ function PublishSheet({ analysis, onClose, onUpdated }) {
         public_title: form.public_title,
         public_summary: form.public_summary,
         public_author: form.public_author,
+        ...(incomplete && !published ? { confirmIncomplete: true } : {}),
         ...(isAdmin ? {
           slug: form.slug,
           seo_title: form.seo_title,
@@ -300,6 +305,19 @@ function PublishSheet({ analysis, onClose, onUpdated }) {
       </p>
 
       <form onSubmit={publish}>
+      {incomplete && !published && (
+        <label className="mb-4 flex items-start gap-2 rounded-lg border border-warn/40 bg-warn-soft p-3 text-[12px] leading-loose">
+          <input type="checkbox" className="mt-1 size-4 shrink-0"
+                 checked={confirmIncomplete}
+                 onChange={e => setConfirmIncomplete(e.target.checked)} />
+          <span>
+            این تحلیل ناقص است
+            {analysis.completeness ? ` — ${completenessMessage(analysis.completeness)}` : ''}.
+            با انتشار، خواننده همان بخش‌های جاافتاده را می‌بیند.
+          </span>
+        </label>
+      )}
+
         <div className="mb-3">
           <Label htmlFor="pb-title">عنوان عمومی</Label>
           <Input id="pb-title" value={form.public_title} maxLength={120} required
@@ -393,7 +411,8 @@ function PublishSheet({ analysis, onClose, onUpdated }) {
           </p>
         )}
 
-        <Button type="submit" variant="primary" className="w-full" disabled={busy}>
+        <Button type="submit" variant="primary" className="w-full"
+                disabled={busy || (incomplete && !published && !confirmIncomplete)}>
           {busy ? 'در حال انتشار…' : published ? 'ذخیره تغییرات' : 'منتشر کن'}
         </Button>
 

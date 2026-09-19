@@ -75,9 +75,10 @@ export default function Dashboard({ user }) {
             <div className="grid grid-cols-3 gap-2">
               <Stat label="کل تحلیل" value={fa(stats.total)} />
               <Stat label="کامل" value={fa(stats.done)} />
+              <Stat label="ناقص" value={fa(stats.partial || 0)} />
               <Stat label="بازنگری‌شده" value={fa(stats.reflected)} />
               <Stat label="نشان‌شده" value={fa(stats.favorites)} />
-              <Stat label="امروز" value={stats.quota ? `${fa(stats.today)}/${fa(stats.quota)}` : fa(stats.today)} />
+              <Stat label="امروز" value={todayLabel(stats)} />
               <Stat label="میانگین زمان" value={faDuration((stats.avgMs || 0) / 1000)} />
             </div>
           </section>
@@ -135,6 +136,14 @@ function Activity({ daily }) {
       </div>
     </section>
   );
+}
+
+function todayLabel(stats) {
+  const daily = stats.allowance?.daily;
+  if (daily) {
+    return daily.limit > 0 ? `${fa(daily.used)}/${fa(daily.limit)}` : fa(daily.used);
+  }
+  return stats.quota ? `${fa(stats.today)}/${fa(stats.quota)}` : fa(stats.today);
 }
 
 function Stat({ label, value }) {

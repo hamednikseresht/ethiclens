@@ -31,7 +31,7 @@ import { SECTION_KEYS, SCHOOLS, STAGES } from './schools.js';
 export const SQL_FINISHED = "status IN ('done','partial')";
 
 /** A block shorter than this is treated as unusable rather than terse. */
-const MIN_BODY_CHARS = 25;
+export const MIN_BODY_CHARS = 25;
 
 /**
  * Sections whose absence breaks the product rather than merely thinning it.
@@ -105,7 +105,41 @@ export function checkCompleteness(sections) {
 export function completenessMessage(c) {
   if (!c || c.complete) return '';
   const n = c.missing.length + c.thin.length;
+  if (!n) return c.truncated ? 'پاسخ وسط کار بریده شد.' : '';
   const names = [...c.missing, ...c.thin].slice(0, 3).map(sectionLabel).join('، ');
   const more = n > 3 ? ` و ${n - 3} بخش دیگر` : '';
   return `${n} بخش از ${c.total} بخش ناقص است: ${names}${more}`;
+}
+
+/**
+ * Fold a continuation into the stored sections.
+ *
+ * Only keys listed in `fillKeys` (missing and thin, usually) are replaced,
+ * and only when the new body is long enough to count as real. Complete
+ * blocks stay as they were, even if the model repeated them.
+ */
+export function mergeSections(previous, incoming, fillKeys) {
+  const out = { ...(previous && typeof previous === 'object' ? previous : {}) };
+  const src = incoming && typeof incoming === 'object' ? incoming : {};
+  const keys = fillKeys?.length ? fillKeys : SECTION_KEYS;
+  for (const key of keys) {
+    const next = String(src[key] ?? '').trim();
+    if (next.length >= MIN_BODY_CHARS) out[key] = next;
+  }
+  return out;
+}
+
+/**
+ * finish_reason is why the stream ended, which a section scan cannot see.
+ * 'length' is a token ceiling; 'abort' is a dropped connection. Either way
+ * the row is not a finished analysis even if every marker happened to appear.
+ */
+export function applyFinishReason(completeness, finishReason) {
+  if (finishReason !== 'length' && finishReason !== 'abort') return completeness;
+  return {
+    ...completeness,
+    truncated: true,
+    complete: false,
+    severity: completeness.complete ? 'partial' : completeness.severity
+  };
 }

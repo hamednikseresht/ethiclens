@@ -71,11 +71,13 @@ export function usageFor(userId) {
 }
 
 /** Is the user allowed to start another analysis? */
-export function checkAllowance(user) {
+export function checkAllowance(user, { countTowardDaily = true } = {}) {
   const limits = limitsFor(user);
   const usage = usageFor(user.id);
 
-  if (limits.dailyQuota > 0 && usage.today >= limits.dailyQuota) {
+  // A continuation reuses the same row, so it must not spend another daily
+  // slot. Monthly tokens still apply: the model is still being called.
+  if (countTowardDaily && limits.dailyQuota > 0 && usage.today >= limits.dailyQuota) {
     return {
       ok: false,
       reason: 'daily',

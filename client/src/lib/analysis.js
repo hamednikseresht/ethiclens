@@ -1,28 +1,22 @@
 import { fa } from './fa';
+import { MATRIX_COLUMNS, STAGE_SCHOOLS } from '@contract/schools.js';
+import { parseMatrix, scoredColumns } from '@contract/matrix.js';
+
+export { MATRIX_COLUMNS, STAGE_SCHOOLS, parseMatrix, scoredColumns };
 
 /**
  * Parsing and structure for an analysis result.
  *
  * The model returns 26 blocks marked with @@key@@. The server stores them
  * parsed; this file turns them into what the screen needs — verdicts split
- * from bodies, the comparison matrix from a markdown table, and the narrative
- * order the sections are read in.
+ * from bodies, and the narrative order the sections are read in.
  *
  * The order and grouping live here rather than coming from the API because
  * they are a reading decision, not data: the five gates each pull in the
  * schools that feed them, so a reader meets a verdict and then the reasoning
- * behind it. Names and colours still come from the server, which stays the
- * one source of truth for what a lens is called and how it looks.
+ * behind it. Column keys, section keys and the matrix parser live in
+ * server/services — one list, one parser, three callers.
  */
-
-/** Which schools argue for each gate, in the order the result reads. */
-export const STAGE_SCHOOLS = {
-  dignity:      ['deontology'],
-  justice:      ['contractualism'],
-  utility:      ['utilitarianism', 'commongood'],
-  carevirtue:   ['care', 'virtue'],
-  authenticity: ['existentialism', 'nietzsche']
-};
 
 /** Prose blocks, grouped into the five phases of the framework. */
 export const PHASES = [
@@ -95,76 +89,6 @@ export const VERDICT_STYLE = {
   warn:    'bg-warn-soft text-warn border-warn/30',
   neutral: 'bg-muted text-text-3 border-border'
 };
-
-/* --------------------------------------------------------------------------
-   Comparison matrix
-   -------------------------------------------------------------------------- */
-
-const FA_DIGITS = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9',
-                    '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9' };
-
-function toScore(cell) {
-  const norm = String(cell)
-    .replace(/[۰-۹٠-٩]/g, d => FA_DIGITS[d])
-    .replace(/[−–—]/g, '-')     // the model writes a real minus sign, not a hyphen
-    .trim();
-  const m = norm.match(/-?\d+/);
-  if (!m) return null;
-  return Math.max(-2, Math.min(2, parseInt(m[0], 10)));
-}
-
-/**
- * Turn the model's markdown table into scored rows.
- *
- * Separator and header rows are skipped by shape rather than position: the
- * model does not always emit them in the same order, and counting rows would
- * silently drop a real option the day it changes.
- */
-export function parseMatrix(raw) {
-  if (!raw) return [];
-  const rows = [];
-  for (const line of String(raw).split('\n')) {
-    const t = line.trim();
-    if (!t.startsWith('|')) continue;
-
-    const cells = t.split('|').slice(1, -1).map(c => c.trim());
-    if (cells.length < 2) continue;
-    if (/^[-:\s]+$/.test(cells.join(''))) continue;      // separator row
-
-    const scores = cells.slice(1).map(toScore);
-    if (scores.every(s => s === null)) continue;         // header row
-
-    rows.push({ option: cells[0].replace(/[*`]/g, '').trim(), scores });
-  }
-  return rows;
-}
-
-export const MATRIX_COLUMNS = [
-  { key: 'dignity',      label: 'کرامت' },
-  { key: 'justice',      label: 'عدالت' },
-  { key: 'utility',      label: 'فایده' },
-  { key: 'commongood',   label: 'خیر مشترک' },
-  { key: 'care',         label: 'مراقبت' },
-  { key: 'virtue',       label: 'فضیلت' },
-  { key: 'authenticity', label: 'اصالت' },
-  { key: 'genealogy',    label: 'تبارشناسی' }
-];
-
-/**
- * Which of those columns this particular matrix actually scored.
- *
- * The list above is what the current prompt asks for, but a stored analysis
- * was produced by whatever prompt was live when it ran — everything from
- * before the genealogy column has one fewer score per row. Drawing the full
- * list against those puts a column of em dashes down every historic analysis,
- * which reads as a broken table rather than as a lens that was never asked
- * about. A column no row scored is not drawn.
- */
-export function scoredColumns(rows) {
-  return MATRIX_COLUMNS
-    .map((c, i) => ({ ...c, i }))
-    .filter(c => rows.some(r => r.scores[c.i] !== null && r.scores[c.i] !== undefined));
-}
 
 /** Cell colour by score, from strong support to strong objection. */
 export function scoreStyle(v) {
