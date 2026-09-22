@@ -77,7 +77,9 @@
 .stage-question{
   font-size:.89rem;font-weight:600;line-height:1.8;color:var(--text);
   background:var(--bg-subtle);border-inline-start:3px solid var(--accent);
-  border-radius:0 var(--r-xs) var(--r-xs) 0;padding:.6rem .85rem;margin-bottom:.9rem;
+  border-start-start-radius:0;border-end-start-radius:0;
+  border-start-end-radius:var(--r-xs);border-end-end-radius:var(--r-xs);
+  padding:.6rem .85rem;margin-bottom:.9rem;
 }
 
 .stage-gate{
@@ -202,7 +204,9 @@
 .result-head h1{font-size:1.2rem;font-weight:600;line-height:1.55;margin-bottom:.5rem}
 .result-dilemma{
   background:var(--bg-subtle);border-inline-start:3px solid var(--accent);
-  border-radius:0 var(--r-sm) var(--r-sm) 0;padding:.85rem 1rem;
+  border-start-start-radius:0;border-end-start-radius:0;
+  border-start-end-radius:var(--r-sm);border-end-end-radius:var(--r-sm);
+  padding:.85rem 1rem;
   font-size:.88rem;line-height:1.9;white-space:pre-wrap;margin-top:.8rem;
 }
 .meta-row{display:flex;flex-wrap:wrap;gap:.4rem;font-size:.76rem;margin-top:.7rem}

@@ -71,9 +71,9 @@ export default function History() {
       <h1 className="display mb-4">تاریخچه</h1>
 
       <div className="relative mb-3">
-        <Search className="pointer-events-none absolute inset-y-0 end-3 my-auto size-4 text-text-5" />
+        <Search className="pointer-events-none absolute inset-y-0 start-3 my-auto size-4 text-text-5" />
         <Input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }}
-               placeholder="جست‌وجو در دوراهی‌ها" className="pe-10" />
+               placeholder="جست‌وجو در دوراهی‌ها" className="ps-10" />
       </div>
 
       <Tabs value={filter} onValueChange={(v) => { setFilter(v); setPage(1); }} className="mb-4">

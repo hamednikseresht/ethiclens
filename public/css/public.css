@@ -14,11 +14,13 @@
 
 /* ---------- خلاصه پیشنهاد در بالای صفحه ---------- */
 .pub-lead{
-  background:var(--primary-soft);border-inline-start:4px solid var(--primary);
-  border-radius:0 var(--r-sm) var(--r-sm) 0;padding:.9rem 1.1rem;margin-top:.9rem;
+  background:var(--accent-soft);border-inline-start:3px solid var(--accent);
+  border-start-start-radius:0;border-end-start-radius:0;
+  border-start-end-radius:var(--r-sm);border-end-end-radius:var(--r-sm);
+  padding:.9rem 1.1rem;margin-top:.9rem;
   font-size:.92rem;line-height:1.95;
 }
-.pub-lead strong{color:var(--primary);font-weight:800}
+.pub-lead strong{color:var(--text);font-weight:600}
 
 /* ---------- متن دوراهی، جمع‌شونده ---------- */
 .pub-dilemma{margin-top:.9rem}
@@ -27,21 +29,21 @@
   list-style:none;display:flex;align-items:center;gap:.4rem;padding:.5rem 0;
 }
 .pub-dilemma summary::-webkit-details-marker{display:none}
-.pub-dilemma summary::before{content:"▸";transition:transform .2s;display:inline-block}
-.pub-dilemma[open] summary::before{transform:rotate(-90deg)}
+.pub-dilemma summary::before{content:"◂";transition:transform .2s;display:inline-block}
+.pub-dilemma[open] summary::before{transform:rotate(90deg)}
 .pub-dilemma summary:hover{color:var(--primary)}
 
 /* ---------- فراخوان پایان صفحه ---------- */
 .pub-cta{
-  background:var(--ink);color:var(--bg);
-  border-radius:var(--r);padding:2.2rem 1.6rem;text-align:center;margin:2.5rem 0 1.5rem;
+  background:var(--bg-surface);color:var(--text);border:1px solid var(--border);
+  border-radius:var(--r-2xl);padding:2.2rem 1.6rem;text-align:center;margin:2.5rem 0 1.5rem;
 }
-.pub-cta h2{font-size:1.15rem;font-weight:600;margin-bottom:.5rem;letter-spacing:-.02em}
-.pub-cta p{font-size:.92rem;opacity:.88;line-height:1.9;max-width:54ch;margin:0 auto 1.3rem}
-.pub-cta .btn{background:transparent;border-color:color-mix(in srgb,var(--bg) 35%,transparent);color:var(--bg)}
-.pub-cta .btn:hover{background:color-mix(in srgb,var(--bg) 12%,transparent);border-color:color-mix(in srgb,var(--bg) 50%,transparent);color:var(--bg)}
-.pub-cta .btn-primary{background:var(--bg);border-color:var(--bg);color:var(--ink)}
-.pub-cta .btn-primary:hover{background:var(--bg);color:var(--ink);filter:none;opacity:.92}
+.pub-cta h2{font-size:1.25rem;font-weight:500;margin-bottom:.5rem;letter-spacing:-.02em}
+.pub-cta p{font-size:.92rem;color:var(--text-muted);line-height:1.9;max-width:54ch;margin:0 auto 1.3rem}
+.pub-cta .btn{background:transparent;border-color:var(--border);color:var(--text)}
+.pub-cta .btn:hover{background:var(--bg-muted);border-color:var(--border-strong);color:var(--text)}
+.pub-cta .btn-primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.pub-cta .btn-primary:hover{background:var(--primary-hover);border-color:var(--primary-hover);color:var(--on-primary);filter:none;opacity:1}
 
 /* ---------- فهرست تحلیل‌های عمومی ---------- */
 .pub-head{margin-bottom:1.6rem}
@@ -53,7 +55,7 @@
 @media (min-width:1100px){.pub-grid{grid-template-columns:repeat(3,1fr)}}
 
 .pub-card{
-  background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);
+  background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-2xl);
   padding:1.25rem;display:flex;flex-direction:column;gap:.6rem;
   transition:border-color var(--dur-fast);
 }

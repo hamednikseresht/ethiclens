@@ -50,9 +50,9 @@ export default function Users() {
     <div className="space-y-3">
       <Panel>
         <div className="relative mb-3">
-          <Search className="pointer-events-none absolute inset-y-0 end-3 my-auto size-4 text-text-5" />
+          <Search className="pointer-events-none absolute inset-y-0 start-3 my-auto size-4 text-text-5" />
           <Input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }}
-                 placeholder="جست‌وجو در نام و ایمیل" className="pe-10" />
+                 placeholder="جست‌وجو در نام و ایمیل" className="ps-10" />
         </div>
 
         <div className="flex gap-1.5 overflow-x-auto pb-1

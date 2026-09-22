@@ -35,24 +35,24 @@ export function AppShell({ user, children, onSignedOut }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur-md"
+      <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md"
               style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <OfflineBar />
         <div className="mx-auto flex h-14 max-w-xl md:max-w-4xl items-center gap-3 px-5">
           <Link to="/" className="flex items-center gap-2.5">
             <img src="/icons/mark.svg" width="28" height="28" alt=""
-                 className="size-7 shrink-0 rounded-md" />
-            <span className="text-sm font-semibold tracking-tight">دیدگاه اخلاق</span>
+                 className="size-7 shrink-0 rounded-lg" />
+            <span className="text-sm font-medium tracking-tight">دیدگاه اخلاق</span>
           </Link>
 
-          <nav className="hidden grow items-center gap-1 md:flex" aria-label="اصلی">
+          <nav className="hidden grow items-center justify-center gap-1 md:flex" aria-label="اصلی">
             {TABS.map(t => (
               <NavLink key={t.to} to={t.to} end={t.to === '/'}
                        className={({ isActive }) =>
-                         cn('flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150',
+                         cn('flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-colors duration-150',
                            isActive
-                             ? 'bg-muted text-foreground'
-                             : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground')}>
+                             ? 'bg-primary text-primary-foreground'
+                             : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
                 <t.icon className="size-4" aria-hidden="true" />
                 {t.label}
               </NavLink>
@@ -64,17 +64,17 @@ export function AppShell({ user, children, onSignedOut }) {
         </div>
       </header>
 
-      <main className="pb-20 md:pb-8">{children}</main>
+      <main className="pb-24 md:pb-8">{children}</main>
 
       {!immersive && (
-        <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur-md md:hidden"
+        <nav className="fixed inset-x-4 bottom-3 z-20 rounded-full border border-border bg-card/90 shadow-[var(--shadow-md)] backdrop-blur-md md:hidden"
              style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
              aria-label="اصلی">
-          <div className="mx-auto flex max-w-xl">
+          <div className="mx-auto flex max-w-xl px-1">
             {TABS.map(t => (
               <NavLink key={t.to} to={t.to} end={t.to === '/'}
                        className={({ isActive }) =>
-                         cn('flex min-h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors duration-150',
+                         cn('flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-full text-[11px] font-medium transition-colors duration-150',
                            isActive ? 'text-foreground' : 'text-muted-foreground')}>
                 {({ isActive }) => (
                   <>

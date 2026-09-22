@@ -18,9 +18,9 @@ function Sheet({ title, onClose, children, footer, open = true }) {
           aria-label={title}
           className={cn(
             'fixed z-50 flex max-h-[88vh] w-full flex-col border border-border bg-card shadow-[var(--shadow-lg)]',
-            'inset-x-0 bottom-0 rounded-t-xl',
+            'inset-x-0 bottom-0 rounded-t-2xl',
             'md:inset-auto md:bottom-auto md:left-1/2 md:top-1/2 md:max-h-[85vh] md:max-w-lg',
-            'md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-xl'
+            'md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl'
           )}
         >
           <div className="flex items-center gap-3 border-b border-border px-5 py-3">

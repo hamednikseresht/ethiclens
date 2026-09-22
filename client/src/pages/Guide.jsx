@@ -301,7 +301,7 @@ function LensCard({ lens, open, onToggle }) {
         <span className="grow">
           <span className="block text-sm font-bold leading-snug">{lens.title}</span>
           {lens.subtitle && (
-            <span className="ltr mt-0.5 block text-[11px] text-text-5">{lens.subtitle}</span>
+            <span className="ltr mt-0.5 block text-end text-[11px] text-text-5">{lens.subtitle}</span>
           )}
           {lens.lead && (
             <span className="mt-1.5 block text-[12.5px] leading-relaxed" style={{ color }}>
@@ -337,7 +337,7 @@ function LensCard({ lens, open, onToggle }) {
                           the end of a Persian phrase reads as part of it, and
                           the two names run together. */}
                       {c.term && (
-                        <span className="ltr mt-0.5 block text-[10.5px] font-normal text-text-5">
+                        <span className="ltr mt-0.5 block text-end text-[10.5px] font-normal text-text-5">
                           {c.term}
                         </span>
                       )}
@@ -413,7 +413,7 @@ function ExperimentCard({ exp }) {
         // The citation is entirely Latin. Left to inherit the page direction
         // it comes out with its page numbers and commas rearranged, so it is
         // given its own.
-        <div dir="ltr" className="mt-2.5 border-t border-border pt-2 text-[11px] text-text-5">
+        <div dir="ltr" className="mt-2.5 border-t border-border pt-2 text-end text-[11px] text-text-5">
           <Markdown>{exp.extra.ref}</Markdown>
         </div>
       )}
