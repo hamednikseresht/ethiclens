@@ -107,7 +107,8 @@ function saveFinished(analysisId, {
   text, sections, status, completeness, usage, durationMs, tokensIn, tokensOut
 }) {
   db.prepare(`UPDATE analyses SET raw_output = ?, sections = ?, status = ?,
-              completeness = ?, tokens_in = ?, tokens_out = ?, duration_ms = ?, error = NULL WHERE id = ?`)
+              completeness = ?, tokens_in = ?, tokens_out = ?, duration_ms = ?,
+              revised_at = datetime('now'), error = NULL WHERE id = ?`)
     .run(text, JSON.stringify(sections), status, JSON.stringify(completeness),
          tokensIn ?? usage?.prompt_tokens ?? 0,
          tokensOut ?? usage?.completion_tokens ?? 0,

@@ -279,7 +279,10 @@ function addMissingColumns() {
       category_id:    'INTEGER REFERENCES categories(id) ON DELETE SET NULL',
       seo_title:      'TEXT',
       h1:             'TEXT',
-      tags:           'TEXT'    // JSON array
+      tags:           'TEXT',   // JSON array
+      // Last time the analysis text or its public title changed. Publish time
+      // stays put; this is what dateModified and the sitemap lastmod follow.
+      revised_at:     'TEXT'
     },
     users: {
       tier:           "TEXT NOT NULL DEFAULT 'basic'",
