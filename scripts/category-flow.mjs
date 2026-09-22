@@ -202,6 +202,21 @@ check('نشان دسته‌بندی نمایش داده می‌شود', html.inc
 check('تگ‌ها روی صفحه‌اند', html.includes('pub-tags') && html.includes('تعارض منافع'));
 check('دسته‌بندی در مسیر راهنما هست', /pub-crumbs[\s\S]{0,400}اخلاق حرفه‌ای/.test(html));
 check('keywords از تگ‌ها ساخته شده', /"keywords":"[^"]*تعارض منافع/.test(html));
+{
+  const settings = await A.call('/api/admin/settings');
+  const title = settings.json?.site_title || '';
+  const explicit = String(settings.json?.site_name || '').trim();
+  const brand = explicit || title.split(/\s+[—–|·]\s+/)[0].trim() || 'Ethic Lens';
+  check('ناشر نام کوتاه برند است',
+    html.includes(`"publisher":{"@type":"Organization","name":${JSON.stringify(brand)}}`));
+}
+
+db.prepare(`UPDATE analyses SET revised_at = ? WHERE id = ?`).run('2024-06-01 12:00:00', aid);
+const edited = await (await fetch(`${BASE}/analysis/${stored.category_slug || 'public'}/${encodeURIComponent(stored.slug)}`)).text();
+check('تاریخ ویرایش در متا می‌آید', /article:modified_time" content="2024-06-01T12:00:00/.test(edited));
+const smEdited = await (await fetch(`${BASE}/sitemap.xml`)).text();
+check('نقشه سایت همان تاریخ ویرایش را دارد',
+  smEdited.includes(`admin-page-${stamp}`) && /<lastmod>2024-06-01<\/lastmod>/.test(smEdited));
 
 /* ================= Category listing ================= */
 section('صفحه دسته‌بندی');
@@ -287,6 +302,11 @@ section('انتشار تحلیل ناقص');
   check('انتشار ناقص با تأیید قبول می‌شود',
     allowed.status === 200 && allowed.json?.isPublic,
     `status ${allowed.status}`);
+
+  const partialHtml = await (await fetch(`${BASE}${allowed.json.url}`)).text();
+  check('تحلیل ناقص noindex است', /noindex, nofollow/.test(partialHtml));
+  const smPartial = await (await fetch(`${BASE}/sitemap.xml`)).text();
+  check('تحلیل ناقص در نقشه سایت نیست', !smPartial.includes(allowed.json.url));
 }
 
 /* Cleanup runs from the exit handler above, so a failure cannot skip it. */

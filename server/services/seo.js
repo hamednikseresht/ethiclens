@@ -167,6 +167,18 @@ export function metaTags({
   return bits.filter(Boolean).join('\n');
 }
 
+/**
+ * The later of several stored times, as an ISO string.
+ *
+ * Publish time does not move when the text is edited afterwards. Callers pass
+ * revised_at alongside it so dateModified and the sitemap follow the edit.
+ */
+export function contentDate(...sqliteDates) {
+  const isos = sqliteDates.map(isoDate).filter(Boolean);
+  if (!isos.length) return '';
+  return isos.reduce((latest, iso) => (iso > latest ? iso : latest));
+}
+
 /** Convert a SQLite datetime to ISO */
 export function isoDate(sqliteDate) {
   if (!sqliteDate) return '';

@@ -223,6 +223,7 @@ router.post('/:id/publish', (req, res) => {
 
   db.prepare(`UPDATE analyses SET is_public = 1, slug = ?,
               published_at = COALESCE(published_at, datetime('now')),
+              revised_at = datetime('now'),
               public_title = ?, public_summary = ?, public_author = ?,
               category_id = ?, seo_title = ?, h1 = ?, tags = ?
               WHERE id = ?`)

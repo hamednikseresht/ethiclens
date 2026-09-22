@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  metaTags, siteUrl, absoluteUrl, escapeHtml as esc, jsonLd, isoDate, faDate,
+  metaTags, siteUrl, siteName, absoluteUrl, escapeHtml as esc, jsonLd, isoDate, contentDate, faDate,
   metaDescription, publishedAnalyses, publishedCount, findBySlug,
   siteJsonLd, breadcrumbJsonLd, injectHead, withNonce, relatedAnalyses
 } from '../services/seo.js';
@@ -251,11 +251,11 @@ router.get('/analysis/:category/:slug', (req, res, next) => {
     description,
     inLanguage: 'fa-IR',
     datePublished: isoDate(row.published_at),
-    dateModified: isoDate(row.published_at || row.created_at),
-    author: { '@type': author ? 'Person' : 'Organization', name: author || 'Ethic Lens' },
+    dateModified: contentDate(row.revised_at, row.published_at, row.created_at),
+    author: { '@type': author ? 'Person' : 'Organization', name: author || siteName() },
     publisher: {
       '@type': 'Organization',
-      name: getSetting('site_title') || 'Ethic Lens',
+      name: siteName(),
       ...(siteUrl(req) ? { url: siteUrl(req) } : {})
     },
     ...(url ? { mainEntityOfPage: { '@type': 'WebPage', '@id': url } } : {}),
@@ -282,7 +282,11 @@ router.get('/analysis/:category/:slug', (req, res, next) => {
     metaTags({
       req, title: seoTitle, description, path,
       type: 'article', publishedAt: row.published_at,
-      modifiedAt: row.published_at || row.created_at, author: author || undefined
+      modifiedAt: contentDate(row.revised_at, row.published_at, row.created_at),
+      // A confirmed incomplete analysis stays on its address so the owner can
+      // share it, but it is too thin to compete in search results.
+      noindex: row.status === 'partial',
+      author: author || undefined
     }),
     `<script type="application/ld+json">${jsonLd(structured)}</script>`,
     breadcrumb ? `<script type="application/ld+json">${jsonLd(breadcrumb)}</script>` : ''
@@ -573,12 +577,21 @@ router.get('/sitemap.xml', (req, res) => {
     // Category pages are real landing pages and belong in the sitemap; one
     // with nothing published in it does not, since an empty page is exactly
     // what crawlers treat as thin content.
-    const cats = listCategories().filter(c => c.published > 0);
+    // A shelf with nothing finished in it is a thin page. Partial analyses
+    // stay reachable at their own address and carry noindex.
+    const cats = db.prepare(`
+      SELECT c.slug FROM categories c
+      WHERE EXISTS (
+        SELECT 1 FROM analyses a
+        WHERE a.category_id = c.id AND a.is_public = 1
+          AND a.slug IS NOT NULL AND a.status = 'done'
+      )
+      ORDER BY c.sort_order, c.id`).all();
 
   const posts = db.prepare(`
-    SELECT a.slug, a.published_at, a.created_at, c.slug AS category_slug
+    SELECT a.slug, a.published_at, a.created_at, a.revised_at, c.slug AS category_slug
     FROM analyses a LEFT JOIN categories c ON c.id = a.category_id
-    WHERE a.is_public = 1 AND a.slug IS NOT NULL AND a.status IN ('done','partial')
+    WHERE a.is_public = 1 AND a.slug IS NOT NULL AND a.status = 'done'
     ORDER BY a.published_at DESC LIMIT 20000`).all();
 
   const url = (loc, lastmod, freq, priority) =>
@@ -593,7 +606,7 @@ router.get('/sitemap.xml', (req, res) => {
 ${statics.map(s => url(s.loc, null, s.freq, s.priority)).join('\n')}
 ${cats.map(c => url('/category/' + c.slug, null, 'weekly', '0.8')).join('\n')}
 ${posts.map(p => url(`/analysis/${p.category_slug || PUBLIC_CATEGORY.slug}/${encodeURIComponent(p.slug)}`,
-    isoDate(p.published_at || p.created_at), 'monthly', '0.7')).join('\n')}
+    contentDate(p.revised_at, p.published_at, p.created_at), 'monthly', '0.7')).join('\n')}
 </urlset>`;
 
   res.set('Cache-Control', 'public, max-age=3600').type('application/xml').send(xml);
@@ -640,8 +653,8 @@ const SEO_PAGES = {
       '@type': 'Article',
       headline: 'دانشنامه لنزهای اخلاقی',
       inLanguage: 'fa-IR',
-      author: { '@type': 'Organization', name: getSetting('site_title') || 'Ethic Lens' },
-      publisher: { '@type': 'Organization', name: getSetting('site_title') || 'Ethic Lens' },
+      author: { '@type': 'Organization', name: siteName() },
+      publisher: { '@type': 'Organization', name: siteName() },
       mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(req, '/guide') }
     }]
   },
@@ -734,6 +747,8 @@ router.get('/category/:slug', (req, res, next) => {
       title: `${cat.title} — تحلیل‌های اخلاقی | ${getSetting('site_title') || 'Ethic Lens'}`,
       description, path
     }),
+    page > 1 ? `<link rel="prev" href="${esc(absoluteUrl(req, page === 2 ? `/category/${cat.slug}` : `/category/${cat.slug}?page=${page - 1}`))}">` : '',
+    page < pages ? `<link rel="next" href="${esc(absoluteUrl(req, `/category/${cat.slug}?page=${page + 1}`))}">` : '',
     `<script type="application/ld+json">${jsonLd(breadcrumbJsonLd(req, [
       { name: 'خانه', path: '/' },
       { name: 'تحلیل‌های عمومی', path: '/explore' },
@@ -759,7 +774,7 @@ router.get('/category/:slug', (req, res, next) => {
         }))
       }
     })}</script>`
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 
   const cards = items.map(a => {
     const t = a.h1?.trim() || a.public_title?.trim() || a.title;
