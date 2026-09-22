@@ -1,6 +1,7 @@
 import { lazy, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useSearchParams, Navigate } from 'react-router-dom';
 import { api, setCsrf } from '@/lib/api';
+import { bindCacheUser, cacheMeta, cacheResult, clearOfflineCache, isNetworkFailure, readMeta, readResult } from '@/lib/offline';
 import { AppShell } from '@/components/AppShell';
 import Login from '@/pages/Login';
 import Analyze from '@/pages/Analyze';
@@ -51,17 +52,32 @@ export default function App() {
 
   useEffect(() => {
     api.get('/api/auth/me')
-      .then(d => { setCsrf(d.csrf); setState({ loading: false, user: d.user || null }); })
+      .then(d => {
+        setCsrf(d.csrf);
+        if (d.user) bindCacheUser(d.user.id);
+        else clearOfflineCache();
+        setState({ loading: false, user: d.user || null });
+      })
       .catch(() => setState({ loading: false, user: null }));
   }, []);
 
   // Schools and gates carry the names and colours every result needs, and
   // they never change between analyses — fetched once for the session.
   useEffect(() => {
-    if (state.user?.status === 'active') api.get('/api/analyze/meta').then(setMeta).catch(() => {});
+    if (state.user?.status !== 'active') return;
+    api.get('/api/analyze/meta')
+      .then(m => { cacheMeta(m); setMeta(m); })
+      .catch(() => { const cached = readMeta(); if (cached) setMeta(cached); });
   }, [state.user]);
 
-  const signIn = (user) => setState({ loading: false, user });
+  const signIn = (user) => {
+    bindCacheUser(user.id);
+    setState({ loading: false, user });
+  };
+  const leave = () => {
+    clearOfflineCache();
+    setState({ loading: false, user: null });
+  };
 
   if (state.loading) {
     return (
@@ -113,7 +129,7 @@ export default function App() {
   return (
     <BrowserRouter basename="/app">
       <PageViews />
-      <AppShell user={state.user} onSignedOut={() => setState({ loading: false, user: null })}>
+      <AppShell user={state.user} onSignedOut={leave}>
         <Routes>
           <Route path="/" element={<AnalyzeOrResult meta={meta} />} />
           <Route path="/history" element={<History />} />
@@ -126,7 +142,7 @@ export default function App() {
                       // The account is gone and so is the session; dropping the
                       // user here sends the app back to the sign-in screen
                       // rather than leaving it rendering a deleted account.
-                      onDeleted={() => setState({ loading: false, user: null })} />
+                      onDeleted={leave} />
           } />
           {/* Nested so every section is its own address: /admin/users is a
               link one admin can send another, and each section fetches only
@@ -155,29 +171,67 @@ export default function App() {
 
 /**
  * One route, two screens. A stored analysis opens as ?id=, so history can
- * link to it and a reload keeps the same analysis open.
+ * link to it and a reload keeps the same analysis open. ?revisit=id opens
+ * Analyze with that row's dilemma and context already filled — a new run,
+ * not an edit of the old one.
  */
 function AnalyzeOrResult({ meta }) {
   const [params, setParams] = useSearchParams();
   const id = params.get('id');
+  const revisitId = params.get('revisit');
   const [result, setResult] = useState(null);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
-    if (!id) { setResult(null); return; }
+    if (!id) { setResult(null); setLoadError(''); return; }
     let alive = true;
-    api.get(`/api/history/${id}`).then(a => { if (alive) setResult(a); }).catch(() => {});
+    setLoadError('');
+    api.get(`/api/history/${id}`)
+      .then(a => {
+        if (!alive) return;
+        cacheResult(a);
+        setResult(a);
+      })
+      .catch(err => {
+        if (!alive) return;
+        const cached = readResult(id);
+        if (cached && isNetworkFailure(err)) {
+          setResult(cached);
+          return;
+        }
+        setLoadError(err.message || 'تحلیل یافت نشد.');
+      });
     return () => { alive = false; };
   }, [id]);
 
-  const clear = () => { setResult(null); setParams({}, { replace: true }); };
+  const clear = () => { setResult(null); setLoadError(''); setParams({}, { replace: true }); };
+  const revisit = (analysisId) => setParams({ revisit: String(analysisId) });
 
   // The actions on the result page each change one part of this row. Merging
   // their patch here keeps the star, the published badge and the reflection in
   // step without refetching and re-rendering a twenty-six-section document.
-  const patch = (fields) => setResult(r => (r ? { ...r, ...fields } : r));
+  const patch = (fields) => {
+    setResult(r => {
+      if (!r) return r;
+      const next = { ...r, ...fields };
+      cacheResult(next);
+      return next;
+    });
+  };
 
   if (id && result) {
-    return <Result analysis={result} meta={meta} onNew={clear} onUpdated={patch} />;
+    return <Result analysis={result} meta={meta}
+                   onNew={clear} onRevisit={() => revisit(result.id)} onUpdated={patch} />;
+  }
+  if (id && loadError) {
+    return (
+      <div className="mx-auto max-w-xl px-5 py-10 text-center">
+        <p className="mb-4 text-sm text-destructive">{loadError}</p>
+        <button type="button" onClick={clear} className="text-sm font-medium text-primary">
+          تحلیل تازه
+        </button>
+      </div>
+    );
   }
   if (id) {
     return (
@@ -186,6 +240,12 @@ function AnalyzeOrResult({ meta }) {
       </div>
     );
   }
-  return <Analyze onDone={(r) => setParams({ id: String(r.analysisId) })} />;
+  return (
+    <Analyze
+      revisitId={revisitId}
+      onRevisitLoaded={() => { if (revisitId) setParams({}, { replace: true }); }}
+      onDone={(r) => setParams({ id: String(r.analysisId) })}
+    />
+  );
 }
 

@@ -93,11 +93,11 @@ export default function Guide() {
       {/* ---------------- Hero ---------------- */}
       <header className="mx-auto max-w-xl md:max-w-2xl px-5 pt-7">
         {P.hero?.subtitle && (
-          <span className="mb-2.5 inline-block rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-bold text-primary">
+          <span className="mb-2.5 inline-block rounded-full border border-border bg-muted px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
             {P.hero.subtitle}
           </span>
         )}
-        <h1 className="display mb-3 text-[32px] font-semibold leading-tight">
+        <h1 className="display mb-3">
           {P.hero?.title || 'دانشنامه'}
         </h1>
         <Markdown className="text-[13px] leading-loose text-text-3">{P.hero?.body}</Markdown>
@@ -117,10 +117,7 @@ export default function Guide() {
                  e.preventDefault();
                  document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth' });
                }}
-               className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold transition-colors ${
-                 active === s.id
-                   ? 'border-primary bg-primary-soft text-primary'
-                   : 'border-border bg-card text-text-4'}`}>
+               className={`chip shrink-0 ${active === s.id ? 'chip-on' : ''}`}>
               {s.label}
             </a>
           ))}
@@ -175,16 +172,16 @@ export default function Guide() {
         </Section>
 
         {/* ---------------- Call to action ---------------- */}
-        <section className="mt-9 rounded-2xl bg-ink p-6 text-center">
-          <h2 className="display mb-2 text-[24px] font-semibold leading-snug text-white">
+        <section className="mt-9 rounded-xl bg-foreground p-6 text-center text-background">
+          <h2 className="display mb-2 text-background">
             حالا این لنزها را روی موقعیت خودتان بگذارید
           </h2>
-          <p className="mb-5 text-[13px] leading-loose text-white/70">
+          <p className="mb-5 text-sm leading-loose text-background/70">
             دیدگاه اخلاق دوراهی شما را از هر {fa(data.lenses.length)} منظر می‌سنجد،
             از {fa(data.gates.length)} دروازه می‌گذراند و تعارض‌ها را نشان می‌دهد —
             نه اینکه به‌جای شما تصمیم بگیرد.
           </p>
-          <Button variant="primary" onClick={() => navigate('/')} className="w-full">
+          <Button variant="inverse" onClick={() => navigate('/')} className="w-full">
             شروع تحلیل
             <ArrowLeft className="size-4" />
           </Button>

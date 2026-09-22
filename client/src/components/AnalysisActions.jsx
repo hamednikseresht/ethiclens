@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { shareAnalysis } from '@/lib/share';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sheet } from '@/components/ui/sheet';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { fa, faDate } from '@/lib/fa';
 import { completenessMessage } from '@contract/completeness.js';
 import {
   Star, Pencil, Download, Globe, Check, TriangleAlert, ExternalLink, NotebookPen,
-  FileCode, FileText, Printer
+  FileCode, FileText, Printer, Share2
 } from 'lucide-react';
 
 /**
@@ -29,6 +32,7 @@ export function AnalysisActions({ analysis, onUpdated }) {
   const [sheet, setSheet] = useState(null);        // null | 'rename' | 'publish'
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const toggleFavorite = async () => {
     setBusy(true); setError('');
@@ -37,6 +41,16 @@ export function AnalysisActions({ analysis, onUpdated }) {
       onUpdated({ is_favorite: r.isFavorite ? 1 : 0 });
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
+  };
+
+  const share = async () => {
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const outcome = await shareAnalysis(analysis);
+      if (outcome === 'copied') setNotice('متن در حافظه کپی شد.');
+    } catch (e) {
+      setError(e.message || 'اشتراک‌گذاری ممکن نشد.');
+    } finally { setBusy(false); }
   };
 
   const published = Boolean(analysis.is_public);
@@ -61,6 +75,11 @@ export function AnalysisActions({ analysis, onUpdated }) {
           خروجی
         </IconAction>
 
+        <IconAction onClick={share} disabled={busy} label="اشتراک‌گذاری">
+          <Share2 className="size-3.5" />
+          اشتراک
+        </IconAction>
+
         <IconAction onClick={() => setSheet('publish')} active={published}
                     label={published ? 'مدیریت انتشار' : 'انتشار عمومی'}>
           <Globe className="size-3.5" />
@@ -69,6 +88,7 @@ export function AnalysisActions({ analysis, onUpdated }) {
       </div>
 
       {error && <p className="mt-2 text-[12px] text-destructive">{error}</p>}
+      {notice && <p className="mt-2 text-[12px] text-ok">{notice}</p>}
 
       {published && analysis.slug && (
         <a href={`/analysis/${analysis.category_slug || 'public'}/${encodeURIComponent(analysis.slug)}`}
@@ -93,13 +113,11 @@ export function AnalysisActions({ analysis, onUpdated }) {
 
 function IconAction({ children, onClick, disabled, active, label }) {
   return (
-    <button onClick={onClick} disabled={disabled} title={label} aria-label={label}
-            className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[11px]
-                        font-bold transition-colors disabled:opacity-50 ${
-              active ? 'border-primary bg-primary-soft text-primary'
-                     : 'border-border bg-card text-text-3 hover:bg-muted'}`}>
+    <Button type="button" size="sm" variant={active ? 'secondary' : 'outline'}
+            onClick={onClick} disabled={disabled} aria-label={label} title={label}
+            className="h-8 rounded-full px-3 text-xs">
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -133,6 +151,9 @@ const EXPORT_FORMATS = [
 
 function ExportSheet({ analysis, onClose }) {
   const base = `/api/history/${analysis.id}`;
+  const [sharing, setSharing] = useState(false);
+  const [shareNote, setShareNote] = useState('');
+  const [shareErr, setShareErr] = useState('');
 
   // A real link rather than a fetch: the response is an attachment and the
   // browser's own download handling is what saves it. GET is exempt from the
@@ -142,9 +163,36 @@ function ExportSheet({ analysis, onClose }) {
   : key === 'html' ? `${base}/export?format=html`
                    : `${base}/export`;
 
+  const share = async () => {
+    setSharing(true); setShareNote(''); setShareErr('');
+    try {
+      const outcome = await shareAnalysis(analysis);
+      if (outcome === 'copied') setShareNote('متن در حافظه کپی شد.');
+      else if (outcome === 'shared') onClose();
+    } catch (e) {
+      setShareErr(e.message || 'اشتراک‌گذاری ممکن نشد.');
+    } finally { setSharing(false); }
+  };
+
   return (
     <Sheet title="خروجی تحلیل" onClose={onClose}>
       <div className="space-y-2">
+        <button type="button" onClick={share} disabled={sharing}
+                className="flex w-full items-start gap-3 rounded-lg border border-border bg-card p-3.5
+                           text-start transition-colors hover:border-primary disabled:opacity-50">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">
+            <Share2 className="size-4" />
+          </span>
+          <span className="min-w-0 grow">
+            <span className="block text-[13px] font-bold">اشتراک‌گذاری</span>
+            <span className="mt-0.5 block text-[11.5px] leading-relaxed text-text-4">
+              از منوی سیستم دستگاه؛ اگر در دسترس نباشد متن کپی می‌شود.
+            </span>
+          </span>
+        </button>
+        {shareNote && <p className="px-1 text-[12px] text-ok">{shareNote}</p>}
+        {shareErr && <p className="px-1 text-[12px] text-destructive">{shareErr}</p>}
+
         {EXPORT_FORMATS.map(f => (
           <a key={f.key} href={href(f.key)}
              {...(f.key === 'pdf'
@@ -307,9 +355,8 @@ function PublishSheet({ analysis, onClose, onUpdated }) {
       <form onSubmit={publish}>
       {incomplete && !published && (
         <label className="mb-4 flex items-start gap-2 rounded-lg border border-warn/40 bg-warn-soft p-3 text-[12px] leading-loose">
-          <input type="checkbox" className="mt-1 size-4 shrink-0"
-                 checked={confirmIncomplete}
-                 onChange={e => setConfirmIncomplete(e.target.checked)} />
+          <Checkbox className="mt-1" checked={confirmIncomplete}
+                    onCheckedChange={(v) => setConfirmIncomplete(v === true)} />
           <span>
             این تحلیل ناقص است
             {analysis.completeness ? ` — ${completenessMessage(analysis.completeness)}` : ''}.
@@ -363,14 +410,18 @@ function PublishSheet({ analysis, onClose, onUpdated }) {
 
             <div className="mb-3">
               <Label htmlFor="pb-cat">دسته‌بندی</Label>
-              <select id="pb-cat" value={form.category_id} onChange={set('category_id')}
-                      className="h-11 w-full rounded-md border border-input bg-card px-3 text-base
-                                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                <option value="">— بدون دسته‌بندی —</option>
-                {analysis.categories.map(c => (
-                  <option key={c.id} value={c.id}>{c.title}</option>
-                ))}
-              </select>
+              <Select value={form.category_id ? String(form.category_id) : 'none'}
+                      onValueChange={(v) => setForm(f => ({ ...f, category_id: v === 'none' ? '' : v }))}>
+                <SelectTrigger id="pb-cat">
+                  <SelectValue placeholder="بدون دسته‌بندی" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— بدون دسته‌بندی —</SelectItem>
+                  {analysis.categories.map(c => (
+                    <SelectItem key={c.id} value={String(c.id)}>{c.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="mb-3">

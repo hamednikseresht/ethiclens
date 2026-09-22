@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert } from '@/components/ui/alert';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { CodeInput } from '@/components/CodeInput';
 import { RefreshCw, ArrowRight, Mail, ShieldCheck } from 'lucide-react';
 
@@ -38,17 +39,20 @@ export default function Login({ onSignedIn }) {
     <div className="flex min-h-screen items-center justify-center bg-background p-5">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <span className="mx-auto mb-3 grid size-12 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-            EL
-          </span>
-          <h1 className="display text-[30px] font-semibold leading-tight">دیدگاه اخلاق</h1>
-          <p className="mt-1 text-xs text-text-4">دوراهی‌ات را از هشت منظر فلسفه اخلاق ببین</p>
+          <img src="/icons/mark.svg" width="40" height="40" alt=""
+               className="mx-auto mb-4 size-10 rounded-md" />
+          <h1 className="display">دیدگاه اخلاق</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">دوراهی‌ات را از هشت منظر فلسفه اخلاق ببین</p>
         </div>
 
         <Card>
-          <CardContent className="p-5 pt-5">
-            {error && <Alert variant="destructive" className="mb-4">{error}</Alert>}
-            {notice && <Alert variant="ok" className="mb-4">{notice}</Alert>}
+          {(error || notice) && (
+            <CardHeader className="pb-0">
+              {error && <Alert variant="destructive">{error}</Alert>}
+              {notice && <Alert variant="ok">{notice}</Alert>}
+            </CardHeader>
+          )}
+          <CardContent className={error || notice ? 'pt-4' : undefined}>
 
             {view === 'login' && (
               <LoginForm
@@ -162,11 +166,13 @@ function LoginForm({ busy, setBusy, setError, onSignedIn, onRegister, onForgot }
         {busy ? 'در حال ورود…' : 'ورود'}
       </Button>
 
-      <div className="flex items-center justify-between pt-1 text-xs">
+      <Separator />
+
+      <div className="flex items-center justify-between text-xs">
         <button type="button" onClick={onForgot} className="text-text-4 hover:text-foreground">
           رمزم را فراموش کرده‌ام
         </button>
-        <button type="button" onClick={onRegister} className="font-bold text-primary hover:underline">
+        <button type="button" onClick={onRegister} className="font-medium underline-offset-4 hover:underline">
           ساخت حساب تازه
         </button>
       </div>

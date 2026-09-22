@@ -33,19 +33,19 @@
 
 /* ---------- فراخوان پایان صفحه ---------- */
 .pub-cta{
-  background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;
+  background:var(--ink);color:var(--bg);
   border-radius:var(--r);padding:2.2rem 1.6rem;text-align:center;margin:2.5rem 0 1.5rem;
 }
-.pub-cta h2{font-size:1.2rem;font-weight:900;margin-bottom:.5rem}
-.pub-cta p{font-size:.92rem;opacity:.94;line-height:1.9;max-width:54ch;margin:0 auto 1.3rem}
-.pub-cta .btn{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.35);color:#fff}
-.pub-cta .btn:hover{background:rgba(255,255,255,.26);border-color:rgba(255,255,255,.5);color:#fff}
-.pub-cta .btn-primary{background:#fff;border-color:#fff;color:var(--primary)}
-.pub-cta .btn-primary:hover{background:#fff;color:var(--primary);filter:brightness(.96)}
+.pub-cta h2{font-size:1.15rem;font-weight:600;margin-bottom:.5rem;letter-spacing:-.02em}
+.pub-cta p{font-size:.92rem;opacity:.88;line-height:1.9;max-width:54ch;margin:0 auto 1.3rem}
+.pub-cta .btn{background:transparent;border-color:color-mix(in srgb,var(--bg) 35%,transparent);color:var(--bg)}
+.pub-cta .btn:hover{background:color-mix(in srgb,var(--bg) 12%,transparent);border-color:color-mix(in srgb,var(--bg) 50%,transparent);color:var(--bg)}
+.pub-cta .btn-primary{background:var(--bg);border-color:var(--bg);color:var(--ink)}
+.pub-cta .btn-primary:hover{background:var(--bg);color:var(--ink);filter:none;opacity:.92}
 
 /* ---------- فهرست تحلیل‌های عمومی ---------- */
 .pub-head{margin-bottom:1.6rem}
-.pub-head h1{font-size:clamp(1.4rem,4vw,1.9rem);font-weight:900;margin-bottom:.6rem;line-height:1.5}
+.pub-head h1{font-size:clamp(1.35rem,4vw,1.75rem);font-weight:600;margin-bottom:.6rem;line-height:1.4;letter-spacing:-.02em}
 .pub-head p{font-size:.93rem;color:var(--text-muted);line-height:2;max-width:66ch}
 
 .pub-grid{display:grid;grid-template-columns:1fr;gap:.9rem}
@@ -55,11 +55,11 @@
 .pub-card{
   background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);
   padding:1.25rem;display:flex;flex-direction:column;gap:.6rem;
-  transition:border-color .2s,box-shadow .2s,transform .2s;
+  transition:border-color var(--dur-fast);
 }
-.pub-card:hover{border-color:var(--primary);box-shadow:var(--shadow-md);transform:translateY(-3px)}
+.pub-card:hover{border-color:var(--border-strong)}
 .pub-card-title{
-  font-size:1rem;font-weight:800;line-height:1.65;color:var(--text);text-decoration:none;
+  font-size:1rem;font-weight:600;line-height:1.65;color:var(--text);text-decoration:none;
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
 }
 .pub-card-title:hover{color:var(--primary);text-decoration:none}

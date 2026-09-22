@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { cacheStats, isNetworkFailure, readStats } from '@/lib/offline';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert } from '@/components/ui/alert';
 import { fa, faDuration } from '@/lib/fa';
 import { NotebookPen, ArrowLeft } from 'lucide-react';
 
@@ -16,10 +19,21 @@ import { NotebookPen, ArrowLeft } from 'lucide-react';
 export default function Dashboard({ user }) {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
+  const [stale, setStale] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/api/history/stats').then(setStats).catch(e => setError(e.message));
+    api.get('/api/history/stats')
+      .then(d => { cacheStats(d); setStats(d); setStale(false); })
+      .catch(e => {
+        const cached = readStats();
+        if (cached && isNetworkFailure(e)) {
+          setStats(cached);
+          setStale(true);
+        } else {
+          setError(e.message);
+        }
+      });
   }, []);
 
   if (error) {
@@ -34,14 +48,20 @@ export default function Dashboard({ user }) {
 
   return (
     <div className="mx-auto max-w-xl md:max-w-4xl px-5 pb-6 pt-6">
-      <h1 className="display mb-1 text-[30px] font-semibold leading-tight">
+      <h1 className="display mb-1">
         سلام {user?.name?.split(' ')[0] || ''}
       </h1>
       <p className="mb-5 text-[13px] text-text-4">خلاصه کارهای شما.</p>
 
+      {stale && (
+        <Alert variant="warn" className="mb-4">
+          اعداد از حافظهٔ این دستگاه است. اتصال برقرار نیست.
+        </Alert>
+      )}
+
       {!stats ? (
         <div className="space-y-3">
-          {[0, 1, 2].map(i => <div key={i} className="h-24 animate-pulse rounded-xl border border-border bg-card" />)}
+          {[0, 1, 2].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
         </div>
       ) : stats.total === 0 ? (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
@@ -57,7 +77,7 @@ export default function Dashboard({ user }) {
       ) : (
         <div className="space-y-3">
           {stats.awaiting > 0 && (
-            <button onClick={() => navigate('/history')}
+            <button onClick={() => navigate('/history?filter=awaiting')}
                     className="flex w-full items-start gap-3 rounded-xl border border-warn/30 bg-warn-soft p-4 text-start">
               <NotebookPen className="mt-0.5 size-5 shrink-0 text-warn" />
               <span>

@@ -3,12 +3,13 @@ import { api } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import { fa, faCount, faDate } from '@/lib/fa';
 import { getTheme, applyTheme } from '@/lib/theme';
 import { watchInstallPrompt, isStandalone, isIosSafari } from '@/lib/pwa';
 import {
   User, KeyRound, Gauge, Palette, Download, BadgeCheck, MailWarning, Check,
-  ShieldAlert, FileJson, Trash2
+  ShieldAlert, FileJson, Trash2, Info, BookOpen, ArrowLeft
 } from 'lucide-react';
 
 /**
@@ -29,7 +30,7 @@ export default function Settings({ user, onUserChanged, onDeleted }) {
 
   return (
     <div className="mx-auto max-w-xl md:max-w-4xl px-5 pb-6 pt-6">
-      <h1 className="display mb-5 text-[30px] font-semibold leading-tight">تنظیمات حساب</h1>
+      <h1 className="display mb-5">تنظیمات حساب</h1>
 
       <div className="space-y-3">
         <ProfileCard user={user} onUserChanged={onUserChanged} />
@@ -38,6 +39,7 @@ export default function Settings({ user, onUserChanged, onDeleted }) {
         <UsageCard allowance={allowance} />
         <AppearanceCard />
         <InstallCard />
+        <AboutCard />
         <AccountCard user={user} />
         <DangerCard user={user} onDeleted={onDeleted} />
       </div>
@@ -292,9 +294,10 @@ function AppearanceCard() {
         {options.map(([k, label]) => (
           <button key={k} onClick={() => pick(k)}
                   aria-pressed={theme === k}
-                  className={`flex-1 rounded-lg border px-3 py-2 text-[12px] font-bold transition-colors ${
-                    theme === k ? 'border-primary bg-primary-soft text-primary'
-                                : 'border-border bg-card text-text-4'}`}>
+                  className={`flex-1 min-h-11 rounded-md border px-3 text-sm font-medium transition-colors ${
+                    theme === k
+                      ? 'border-foreground bg-foreground text-background'
+                      : 'border-border bg-card text-muted-foreground hover:bg-muted'}`}>
             {label}
           </button>
         ))}
@@ -360,6 +363,28 @@ function InstallCard() {
       {outcome === 'dismissed' && (
         <p className="mt-2 text-[11px] text-text-5">نصب انجام نشد. هر وقت خواستید دوباره امتحان کنید.</p>
       )}
+    </Card>
+  );
+}
+
+function AboutCard() {
+  return (
+    <Card icon={Info} title="درباره">
+      <div className="space-y-2">
+        <a href="/about"
+           className="flex min-h-11 items-center gap-3 rounded-lg border border-border bg-subtle px-3
+                      text-[13px] transition-colors hover:border-primary">
+          <span className="grow font-bold">درباره دیدگاه اخلاق</span>
+          <ArrowLeft className="size-4 text-text-5" />
+        </a>
+        <Link to="/guide"
+              className="flex min-h-11 items-center gap-3 rounded-lg border border-border bg-subtle px-3
+                         text-[13px] transition-colors hover:border-primary">
+          <BookOpen className="size-4 text-text-4" />
+          <span className="grow font-bold">دانشنامه</span>
+          <ArrowLeft className="size-4 text-text-5" />
+        </Link>
+      </div>
     </Card>
   );
 }

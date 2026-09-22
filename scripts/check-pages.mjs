@@ -112,6 +112,10 @@ assert('SW پاسخ HTML را ذخیره نمی‌کند',
 assert('SW ناوبری را اول از شبکه می‌گیرد',
   /request\.mode === ['"]navigate['"]/.test(sw)
   && /fetch\(request\)\.catch/.test(sw));
+const offlineJs = fs.readFileSync(path.join(ROOT, 'client/src/lib/offline.js'), 'utf8');
+assert('کش آفلاین در localStorage است نه SW',
+  /localStorage/.test(offlineJs)
+  && !/caches\.(open|match)/.test(offlineJs));
 
 /* ---- One analysis contract ---- */
 console.log('\n── قرارداد تحلیل ──');

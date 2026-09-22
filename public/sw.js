@@ -9,6 +9,8 @@
       or even one that reads the body to decide, ends the stream — and the
       failure looks like the model hanging rather than like a caching bug.
       The handler returns early for these before doing anything else.
+      History and the last opened result that should survive offline live in
+      the page's localStorage, not here.
 
    2. HTML is never cached. Every page behind a login renders someone's own
       dilemmas. Two people share a phone, the second opens the app, and a

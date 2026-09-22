@@ -1,10 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { cacheHistory, isNetworkFailure, readHistory } from '@/lib/offline';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert } from '@/components/ui/alert';
 import { fa, faDate } from '@/lib/fa';
-import { Search, Star, NotebookPen, Globe, TriangleAlert, Clock } from 'lucide-react';
+import { Search, Star, NotebookPen, Globe, TriangleAlert, Clock, RotateCcw } from 'lucide-react';
 
 /**
  * Past analyses.
@@ -19,11 +23,16 @@ import { Search, Star, NotebookPen, Globe, TriangleAlert, Clock } from 'lucide-r
 const PER_PAGE = 12;
 
 export default function History() {
+  const [searchParams] = useSearchParams();
+  const initialFilter = searchParams.get('filter') === 'awaiting' ? 'awaiting'
+    : searchParams.get('filter') === 'favorite' ? 'favorite'
+    : 'all';
   const [data, setData] = useState(null);
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
-  const [filter, setFilter] = useState('all');   // all | favorite | awaiting
+  const [filter, setFilter] = useState(initialFilter);   // all | favorite | awaiting
   const [error, setError] = useState('');
+  const [stale, setStale] = useState(false);
   const navigate = useNavigate();
 
   const load = useCallback(async () => {
@@ -32,8 +41,23 @@ export default function History() {
     if (filter === 'favorite') params.set('favorite', '1');
     if (filter === 'awaiting') params.set('reflected', '0');
 
-    try { setData(await api.get(`/api/history?${params}`)); }
-    catch (e) { setError(e.message); }
+    try {
+      const d = await api.get(`/api/history?${params}`);
+      setData(d);
+      setError('');
+      setStale(false);
+      if (page === 1 && !q.trim() && filter === 'all') cacheHistory(d);
+    } catch (e) {
+      const cached = (page === 1 && !q.trim() && filter === 'all') ? readHistory() : null;
+      if (cached && isNetworkFailure(e)) {
+        setData(cached);
+        setStale(true);
+        setError('');
+      } else {
+        setError(e.message);
+        setData(null);
+      }
+    }
   }, [page, q, filter]);
 
   // Debounced so typing does not fire a request per keystroke.
@@ -44,7 +68,7 @@ export default function History() {
 
   return (
     <div className="mx-auto max-w-xl md:max-w-4xl px-5 pb-6 pt-6">
-      <h1 className="display mb-4 text-[30px] font-semibold leading-tight">تاریخچه</h1>
+      <h1 className="display mb-4">تاریخچه</h1>
 
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute inset-y-0 end-3 my-auto size-4 text-text-5" />
@@ -52,29 +76,25 @@ export default function History() {
                placeholder="جست‌وجو در دوراهی‌ها" className="pe-10" />
       </div>
 
-      <div className="mb-4 flex gap-1.5">
-        {[
-          ['all', 'همه'],
-          ['favorite', 'نشان‌شده'],
-          ['awaiting', 'منتظر بازنگری']
-        ].map(([k, label]) => (
-          <button key={k} onClick={() => { setFilter(k); setPage(1); }}
-                  className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition-colors ${
-                    filter === k
-                      ? 'border-primary bg-primary-soft text-primary'
-                      : 'border-border bg-card text-text-4'}`}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={filter} onValueChange={(v) => { setFilter(v); setPage(1); }} className="mb-4">
+        <TabsList className="w-full">
+          <TabsTrigger value="all">همه</TabsTrigger>
+          <TabsTrigger value="favorite">نشان‌شده</TabsTrigger>
+          <TabsTrigger value="awaiting">منتظر بازنگری</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {stale && (
+        <Alert variant="warn" className="mb-3">
+          فهرست از حافظهٔ این دستگاه است. اتصال برقرار نیست.
+        </Alert>
+      )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {!data && !error && (
         <div className="space-y-3">
-          {[0, 1, 2].map(i => (
-            <div key={i} className="h-24 animate-pulse rounded-xl border border-border bg-card" />
-          ))}
+          {[0, 1, 2].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
         </div>
       )}
 
@@ -98,7 +118,11 @@ export default function History() {
             {fa(data.total)} تحلیل
           </p>
           <div className="space-y-3">
-            {data.items.map(it => <Row key={it.id} item={it} onOpen={() => navigate(`/?id=${it.id}`)} />)}
+            {data.items.map(it => (
+              <Row key={it.id} item={it}
+                   onOpen={() => navigate(`/?id=${it.id}`)}
+                   onRevisit={() => navigate(`/?revisit=${it.id}`)} />
+            ))}
           </div>
 
           {data.pages > 1 && (
@@ -118,13 +142,13 @@ export default function History() {
   );
 }
 
-function Row({ item, onOpen }) {
+function Row({ item, onOpen, onRevisit }) {
   const c = parseCompleteness(item.completeness);
   const partial = item.status === 'partial' || (c && !c.complete);
 
   return (
-    <button onClick={onOpen}
-            className="w-full rounded-xl border border-border bg-card p-4 text-start transition-colors hover:bg-subtle">
+    <article className="rounded-xl border border-border bg-card transition-colors hover:bg-subtle">
+      <button type="button" onClick={onOpen} className="w-full p-4 text-start">
       <div className="mb-1.5 flex items-start gap-2">
         <h2 className="grow text-sm font-bold leading-relaxed">{item.title}</h2>
         {item.is_favorite ? <Star className="mt-0.5 size-3.5 shrink-0 fill-warn text-warn" /> : null}
@@ -151,7 +175,16 @@ function Row({ item, onOpen }) {
           ? <Tag tone="ok"><NotebookPen className="size-3" /> بازنگری شد</Tag>
           : (item.status === 'done' || item.status === 'partial') && <Tag>منتظر بازنگری</Tag>}
       </div>
-    </button>
+      </button>
+      {onRevisit && (
+        <div className="flex justify-end border-t border-border px-3 py-1.5">
+          <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs"
+                  onClick={onRevisit}>
+            <RotateCcw className="size-3.5" /> تحلیل دوباره
+          </Button>
+        </div>
+      )}
+    </article>
   );
 }
 
