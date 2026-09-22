@@ -37,12 +37,14 @@ export default function Login({ onSignedIn }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-5">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 text-center">
+      <div className="w-full max-w-md">
+        <div className="mb-8 text-center">
           <img src="/icons/mark.svg" width="40" height="40" alt=""
-               className="mx-auto mb-4 size-10 rounded-md" />
+               className="mx-auto mb-5 size-10 rounded-xl" />
           <h1 className="display">دیدگاه اخلاق</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">دوراهی‌ات را از هشت منظر فلسفه اخلاق ببین</p>
+          <p className="mt-2 text-sm leading-loose text-muted-foreground">
+            دوراهی‌ات را از <span className="hl">هشت منظر</span> فلسفه اخلاق ببین
+          </p>
         </div>
 
         <Card>

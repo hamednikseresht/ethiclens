@@ -16,7 +16,7 @@
 <link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
 <link rel="icon" href="/icons/mark.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<meta name="theme-color" content="#fafaf9">
+<meta name="theme-color" content="#f4f3ee">
 <meta name="apple-mobile-web-app-title" content="دیدگاه اخلاق">
 <link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/app.css">
@@ -24,50 +24,48 @@
 <link rel="stylesheet" href="/css/public.css">
 <style>
   .hero{
-    padding:3.5rem 1rem 3rem;text-align:center;
+    padding:4.5rem 1rem 3.5rem;text-align:center;
   }
   .hero .eyebrow{display:inline-flex;align-items:center;gap:.4rem;font-size:.78rem;font-weight:500;
-    background:var(--bg-surface);border:1px solid var(--border);border-radius:999px;padding:.3rem .8rem;
-    color:var(--text-muted);margin-bottom:1.1rem}
-  .hero h1{font-size:clamp(1.6rem,4.5vw,2.4rem);font-weight:600;line-height:1.35;margin-bottom:.9rem;letter-spacing:-.03em}
-  .hero h1 .hl{color:var(--text)}
-  .hero p{font-size:clamp(.95rem,2.2vw,1.08rem);color:var(--text-muted);max-width:60ch;margin:0 auto 1.8rem;line-height:1.9}
+    background:var(--bg-surface);border:1px solid var(--border);border-radius:999px;padding:.35rem .9rem;
+    color:var(--text-muted);margin-bottom:1.4rem}
+  .hero h1{font-size:clamp(1.85rem,5vw,3rem);font-weight:500;line-height:1.3;margin-bottom:1rem;letter-spacing:-.03em}
+  .hero h1 .hl{color:var(--accent)}
+  .hero p{font-size:clamp(.95rem,2.2vw,1.08rem);color:var(--text-muted);max-width:60ch;margin:0 auto 2rem;line-height:1.9}
   .hero-cta{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap}
 
   .lens-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:.7rem;margin:3rem 0}
-  .lens{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-lg);
-        padding:1rem;border-top:2px solid var(--lc);text-align:center}
+  .lens{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-2xl);
+        padding:1.1rem;border-top:2px solid var(--lc);text-align:center}
   .lens .nm{font-size:.88rem;font-weight:600;margin-bottom:.15rem}
   .lens .th{font-size:.73rem;color:var(--text-muted)}
 
   .steps{display:grid;grid-template-columns:1fr;gap:1rem;margin:1rem 0 3rem}
   @media (min-width:820px){.steps{grid-template-columns:repeat(3,1fr)}}
-  .step{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem}
-  .step .n{width:28px;height:28px;border-radius:var(--r-sm);background:var(--bg-muted);color:var(--text);
+  .step{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-2xl);padding:1.5rem}
+  .step .n{width:28px;height:28px;border-radius:var(--r-pill);background:var(--bg-muted);color:var(--text);
            display:grid;place-items:center;font-weight:600;font-size:.8rem;margin-bottom:.7rem}
   .step h3{font-size:1rem;font-weight:600;margin-bottom:.4rem}
   .step p{font-size:.87rem;color:var(--text-muted);line-height:1.85}
 
-  .sec-title{text-align:center;margin-bottom:.5rem;font-size:1.25rem;font-weight:600;letter-spacing:-.02em}
+  .sec-title{text-align:center;margin-bottom:.5rem;font-size:1.35rem;font-weight:500;letter-spacing:-.02em}
   .sec-lead{text-align:center;color:var(--text-muted);font-size:.9rem;max-width:56ch;margin:0 auto 2rem;line-height:1.85}
 
-  .cta-band{background:var(--ink);color:var(--bg);border-radius:var(--r);
-            padding:2.4rem 1.5rem;text-align:center;margin:3rem 0 2rem}
-  .cta-band h2{font-size:1.2rem;font-weight:600;margin-bottom:.5rem;letter-spacing:-.02em}
-  .cta-band p{opacity:.88;font-size:.92rem;margin-bottom:1.3rem;max-width:52ch;margin-inline:auto;line-height:1.85}
-  .cta-band .btn{background:var(--bg);border-color:var(--bg);color:var(--ink)}
-  .cta-band .btn:hover{background:var(--bg);color:var(--ink);filter:none;opacity:.92}
+  .cta-band{background:var(--bg-surface);color:var(--text);border:1px solid var(--border);
+            border-radius:var(--r-2xl);padding:2.6rem 1.5rem;text-align:center;margin:3rem 0 2rem}
+  .cta-band h2{font-size:1.35rem;font-weight:500;margin-bottom:.5rem;letter-spacing:-.02em}
+  .cta-band p{color:var(--text-muted);font-size:.92rem;margin-bottom:1.3rem;max-width:52ch;margin-inline:auto;line-height:1.85}
 
   .makers{display:grid;grid-template-columns:1fr;gap:.9rem;margin:1.3rem 0 1rem}
   @media (min-width:700px){.makers{grid-template-columns:1fr 1fr}}
   .maker{
-    background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);
+    background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-2xl);
     padding:1.2rem;display:flex;align-items:center;gap:.9rem;
     text-decoration:none;color:var(--text);transition:border-color var(--dur-fast);
   }
   .maker:hover{border-color:var(--border-strong);text-decoration:none}
   .maker-avatar{
-    width:48px;height:48px;border-radius:var(--r-md);display:grid;place-items:center;flex-shrink:0;
+    width:48px;height:48px;border-radius:var(--r-pill);display:grid;place-items:center;flex-shrink:0;
     font-size:1rem;font-weight:600;color:var(--on-primary);background:var(--primary);
   }
   .maker-name{font-size:1rem;font-weight:600;line-height:1.4}

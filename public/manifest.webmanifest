@@ -9,8 +9,8 @@
   "id": "/app/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f5f5f4",
-  "theme_color": "#f5f5f4",
+  "background_color": "#f4f3ee",
+  "theme_color": "#f4f3ee",
   "categories": [
     "education",
     "productivity",

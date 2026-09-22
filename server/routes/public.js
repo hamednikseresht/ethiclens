@@ -91,7 +91,7 @@ function shell({ head, body, bodyClass = '' }) {
 <link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
 <link rel="icon" href="/icons/mark.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<meta name="theme-color" content="#fafaf9">
+<meta name="theme-color" content="#f4f3ee">
 <meta name="apple-mobile-web-app-title" content="دیدگاه اخلاق">
 ${head}
 ${FONTS}

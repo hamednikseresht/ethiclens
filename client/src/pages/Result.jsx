@@ -69,7 +69,7 @@ export default function Result({ analysis, meta, onNew, onRevisit, onUpdated }) 
       )}
 
       {sections.recommendation && (
-        <blockquote className="mt-6 border-s-2 border-foreground ps-4">
+        <blockquote className="mt-6 border-s-2 border-accent ps-4">
           <p className="text-[11px] font-medium tracking-wide text-muted-foreground">مسیر پیشنهادی</p>
           {rec.verdict && (
             <p className="display mt-2 text-[22px] font-medium leading-snug text-balance">

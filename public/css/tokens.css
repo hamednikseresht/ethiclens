@@ -2,7 +2,8 @@
    Shared design tokens — public HTML and the React app.
 
    Shape is shadcn (semantic pairs, --radius cascade, ink primary).
-   Values are editorial stone, not navy/sky. Hex lives here once.
+   Values come from the Kinto Figma file (Home canvas, Shadcn Colors,
+   Tokens collections) interpreted for this product. Hex lives here once.
    client/src/index.css maps the same names into Tailwind @theme.
 
    School colours match server/services/schools.js and are exhibition
@@ -10,25 +11,25 @@
    ========================================================================== */
 
 :root {
-  --bg:            #fafaf9;
+  --bg:            #f4f3ee;
   --bg-raised:     #ffffff;
-  --bg-sunken:     #f5f5f4;
-  --bg-muted:      #f5f5f4;
-  --border:        #e7e5e4;
-  --border-strong: #d6d3d1;
-  --text:          #0c0a09;
-  --text-2:        #292524;
-  --text-3:        #57534e;
-  --text-4:        #78716c;
-  --text-5:        #a8a29e;
+  --bg-sunken:     #ede9df;
+  --bg-muted:      #f8f4e7;
+  --border:        #e4e4e7;
+  --border-strong: #d4d4d8;
+  --text:          #09090b;
+  --text-2:        #18181b;
+  --text-3:        #52525b;
+  --text-4:        #71717a;
+  --text-5:        #a1a1aa;
 
-  --primary:       #1c1917;
-  --on-primary:    #fafaf9;
-  --primary-soft:  #f5f5f4;
-  --accent:        #0f766e;
-  --accent-soft:   #f0fdfa;
-  --ink:           #1c1917;
-  --ink-2:         #292524;
+  --primary:       #18181b;
+  --on-primary:    #fafafa;
+  --primary-soft:  #f8f4e7;
+  --accent:        #ad7a3b;
+  --accent-soft:   #f2dec2;
+  --ink:           #18181b;
+  --ink-2:         #09090b;
 
   --danger: #dc2626;  --danger-soft: #fef2f2;
   --warn:   #b45309;  --warn-soft:   #fffbeb;
@@ -43,7 +44,7 @@
   --school-existential: #65a30d;
   --school-genealogy:   #b45309;
 
-  --radius: 0.625rem;
+  --radius: 1rem;
   --r-sm: calc(var(--radius) - 4px);
   --r-md: calc(var(--radius) - 2px);
   --r-lg: var(--radius);
@@ -65,41 +66,41 @@
   --bg-inset:    var(--bg-muted);
   --text-muted:  var(--text-3);
   --text-faint:  var(--text-5);
-  --primary-hover: #292524;
+  --primary-hover: #27272a;
   --primary-ring:  color-mix(in srgb, var(--primary) 25%, transparent);
   --success:      var(--ok);
   --success-soft: var(--ok-soft);
   --r:    var(--r-lg);
   --r-xs: var(--r-sm);
   --nav-h: 56px;
-  --shadow-xs: 0 1px 2px rgba(12, 10, 9, .05);
-  --shadow-sm: 0 1px 2px rgba(12, 10, 9, .05);
-  --shadow-md: 0 4px 12px rgba(12, 10, 9, .06);
-  --shadow-lg: 0 12px 32px rgba(12, 10, 9, .12);
+  --shadow-xs: 0 1px 2px rgba(9, 9, 11, .04);
+  --shadow-sm: 0 1px 2px rgba(9, 9, 11, .05);
+  --shadow-md: 0 8px 24px rgba(9, 9, 11, .06);
+  --shadow-lg: 0 16px 40px rgba(9, 9, 11, .10);
   --dur-fast: 150ms;
   --dur: 200ms;
 }
 
 [data-theme="dark"] {
-  --bg:            #0c0a09;
-  --bg-raised:     #1c1917;
-  --bg-sunken:     #141210;
-  --bg-muted:      #292524;
-  --border:        #292524;
-  --border-strong: #44403c;
-  --text:          #fafaf9;
-  --text-2:        #e7e5e4;
+  --bg:            #161412;
+  --bg-raised:     #221e1a;
+  --bg-sunken:     #1a1714;
+  --bg-muted:      #2a241e;
+  --border:        #3f3a34;
+  --border-strong: #57534e;
+  --text:          #f4f3ee;
+  --text-2:        #ede9df;
   --text-3:        #a8a29e;
   --text-4:        #78716c;
   --text-5:        #57534e;
 
-  --primary:       #fafaf9;
-  --on-primary:    #1c1917;
-  --primary-soft:  #292524;
-  --accent:        #2dd4bf;
-  --accent-soft:   #134e4a;
-  --ink:           #fafaf9;
-  --ink-2:         #e7e5e4;
+  --primary:       #f4f3ee;
+  --on-primary:    #18181b;
+  --primary-soft:  #2a241e;
+  --accent:        #d9b951;
+  --accent-soft:   #3a2e1c;
+  --ink:           #f4f3ee;
+  --ink-2:         #ede9df;
 
   --danger-soft: #450a0a;
   --warn:        #fbbf24;
@@ -107,10 +108,10 @@
   --ok:          #4ade80;
   --ok-soft:     #052e16;
 
-  --primary-hover: #e7e5e4;
+  --primary-hover: #e4e4e7;
   --primary-ring:  color-mix(in srgb, var(--primary) 30%, transparent);
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, .4);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, .45);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, .45);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, .55);
 }
