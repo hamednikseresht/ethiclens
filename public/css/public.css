@@ -15,7 +15,9 @@
 /* ---------- خلاصه پیشنهاد در بالای صفحه ---------- */
 .pub-lead{
   background:var(--accent-soft);border-inline-start:3px solid var(--accent);
-  border-radius:0 var(--r-sm) var(--r-sm) 0;padding:.9rem 1.1rem;margin-top:.9rem;
+  border-start-start-radius:0;border-end-start-radius:0;
+  border-start-end-radius:var(--r-sm);border-end-end-radius:var(--r-sm);
+  padding:.9rem 1.1rem;margin-top:.9rem;
   font-size:.92rem;line-height:1.95;
 }
 .pub-lead strong{color:var(--text);font-weight:600}
@@ -27,8 +29,8 @@
   list-style:none;display:flex;align-items:center;gap:.4rem;padding:.5rem 0;
 }
 .pub-dilemma summary::-webkit-details-marker{display:none}
-.pub-dilemma summary::before{content:"▸";transition:transform .2s;display:inline-block}
-.pub-dilemma[open] summary::before{transform:rotate(-90deg)}
+.pub-dilemma summary::before{content:"◂";transition:transform .2s;display:inline-block}
+.pub-dilemma[open] summary::before{transform:rotate(90deg)}
 .pub-dilemma summary:hover{color:var(--primary)}
 
 /* ---------- فراخوان پایان صفحه ---------- */

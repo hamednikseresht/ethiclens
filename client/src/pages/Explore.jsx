@@ -51,9 +51,9 @@ export default function Explore() {
       </p>
 
       <div className="relative mb-3">
-        <Search className="pointer-events-none absolute inset-y-0 end-3 my-auto size-4 text-text-5" />
+        <Search className="pointer-events-none absolute inset-y-0 start-3 my-auto size-4 text-text-5" />
         <Input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }}
-               placeholder="جست‌وجو در تحلیل‌های منتشرشده" className="pe-10" />
+               placeholder="جست‌وجو در تحلیل‌های منتشرشده" className="ps-10" />
       </div>
 
       {data?.categories?.length > 0 && (
