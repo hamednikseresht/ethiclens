@@ -9,7 +9,7 @@
 <link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
 <link rel="icon" href="/icons/mark.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<meta name="theme-color" content="#f5f5f4">
+<meta name="theme-color" content="#fafaf9">
 <meta name="apple-mobile-web-app-title" content="دیدگاه اخلاق">
 <link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/app.css">
@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/css/public.css">
 <style>
   .g-hero{padding:2.5rem 0 1.5rem}
-  .g-hero h1{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:900;line-height:1.5;margin-bottom:.7rem}
+  .g-hero h1{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:600;line-height:1.5;margin-bottom:.7rem}
   .g-hero .lead{font-size:1rem;color:var(--text-muted);line-height:2;max-width:70ch}
 
   /* Table of contents */
@@ -33,7 +33,7 @@
 
   /* Section */
   .sec{margin:2.5rem 0}
-  .sec-title{font-size:1.35rem;font-weight:900;margin-bottom:.4rem;
+  .sec-title{font-size:1.35rem;font-weight:600;margin-bottom:.4rem;
              display:flex;align-items:center;gap:.6rem;scroll-margin-top:5rem}
   .sec-lead{font-size:.92rem;color:var(--text-muted);line-height:2;margin-bottom:1.4rem;max-width:72ch}
 
@@ -42,7 +42,7 @@
   @media (min-width:900px){.phases{grid-template-columns:1fr 1fr}}
   .phase-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-sm);
               padding:1.1rem 1.2rem;border-top:3px solid var(--primary)}
-  .phase-card h3{font-size:1rem;font-weight:800;margin-bottom:.35rem;display:flex;gap:.5rem;align-items:baseline}
+  .phase-card h3{font-size:1rem;font-weight:600;margin-bottom:.35rem;display:flex;gap:.5rem;align-items:baseline}
   .phase-card h3 b{color:var(--primary);font-size:.8rem}
   .phase-card p{font-size:.87rem;color:var(--text-muted);line-height:1.95;margin-bottom:.6rem}
   .phase-card ul{list-style:none;font-size:.85rem;line-height:1.9}
@@ -55,19 +55,19 @@
         margin-bottom:1.1rem;overflow:hidden;border-top:3px solid var(--lc)}
   .lens-head{padding:1.2rem 1.4rem .9rem;display:flex;gap:.9rem;align-items:flex-start;flex-wrap:wrap}
   .lens-ic{font-size:1.7rem;line-height:1.2}
-  .lens-name{font-size:1.15rem;font-weight:900;line-height:1.4}
+  .lens-name{font-size:1.15rem;font-weight:600;line-height:1.4}
   .lens-orig{font-size:.78rem;color:var(--text-faint);direction:ltr;display:block;margin-top:.1rem}
   .lens-q{background:var(--bg-subtle);border-inline-start:3px solid var(--lc);
           border-radius:0 var(--r-xs) var(--r-xs) 0;padding:.6rem .9rem;margin:0 1.4rem .9rem;
           font-size:.92rem;font-weight:700;line-height:1.8}
   .lens-body{padding:0 1.4rem 1.2rem}
   .lens-body p{font-size:.9rem;line-height:2;margin-bottom:.9rem}
-  .lens-body h4{font-size:.86rem;font-weight:800;margin:1.1rem 0 .5rem;color:var(--text)}
+  .lens-body h4{font-size:.86rem;font-weight:600;margin:1.1rem 0 .5rem;color:var(--text)}
 
   .concepts{display:grid;grid-template-columns:1fr;gap:.6rem}
   @media (min-width:700px){.concepts{grid-template-columns:1fr 1fr}}
   .concept{background:var(--bg-subtle);border-radius:var(--r-xs);padding:.7rem .85rem}
-  .concept b{display:block;font-size:.87rem;font-weight:800;margin-bottom:.15rem}
+  .concept b{display:block;font-size:.87rem;font-weight:600;margin-bottom:.15rem}
   .concept .term{font-size:.72rem;color:var(--text-faint);direction:ltr;display:block;margin-bottom:.3rem}
   .concept span{font-size:.83rem;color:var(--text-muted);line-height:1.85}
 
@@ -86,9 +86,9 @@
         padding:1rem 1.15rem;display:grid;grid-template-columns:auto 1fr;gap:.9rem;align-items:start;
         border-inline-start:3px solid var(--gc)}
   .gate-n{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
-          background:var(--bg-subtle);color:var(--gc);font-weight:900;font-size:.95rem;border:2px solid var(--gc)}
-  .gate h3{font-size:1rem;font-weight:800;margin-bottom:.1rem}
-  .gate .kind{font-size:.7rem;font-weight:800;padding:.1rem .45rem;border-radius:999px;
+          background:var(--bg-subtle);color:var(--gc);font-weight:600;font-size:.95rem;border:2px solid var(--gc)}
+  .gate h3{font-size:1rem;font-weight:600;margin-bottom:.1rem}
+  .gate .kind{font-size:.7rem;font-weight:600;padding:.1rem .45rem;border-radius:999px;
               background:var(--bg-subtle);color:var(--gc);margin-inline-start:.4rem;vertical-align:middle}
   .gate .who{font-size:.76rem;color:var(--text-muted);margin-bottom:.4rem}
   .gate p{font-size:.87rem;line-height:1.95;color:var(--text-muted)}
@@ -97,18 +97,18 @@
   /* Comparison table */
   .cmp{font-size:.83rem}
   .cmp th{font-size:.76rem}
-  .cmp td:first-child{font-weight:800;white-space:nowrap}
+  .cmp td:first-child{font-weight:600;white-space:nowrap}
 
   /* Thought experiment */
   .exp{background:var(--accent-soft);border:1px dashed var(--accent);border-radius:var(--r-sm);
        padding:1rem 1.15rem;margin-bottom:.85rem}
-  .exp h3{font-size:.95rem;font-weight:800;margin-bottom:.4rem;color:var(--text)}
+  .exp h3{font-size:.95rem;font-weight:600;margin-bottom:.4rem;color:var(--text)}
   .exp p{font-size:.87rem;line-height:1.95;margin-bottom:.5rem}
   .exp .ref{font-size:.76rem;color:var(--text-muted);direction:ltr;text-align:right}
 
   /* Bibliography */
   .bib{font-size:.86rem;line-height:2.1}
-  .bib h3{font-size:.95rem;font-weight:800;margin:1.3rem 0 .5rem}
+  .bib h3{font-size:.95rem;font-weight:600;margin:1.3rem 0 .5rem}
   .bib ol{list-style:none;counter-reset:b}
   .bib li{counter-increment:b;position:relative;padding-inline-start:2rem;margin-bottom:.55rem;
           color:var(--text-muted)}
@@ -121,12 +121,12 @@
         border-radius:0 var(--r-sm) var(--r-sm) 0;padding:.95rem 1.15rem;font-size:.88rem;
         line-height:2;margin:1.2rem 0}
 
-  .cta-guide{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;
+  .cta-guide{background:var(--ink);color:var(--bg);
              border-radius:var(--r);padding:1.8rem 1.5rem;text-align:center;margin:2.5rem 0 1rem}
-  .cta-guide h2{font-size:1.15rem;font-weight:900;margin-bottom:.5rem}
+  .cta-guide h2{font-size:1.15rem;font-weight:600;margin-bottom:.5rem}
   .cta-guide p{opacity:.93;font-size:.9rem;margin-bottom:1.1rem;max-width:52ch;margin-inline:auto;line-height:1.9}
-  .cta-guide .btn{background:#fff;border-color:#fff;color:var(--primary)}
-  .cta-guide .btn:hover{background:#fff;color:var(--primary);filter:brightness(.96)}
+  .cta-guide .btn{background:var(--bg);border-color:var(--bg);color:var(--ink)}
+  .cta-guide .btn:hover{background:var(--bg);color:var(--ink);opacity:.92}
 </style>
 <script src="/js/analytics.js"></script>
 </head>

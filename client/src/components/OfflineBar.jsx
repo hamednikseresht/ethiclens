@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { WifiOff } from 'lucide-react';
+import { hasOfflineCache } from '@/lib/offline';
 
 /**
  * Says when the connection is gone.
@@ -30,11 +31,15 @@ export function OfflineBar() {
 
   if (!offline) return null;
 
+  const cached = hasOfflineCache();
+
   return (
     <div role="status"
          className="flex items-center justify-center gap-2 bg-warn px-4 py-1.5 text-[11.5px] font-bold text-white">
       <WifiOff className="size-3.5" />
-      اتصال اینترنت قطع است
+      {cached
+        ? 'اتصال قطع است — تاریخچه و آخرین نتیجه از حافظهٔ دستگاه'
+        : 'اتصال اینترنت قطع است'}
     </div>
   );
 }

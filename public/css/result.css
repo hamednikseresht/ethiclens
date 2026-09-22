@@ -5,7 +5,7 @@
 
 /* ---------- فاز ---------- */
 .phase{display:flex;flex-direction:column;gap:.9rem}
-.phase-n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:.7rem;font-weight:900}
+.phase-n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--primary);color:var(--on-primary);font-size:.7rem;font-weight:600}
 .phase-label{
   display:inline-flex;align-items:center;gap:.5rem;align-self:flex-start;
   font-size:.78rem;font-weight:800;color:var(--primary);
@@ -49,7 +49,7 @@
 .stage-rail{display:flex;flex-direction:column;align-items:center;gap:.4rem;padding-top:.2rem}
 .stage-num{
   width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
-  font-size:1rem;font-weight:900;flex-shrink:0;
+  font-size:1rem;font-weight:600;flex-shrink:0;
   background:var(--bg-subtle);color:var(--text-muted);
   border:2px solid var(--border-strong);transition:all .25s;
 }
@@ -176,7 +176,7 @@
 [data-theme='dark'] .mx-cell[data-v='1']{background:#166534;color:#dcfce7}
 [data-theme='dark'] .mx-cell[data-v='-1']{background:#7f1d1d;color:#fee2e2}
 .mx-total{
-  text-align:center;font-weight:900;font-variant-numeric:tabular-nums;
+  text-align:center;font-weight:600;font-variant-numeric:tabular-nums;
   padding:.5rem .4rem;border-radius:8px;background:var(--bg-inset);min-width:3rem;
 }
 .mx-total[data-t='pos']{color:var(--success)}
@@ -199,7 +199,7 @@
   background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r);
   padding:1.3rem;margin-bottom:1.3rem;box-shadow:var(--shadow-sm);
 }
-.result-head h1{font-size:1.2rem;font-weight:900;line-height:1.55;margin-bottom:.5rem}
+.result-head h1{font-size:1.2rem;font-weight:600;line-height:1.55;margin-bottom:.5rem}
 .result-dilemma{
   background:var(--bg-subtle);border-inline-start:3px solid var(--accent);
   border-radius:0 var(--r-sm) var(--r-sm) 0;padding:.85rem 1rem;

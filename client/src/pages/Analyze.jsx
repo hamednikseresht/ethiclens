@@ -2,14 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import { api, streamAnalysis } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { quoteDeck } from '@shared/quotes.js';
-import { ArrowLeft, ArrowRight, Compass, X, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Compass, X, Check, RotateCcw } from 'lucide-react';
 import { fa, faDuration } from '@/lib/fa';
 import { SAMPLE_DILEMMAS } from '@/lib/samples';
 import { LensOctagon } from '@/components/LensOctagon';
+import { cacheMeta, isNetworkFailure, readMeta, readResult } from '@/lib/offline';
 
 /**
  * New analysis: a two-step form, then a waiting screen while the model works.
@@ -36,7 +39,19 @@ const CONTEXT_FIELDS = [
   { key: 'values',       label: 'ارزش‌ها و محدودیت‌های شخصی', placeholder: 'صداقت برایم از امنیت شغلی مهم‌تر است، ولی…', multiline: true }
 ];
 
-export default function Analyze({ onDone }) {
+function formFromAnalysis(a) {
+  const ctx = a?.context && typeof a.context === 'object' ? a.context : {};
+  return {
+    dilemma: a.dilemma || '',
+    domain: ctx.domain || '',
+    stakeholders: ctx.stakeholders || '',
+    options: ctx.options || '',
+    urgency: ctx.urgency || '',
+    values: ctx.values || ''
+  };
+}
+
+export default function Analyze({ onDone, revisitId, onRevisitLoaded }) {
   const [meta, setMeta] = useState(null);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
@@ -44,12 +59,47 @@ export default function Analyze({ onDone }) {
   });
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
+  const [fromPrior, setFromPrior] = useState(false);
 
   useEffect(() => {
     api.get('/api/analyze/meta')
-      .then(d => { setMeta(d); setForm(f => ({ ...f, model: d.defaultModel || d.models?.[0]?.ref || '' })); })
-      .catch(e => setError(e.message));
+      .then(d => {
+        cacheMeta(d);
+        setMeta(d);
+        setForm(f => ({ ...f, model: d.defaultModel || d.models?.[0]?.ref || '' }));
+      })
+      .catch(e => {
+        const cached = readMeta();
+        if (cached) {
+          setMeta(cached);
+          setForm(f => ({ ...f, model: f.model || cached.defaultModel || cached.models?.[0]?.ref || '' }));
+        } else {
+          setError(e.message);
+        }
+      });
   }, []);
+
+  // A revisit is a new analysis with the old dilemma and context already
+  // filled. The query is stripped after load so submitting does not look
+  // like an edit of the previous row, and a later refresh is a blank form.
+  useEffect(() => {
+    if (!revisitId) return;
+    let alive = true;
+    const apply = (a) => {
+      if (!alive || !a) return;
+      setForm(f => ({ ...f, ...formFromAnalysis(a) }));
+      setFromPrior(true);
+      onRevisitLoaded?.();
+    };
+    api.get(`/api/history/${revisitId}`)
+      .then(apply)
+      .catch(err => {
+        const cached = readResult(revisitId);
+        if (cached && isNetworkFailure(err)) apply(cached);
+        else if (alive) setError(err.message);
+      });
+    return () => { alive = false; };
+  }, [revisitId]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const tooShort = form.dilemma.trim().length < MIN_LEN;
@@ -66,27 +116,49 @@ export default function Analyze({ onDone }) {
 
       {error && <Alert variant="destructive" className="mb-4">{error}</Alert>}
 
+      {fromPrior && (
+        <Alert className="mb-4">
+          <div className="flex items-start gap-2">
+            <RotateCcw className="mt-0.5 size-4 shrink-0" />
+            <div className="min-w-0 grow">
+              <p className="text-sm font-bold">متن از تحلیل قبلی آمده است</p>
+              <p className="mt-1 text-xs leading-loose text-muted-foreground">
+                ویرایش کنید و دوباره بفرستید. این یک تحلیل تازه است، نه بازنویسی همان نتیجه.
+              </p>
+              <Button type="button" variant="ghost" size="sm" className="mt-2 h-8 px-2"
+                      onClick={() => {
+                        setFromPrior(false);
+                        setForm(f => ({
+                          ...f,
+                          dilemma: '', domain: '', stakeholders: '',
+                          options: '', urgency: '', values: ''
+                        }));
+                      }}>
+                شروع از صفر
+              </Button>
+            </div>
+          </div>
+        </Alert>
+      )}
+
       {step === 1 && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <h1 className="display text-[33px] font-semibold leading-tight">
+            <h1 className="display">
               چه دوراهی‌ای پیش رویتان است؟
             </h1>
-            <p className="text-sm leading-loose text-text-3">
+            <p className="text-sm leading-loose text-muted-foreground">
               موقعیت را با جزئیات بنویسید. هرچه دقیق‌تر، تحلیل کمتر کلی‌گویانه.
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <textarea
+            <Textarea
               value={form.dilemma}
               onChange={(e) => set('dilemma', e.target.value.slice(0, MAX_LEN))}
               rows={9}
               autoFocus
               placeholder="مثلاً: مدیرم از من خواسته گزارشی را طوری بنویسم که ایراد یک محصول در آن دیده نشود. اگر قبول نکنم احتمالاً شغلم را از دست می‌دهم، و همسرم بیکار است…"
-              className="w-full rounded-lg border border-input bg-card p-4 text-[15px] leading-loose
-                         placeholder:text-text-5 focus-visible:outline-none focus-visible:ring-2
-                         focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
             />
             <div className="flex justify-between text-[11px] text-text-5">
               <span>{tooShort ? `دست‌کم ${fa(MIN_LEN)} نویسه` : 'کافی است'}</span>
@@ -110,7 +182,7 @@ export default function Analyze({ onDone }) {
       {step === 2 && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <h2 className="display text-[30px] font-semibold leading-tight">اطلاعات تکمیلی</h2>
+            <h2 className="display">اطلاعات تکمیلی</h2>
             <p className="text-sm leading-loose text-text-3">
               همه اختیاری‌اند. هرکدام را پر کنید، تحلیل همان‌قدر دقیق‌تر می‌شود.
             </p>
@@ -120,13 +192,11 @@ export default function Analyze({ onDone }) {
             <div key={f.key} className="space-y-1.5">
               <Label htmlFor={f.key}>{f.label}</Label>
               {f.multiline ? (
-                <textarea
+                <Textarea
                   id={f.key} rows={2} value={form[f.key]}
                   onChange={(e) => set(f.key, e.target.value)}
                   placeholder={f.placeholder}
-                  className="w-full rounded-md border border-input bg-card p-3 text-sm leading-loose
-                             placeholder:text-text-5 focus-visible:outline-none focus-visible:ring-2
-                             focus-visible:ring-ring"
+                  className="min-h-[72px] text-sm"
                 />
               ) : (
                 <Input id={f.key} value={form[f.key]}
@@ -138,14 +208,16 @@ export default function Analyze({ onDone }) {
           {meta?.models?.length > 1 && (
             <div className="space-y-1.5">
               <Label htmlFor="model">مدل تحلیل</Label>
-              <select
-                id="model" value={form.model} onChange={(e) => set('model', e.target.value)}
-                className="h-11 w-full rounded-md border border-input bg-card px-3 text-sm
-                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                {meta.models.map(m => (
-                  <option key={m.ref} value={m.ref}>{m.label} — {m.provider}</option>
-                ))}
-              </select>
+              <Select value={form.model || undefined} onValueChange={(v) => set('model', v)}>
+                <SelectTrigger id="model">
+                  <SelectValue placeholder="انتخاب مدل" />
+                </SelectTrigger>
+                <SelectContent>
+                  {meta.models.map(m => (
+                    <SelectItem key={m.ref} value={m.ref}>{m.label} — {m.provider}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {meta.models.find(m => m.ref === form.model)?.note && (
                 <p className="text-[11px] text-text-5">
                   {meta.models.find(m => m.ref === form.model).note}
@@ -201,11 +273,8 @@ function Samples({ current, onPick }) {
           return (
             <button key={s.label} type="button" onClick={() => choose(s)}
                     aria-pressed={active}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5
-                                text-[11.5px] font-bold transition-colors ${active
-                                  ? 'border-primary bg-primary-soft text-primary'
-                                  : 'border-border bg-card text-text-3 hover:border-primary hover:text-primary'}`}>
-              {active ? <Check className="size-3.5" /> : <span aria-hidden="true">{s.icon}</span>}
+                    className={`chip ${active ? 'chip-on' : ''}`}>
+              {active && <Check className="size-3.5" aria-hidden="true" />}
               {s.label}
             </button>
           );

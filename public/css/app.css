@@ -1,126 +1,7 @@
-/* ==========================================================================
-   Design tokens — mobile PWA redesign.
+@import "./tokens.css";
 
-   The canonical names come from design/mobile-pwa/tokens.css. The block below
-   them maps every legacy name onto the new palette.
-
-   The aliases exist because 356 of the 818 var() references in this codebase
-   still use the old names. Replacing the block outright would have repainted
-   the app by breaking it. With the aliases the new warm-stone palette applies
-   everywhere at once, and the old names are retired screen by screen as each
-   is rebuilt — so a half-finished migration never leaves a page unstyled.
-   ========================================================================== */
-:root{
-  /* ---- Neutrals: warm stone, replacing the cold slate ramp ---- */
-  --bg:            #f5f5f4;
-  --bg-raised:     #ffffff;
-  --bg-sunken:     #fafaf9;
-  --bg-muted:      #e7e5e4;
-  --border:        #e7e5e4;
-  --border-strong: #d6d3d1;
-  --text:          #1c1917;
-  --text-2:        #44403c;
-  --text-3:        #57534e;
-  --text-4:        #78716c;
-  --text-5:        #a8a29e;
-
-  /* ---- Brand ---- */
-  --primary:       #1d4ed8;
-  --primary-soft:  #eff6ff;
-  --accent:        #0d9488;
-  --accent-soft:   #f0fdfa;
-  --ink:           #1c1917;
-  --ink-2:         #292524;
-
-  /* ---- Verdicts ---- */
-  --danger: #dc2626;  --danger-soft: #fef2f2;
-  --warn:   #d97706;  --warn-soft:   #fffbeb;
-  --ok:     #059669;  --ok-soft:     #ecfdf5;
-
-  /* ---- The eight schools ----
-     server/services/schools.js is the source of truth for these; the copies
-     here exist only so CSS can reach them. If one changes there, change it
-     here too. */
-  --school-virtue:      #7c3aed;
-  --school-deontology:  #2563eb;
-  --school-utilitarian: #0d9488;
-  --school-common-good: #0891b2;
-  --school-contractual: #ea580c;
-  --school-care:        #db2777;
-  --school-existential: #65a30d;
-  --school-genealogy:   #b45309;
-
-  /* ---- Radius ---- */
-  --r-sm: 9px; --r-md: 12px; --r-lg: 14px; --r-xl: 16px; --r-2xl: 18px;
-  --r-pill: 999px;
-
-  /* ---- Layout ---- */
-  --gutter: 20px;
-  --tabbar-h: 64px;
-
-  /* ---- Type ---- */
-  --font-ui:      'Shabnam', system-ui, -apple-system, Tahoma, sans-serif;
-  --font-display: 'Shabnam', system-ui, Tahoma, sans-serif;
-
-  /* ---- Safe areas ---- */
-  --safe-top:    env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-
-  /* ---- Legacy aliases ----
-     Old name → new value. Everything still written against the old names
-     picks up the new palette without being touched. */
-  --bg-body:     var(--bg);
-  --bg-surface:  var(--bg-raised);
-  --bg-subtle:   var(--bg-sunken);
-  --bg-inset:    var(--bg-muted);
-  --text-muted:  var(--text-3);
-  --text-faint:  var(--text-5);
-  --primary-hover: #1e40af;
-  --primary-ring:  rgba(29, 78, 216, .35);
-  --success:      var(--ok);
-  --success-soft: var(--ok-soft);
-  --r:    var(--r-xl);
-  --r-xs: var(--r-sm);
-  --nav-h: 60px;
-
-  /* Cards lost their shadows in this redesign — they are a hairline border on
-     a raised surface now. Neutralising the two card-level shadows here removes
-     them everywhere at once instead of hunting down 19 call sites. The large
-     one survives for genuinely floating layers: sheets and toasts. */
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: 0 -8px 24px rgba(28, 25, 23, .10);
-}
-
-[data-theme="dark"]{
-  --bg:            #1c1917;
-  --bg-raised:     #262322;
-  --bg-sunken:     #1f1d1c;
-  --bg-muted:      #292524;
-  --border:        #322e2c;
-  --border-strong: #44403c;
-  --text:          #fafaf9;
-  --text-2:        #e7e5e4;
-  --text-3:        #d6d3d1;
-  --text-4:        #a8a29e;
-  --text-5:        #78716c;
-
-  --primary:       #60a5fa;
-  --primary-soft:  rgba(96, 165, 250, .14);
-  --accent-soft:   rgba(13, 148, 136, .16);
-  --danger-soft:   rgba(220, 38, 38, .16);
-  --warn-soft:     rgba(217, 119, 6, .16);
-  --ok-soft:       rgba(5, 150, 105, .16);
-
-  /* Dark surfaces invert: the verdict card and primary button read as light
-     on dark rather than the other way round. */
-  --ink:           #fafaf9;
-  --ink-2:         #e7e5e4;
-
-  --primary-hover: #93c5fd;
-  --primary-ring:  rgba(96, 165, 250, .35);
-  --shadow-lg:     0 -8px 24px rgba(0, 0, 0, .55);
-}
+/* Component styles for the public pages. Palette lives in tokens.css so
+   /guide and /app cannot drift. */
 
 *, *::before, *::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth;scroll-padding-top:calc(var(--nav-h) + 1rem)}
@@ -157,7 +38,7 @@ img, svg{max-width:100%}
   border-bottom:1px solid var(--border);
 }
 .topbar-inner{max-width:1180px;margin:0 auto;height:100%;padding:0 1rem;display:flex;align-items:center;gap:.75rem}
-.brand{display:flex;align-items:center;gap:.55rem;font-weight:900;font-size:1.05rem;color:var(--text);text-decoration:none;flex-shrink:0}
+.brand{display:flex;align-items:center;gap:.55rem;font-weight:600;font-size:.95rem;color:var(--text);text-decoration:none;flex-shrink:0;letter-spacing:-.01em}
 .brand:hover{text-decoration:none}
 /* The product mark itself, not a two-letter stand-in for it. The artwork
    carries its own rounded square and colour, so nothing is drawn behind it. */
@@ -171,11 +52,11 @@ img, svg{max-width:100%}
 }
 .nav-links::-webkit-scrollbar{display:none}
 .nav-links a{
-  padding:.45rem .8rem;border-radius:9px;font-size:.9rem;font-weight:600;
+  padding:.45rem .8rem;border-radius:var(--r-md);font-size:.875rem;font-weight:500;
   color:var(--text-muted);white-space:nowrap;text-decoration:none;
 }
 .nav-links a:hover{background:var(--bg-subtle);color:var(--text);text-decoration:none}
-.nav-links a.active{background:var(--primary-soft);color:var(--primary)}
+.nav-links a.active{background:var(--bg-muted);color:var(--text)}
 
 /* ---------- Menu button ----------
    Hidden on desktop; the media query below turns it on. */
@@ -246,7 +127,7 @@ img, svg{max-width:100%}
   font-size:.85rem;font-weight:700;color:var(--text);min-height:38px;
 }
 .usermenu-btn:hover{background:var(--bg-subtle)}
-.avatar{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--primary);color:#fff;font-size:.78rem;font-weight:800;flex-shrink:0}
+.avatar{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--primary);color:var(--on-primary);font-size:.78rem;font-weight:600;flex-shrink:0}
 .usermenu-pop{
   position:absolute;top:calc(100% + .5rem);inset-inline-end:0;min-width:210px;
   background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;
@@ -265,22 +146,22 @@ img, svg{max-width:100%}
 /* ---------- دکمه‌ها ---------- */
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:.45rem;
-  font-family:inherit;font-size:.9rem;font-weight:700;line-height:1;
-  padding:.7rem 1.1rem;min-height:42px;border-radius:10px;
+  font-family:inherit;font-size:.875rem;font-weight:500;line-height:1;
+  padding:.7rem 1rem;min-height:44px;border-radius:var(--r-md);
   border:1px solid var(--border);background:var(--bg-surface);color:var(--text);
-  cursor:pointer;transition:all .16s;white-space:nowrap;text-decoration:none;
+  cursor:pointer;transition:background-color var(--dur-fast),border-color var(--dur-fast),color var(--dur-fast);
+  white-space:nowrap;text-decoration:none;box-shadow:var(--shadow-xs);
 }
 .btn:hover:not(:disabled){border-color:var(--border-strong);background:var(--bg-subtle);text-decoration:none}
-.btn:active:not(:disabled){transform:translateY(1px)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--primary-ring)}
-.btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
-.btn-primary:hover:not(:disabled){background:var(--primary-hover);border-color:var(--primary-hover);color:#fff}
-.btn-ghost{background:transparent;border-color:transparent;color:var(--text-muted)}
+.btn-primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.btn-primary:hover:not(:disabled){background:var(--primary-hover);border-color:var(--primary-hover);color:var(--on-primary)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--text-muted);box-shadow:none}
 .btn-ghost:hover:not(:disabled){background:var(--bg-subtle);color:var(--text)}
-.btn-sm{padding:.4rem .7rem;min-height:34px;font-size:.82rem;border-radius:8px}
-.btn-lg{padding:.9rem 1.6rem;min-height:52px;font-size:1rem;border-radius:12px}
-.btn-icon{width:40px;height:40px;padding:0;border-radius:10px;flex-shrink:0}
+.btn-sm{padding:.4rem .7rem;min-height:36px;font-size:.82rem;border-radius:var(--r-sm)}
+.btn-lg{padding:.9rem 1.4rem;min-height:48px;font-size:1rem}
+.btn-icon{width:44px;height:44px;padding:0;border-radius:var(--r-md);flex-shrink:0}
 
 /* ---------- فرم ---------- */
 .field{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
@@ -364,7 +245,7 @@ tbody tr:hover{background:var(--bg-subtle)}
 .prose blockquote{border-inline-start:3px solid var(--primary);padding-inline-start:.9rem;color:var(--text-muted);margin:.7rem 0}
 
 /* ---------- ابزارک شناور ---------- */
-.fab{position:fixed;bottom:max(1.25rem,env(safe-area-inset-bottom));inset-inline-start:1.25rem;width:46px;height:46px;border-radius:50%;background:var(--primary);color:#fff;border:none;box-shadow:var(--shadow-lg);cursor:pointer;display:none;place-items:center;font-size:1.15rem;z-index:900}
+.fab{position:fixed;bottom:max(1.25rem,env(safe-area-inset-bottom));inset-inline-start:1.25rem;width:46px;height:46px;border-radius:50%;background:var(--primary);color:var(--on-primary);border:none;box-shadow:var(--shadow-lg);cursor:pointer;display:none;place-items:center;font-size:1.15rem;z-index:900}
 .fab.show{display:grid}
 
 @media (min-width:768px){

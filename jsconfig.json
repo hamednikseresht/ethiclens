@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["client/src/*"],
+      "@shared/*": ["public/js/*"],
+      "@contract/*": ["server/services/*"]
+    }
+  },
+  "exclude": ["node_modules", "client-dist", "client-dist.next", "graphify-out"]
+}

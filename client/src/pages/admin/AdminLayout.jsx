@@ -35,23 +35,26 @@ export default function AdminLayout({ user }) {
   return (
     <div className="pb-6">
       <header className="mx-auto max-w-xl md:max-w-4xl px-5 pt-6">
-        <h1 className="display text-[30px] font-semibold leading-tight">پنل مدیریت</h1>
+        <h1 className="display">پنل مدیریت</h1>
       </header>
 
       <nav className="sticky z-10 mt-4 border-y border-border bg-background/95 backdrop-blur"
            style={{ top: 'calc(56px + env(safe-area-inset-top, 0px))' }}>
-        <div className="mx-auto flex max-w-xl md:max-w-4xl gap-1.5 overflow-x-auto px-5 py-2
+        <div className="mx-auto flex max-w-xl md:max-w-4xl overflow-x-auto px-5 py-2
                         [-ms-overflow-style:none] [scrollbar-width:none]
                         [&::-webkit-scrollbar]:hidden">
-          {SECTIONS.map(s => (
-            <NavLink key={s.to} to={s.to} end={s.to === ''}
-                     className={({ isActive }) =>
-                       `shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold transition-colors ${
-                         isActive ? 'border-primary bg-primary-soft text-primary'
-                                  : 'border-border bg-card text-text-4'}`}>
-              {s.label}
-            </NavLink>
-          ))}
+          <div className="inline-flex h-10 min-w-max items-center rounded-lg bg-muted p-1">
+            {SECTIONS.map(s => (
+              <NavLink key={s.to} to={s.to} end={s.to === ''}
+                       className={({ isActive }) =>
+                         `shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                           isActive
+                             ? 'bg-background text-foreground shadow-[var(--shadow-xs)]'
+                             : 'text-muted-foreground hover:text-foreground'}`}>
+                {s.label}
+              </NavLink>
+            ))}
+          </div>
         </div>
       </nav>
 

@@ -45,7 +45,7 @@ export default function Explore() {
 
   return (
     <div className="mx-auto max-w-xl md:max-w-4xl px-5 pb-6 pt-6">
-      <h1 className="display mb-1.5 text-[30px] font-semibold leading-tight">تحلیل‌های عمومی</h1>
+      <h1 className="display mb-1.5">تحلیل‌های عمومی</h1>
       <p className="mb-4 text-justify text-[13px] leading-loose text-text-3">
         دوراهی‌های واقعی که کاربران تحلیل کرده و برای استفاده دیگران منتشر کرده‌اند.
       </p>
@@ -136,10 +136,7 @@ export default function Explore() {
 
 function Chip({ active, onClick, children }) {
   return (
-    <button onClick={onClick}
-            className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold transition-colors ${
-              active ? 'border-primary bg-primary-soft text-primary'
-                     : 'border-border bg-card text-text-4'}`}>
+    <button onClick={onClick} className={`chip shrink-0 ${active ? 'chip-on' : ''}`}>
       {children}
     </button>
   );
@@ -155,12 +152,12 @@ function Card({ item }) {
     <a href={`/analysis/${item.category?.slug || 'public'}/${encodeURIComponent(item.slug)}`}
        className="block rounded-xl border border-border bg-card p-4 transition-colors hover:bg-subtle">
       {item.category && (
-        <span className="mb-2 inline-block rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold text-primary">
+        <span className="mb-2 inline-block rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
           {item.category.title}
         </span>
       )}
 
-      <h2 className="mb-1.5 flex items-start gap-1.5 text-sm font-bold leading-relaxed">
+      <h2 className="mb-1.5 flex items-start gap-1.5 text-sm font-semibold leading-relaxed">
         <span className="grow">{item.title}</span>
         <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-text-5" />
       </h2>

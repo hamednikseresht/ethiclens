@@ -3,6 +3,9 @@ import { api } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton as UiSkeleton } from '@/components/ui/skeleton';
 import { Check, TriangleAlert, Loader2 } from 'lucide-react';
 
 /**
@@ -73,7 +76,7 @@ export function Panel({ title, hint, action, children }) {
       {(title || action) && (
         <div className="mb-3 flex items-start gap-3">
           <div className="grow">
-            {title && <h2 className="text-sm font-bold">{title}</h2>}
+            {title && <h2 className="text-sm font-semibold">{title}</h2>}
             {hint && <p className="mt-1 text-justify text-[11.5px] leading-loose text-text-4">{hint}</p>}
           </div>
           {action}
@@ -102,34 +105,35 @@ export function TextField({ label, hint, id, ...props }) {
   );
 }
 
-export function SelectField({ label, hint, id, options, ...props }) {
+export function SelectField({ label, hint, id, options, value, onChange, ...props }) {
   return (
     <Field label={label} hint={hint} id={id}>
-      <select id={id} {...props}
-              className="h-11 w-full rounded-md border border-input bg-card px-3 text-base
-                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        {options.map(o => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
+      <Select value={value === '' || value == null ? undefined : String(value)}
+              onValueChange={(v) => onChange?.({ target: { value: v } })}>
+        <SelectTrigger id={id} {...props}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.filter(o => o.value !== '' && o.value != null).map(o => (
+            <SelectItem key={String(o.value)} value={String(o.value)}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </Field>
   );
 }
 
 /**
- * A labelled on/off row.
- *
- * A real checkbox underneath rather than a styled div: it is focusable, it
- * toggles with the keyboard, and screen readers already know what it is.
+ * A labelled on/off row, using the shadcn Switch.
  */
 export function Toggle({ label, hint, checked, onChange, disabled }) {
   return (
     <label className={`flex cursor-pointer items-start gap-3 py-2 ${disabled ? 'opacity-50' : ''}`}>
-      <input type="checkbox" checked={!!checked} disabled={disabled}
-             onChange={(e) => onChange(e.target.checked)}
-             className="mt-0.5 size-4 shrink-0 accent-[var(--color-primary)]" />
+      <Switch checked={!!checked} disabled={disabled}
+              onCheckedChange={(v) => onChange(v)}
+              className="mt-0.5" />
       <span className="grow">
-        <span className="block text-[13px] font-bold">{label}</span>
+        <span className="block text-sm font-medium">{label}</span>
         {hint && <span className="mt-0.5 block text-justify text-[11px] leading-loose text-text-4">{hint}</span>}
       </span>
     </label>
@@ -159,7 +163,7 @@ export function Skeleton({ rows = 3 }) {
   return (
     <div className="space-y-2">
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="h-14 animate-pulse rounded-lg border border-border bg-card" />
+        <UiSkeleton key={i} className="h-14 rounded-lg" />
       ))}
     </div>
   );
@@ -229,7 +233,7 @@ export function TableWrap({ children }) {
 
 export function Th({ children, className = '' }) {
   return (
-    <th className={`whitespace-nowrap px-2.5 py-2 text-start text-[11px] font-bold text-text-4 ${className}`}>
+    <th className={`whitespace-nowrap px-2.5 py-2 text-start text-[11px] font-medium text-muted-foreground ${className}`}>
       {children}
     </th>
   );
@@ -248,7 +252,7 @@ export function Pill({ tone, children }) {
     info:   'border-primary/30 bg-primary-soft text-primary'
   };
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+        <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-medium ${
       tones[tone] || 'border-border bg-muted text-text-4'}`}>
       {children}
     </span>

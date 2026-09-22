@@ -1,62 +1,50 @@
-import { useEffect } from 'react';
+import * as React from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 /**
- * A bottom sheet.
- *
- * Bottom rather than centred on a phone: these hold forms, and a centred
- * dialog there puts its fields under the keyboard the moment one takes focus.
- * On a desktop there is no keyboard to avoid and no thumb to reach with, so
- * it becomes an ordinary centred dialog with a width of its own.
- *
- * Escape closes it and the background scroll is frozen while it is open —
- * without that, dragging inside a short sheet scrolls the page behind it and
- * the form appears to drift off-screen.
+ * shadcn Sheet, laid out for this product: bottom on a phone (keyboard and
+ * thumb), centred dialog from md up. Built on Radix Dialog so focus is
+ * trapped and Escape closes it — the previous custom overlay did neither
+ * reliably with assistive tech.
  */
-export function Sheet({ title, onClose, children, footer }) {
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = previous;
-    };
-  }, [onClose]);
-
+function Sheet({ title, onClose, children, footer, open = true }) {
   return (
-    // Bottom sheet on a phone, centred dialog from md up. Anchored to the
-    // bottom edge and full width, it spanned the whole of a desktop window —
-    // a form built for a 375px screen stretched across 1440.
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-foreground/40
-                    md:items-center md:p-6"
-         onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label={title}
-           className="max-h-[88vh] w-full overflow-y-auto rounded-t-2xl bg-card
-                      shadow-[0_-8px_24px_rgba(28,25,23,.10)]
-                      md:max-h-[85vh] md:max-w-lg md:rounded-2xl
-                      md:shadow-[0_12px_40px_rgba(28,25,23,.18)]"
-           onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-card px-5 py-3.5">
-          <h2 className="grow text-sm font-bold">{title}</h2>
-          <button onClick={onClose} aria-label="بستن"
-                  className="grid size-8 place-items-center rounded-full text-text-4 hover:bg-muted">
-            <X className="size-4" />
-          </button>
-        </div>
-
-        <div className="px-5 py-4">{children}</div>
-
-        {footer && (
-          <div className="sticky bottom-0 border-t border-border bg-card px-5 py-3"
-               style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
-            {footer}
+    <DialogPrimitive.Root open={open} onOpenChange={(next) => { if (!next) onClose?.(); }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-foreground/40" />
+        <DialogPrimitive.Content
+          aria-label={title}
+          className={cn(
+            'fixed z-50 flex max-h-[88vh] w-full flex-col border border-border bg-card shadow-[var(--shadow-lg)]',
+            'inset-x-0 bottom-0 rounded-t-xl',
+            'md:inset-auto md:bottom-auto md:left-1/2 md:top-1/2 md:max-h-[85vh] md:max-w-lg',
+            'md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-xl'
+          )}
+        >
+          <div className="flex items-center gap-3 border-b border-border px-5 py-3">
+            <DialogPrimitive.Title className="grow text-sm font-semibold">
+              {title}
+            </DialogPrimitive.Title>
+            <DialogPrimitive.Close
+              className="grid size-11 place-items-center rounded-md text-muted-foreground hover:bg-muted"
+              aria-label="بستن"
+            >
+              <X className="size-4" aria-hidden="true" />
+            </DialogPrimitive.Close>
           </div>
-        )}
-      </div>
-    </div>
+          <div className="overflow-y-auto px-5 py-4">{children}</div>
+          {footer && (
+            <div className="border-t border-border px-5 py-3"
+                 style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
+              {footer}
+            </div>
+          )}
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
+
+export { Sheet };
